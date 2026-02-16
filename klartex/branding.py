@@ -16,7 +16,7 @@ class Branding:
     phone: str = ""
     logo: str = ""
     colors: dict = field(default_factory=lambda: {"primary": "1A1A1A", "secondary": "666666", "accent": "0066CC"})
-    font: dict = field(default_factory=lambda: {"family": "Lato"})
+    font: dict = field(default_factory=lambda: {"family": ""})
     lang: str = "sv"
 
 

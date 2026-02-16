@@ -104,7 +104,6 @@ def render(
         # Symlink cls and assets so xelatex can find them
         (tmp / "klartex-base.cls").symlink_to(CLS_DIR / "klartex-base.cls")
         (tmp / "assets").symlink_to(ASSETS_DIR)
-        (tmp / "fonts").symlink_to(ASSETS_DIR / "fonts")
 
         # Run xelatex twice (for page references)
         for _ in range(2):

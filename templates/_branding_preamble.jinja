@@ -22,4 +22,7 @@
 \definecolor{brandprimary}{HTML}{\VAR{brand.colors.primary}}
 \definecolor{brandsecondary}{HTML}{\VAR{brand.colors.secondary}}
 \definecolor{brandaccent}{HTML}{\VAR{brand.colors.accent}}
+\BLOCK{if brand.font.family}
+\setmainfont{\VAR{brand.font.family}}
+\BLOCK{endif}
 \setdoclang{\VAR{brand.lang}}

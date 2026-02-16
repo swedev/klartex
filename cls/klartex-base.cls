@@ -40,16 +40,8 @@
 \emergencystretch=2em
 \hbadness=2000
 
-% Font setup — Lato as default, loaded from assets/fonts/
-\newcommand{\fontpath}{fonts/}
-\setmainfont{Lato}[
-    Path = \fontpath,
-    Extension = .ttf,
-    UprightFont = *-Reg,
-    BoldFont = *-Bol,
-    ItalicFont = *-RegIta,
-    BoldItalicFont = *-BolIta
-]
+% Font — no default override; fontspec uses Latin Modern automatically.
+% Branding can set a custom font via \setmainfont in the preamble.
 
 % Brand colors — configurable via \definecolor in document preamble
 \definecolor{brandprimary}{HTML}{1A1A1A}

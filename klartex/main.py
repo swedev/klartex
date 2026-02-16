@@ -13,13 +13,14 @@ class RenderRequest(BaseModel):
     template: str
     data: dict
     branding: str = "default"
+    branding_dir: str | None = None
 
 
 @app.post("/render")
 def render_pdf(req: RenderRequest):
     """Render a template to PDF."""
     try:
-        pdf_bytes = render(req.template, req.data, branding=req.branding)
+        pdf_bytes = render(req.template, req.data, branding=req.branding, branding_dir=req.branding_dir)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:

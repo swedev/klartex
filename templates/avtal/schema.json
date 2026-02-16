@@ -5,6 +5,7 @@
   "type": "object",
   "required": ["title", "party1", "party2", "clauses"],
   "properties": {
+    "header": { "type": "string", "enum": ["standard", "minimal", "none"], "default": "standard", "description": "Header layout" },
     "title": { "type": "string", "description": "Agreement title" },
     "party1": {
       "type": "object",

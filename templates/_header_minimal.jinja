@@ -1,0 +1,12 @@
+\makeatletter
+\fancyhead[R]{%
+    \ifdefempty{\brandlogo}{}{%
+        \raisebox{-0.6cm}[0pt][0pt]{\includegraphics[height=0.855cm]{\brandlogo}}%
+    }%
+}
+\fancyfoot[C]{%
+    \wf@setlang%
+    \fontsize{6pt}{9pt}\selectfont\color{brandsecondary}%
+    \wf@page\ \thepage\ \wf@of\ \pageref{LastPage}%
+}
+\makeatother

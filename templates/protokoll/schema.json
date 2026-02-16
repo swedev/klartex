@@ -5,6 +5,7 @@
   "type": "object",
   "required": ["meeting_type", "date", "attendees", "agenda_items"],
   "properties": {
+    "header": { "type": "string", "enum": ["standard", "minimal", "none"], "default": "standard", "description": "Header layout" },
     "meeting_type": {
       "type": "string",
       "description": "Type of meeting, e.g. Styrelsemöte, Årsmöte"

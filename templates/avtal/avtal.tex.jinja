@@ -1,6 +1,7 @@
 \documentclass{klartex-base}
 
 %% include '_branding_preamble.jinja'
+%% include '_header_' ~ data.get('header', 'standard') ~ '.jinja'
 
 \BLOCK{if data.get('lang', 'sv') == 'en'}
 \setdoclang{en}

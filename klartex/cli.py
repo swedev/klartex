@@ -17,6 +17,7 @@ def render_cmd(
     data: Path = typer.Option(..., "--data", "-d", help="Path to JSON data file"),
     output: Path = typer.Option("output.pdf", "--output", "-o", help="Output PDF path"),
     branding: str = typer.Option("default", "--branding", "-b", help="Branding name"),
+    branding_dir: Path = typer.Option(None, "--branding-dir", help="Directory with branding YAML files"),
 ):
     """Render a template to PDF."""
     if not data.exists():
@@ -25,7 +26,7 @@ def render_cmd(
 
     raw = json.loads(data.read_text())
     try:
-        pdf_bytes = render(template, raw, branding=branding)
+        pdf_bytes = render(template, raw, branding=branding, branding_dir=branding_dir)
     except Exception as e:
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(1)

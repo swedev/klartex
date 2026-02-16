@@ -90,44 +90,9 @@
 % Graphics search path
 \graphicspath{{./}}
 
-% Header and footer setup
+% Header and footer setup — layout is injected via branding preamble
 \pagestyle{fancy}
 \fancyhf{}
-
-% Header — org info on left, logo on right (skip if no branding)
-\fancyhead[L]{%
-    \ifdefempty{\orgname}{}{%
-    \color{brandsecondary}%
-    \begin{minipage}[t]{0.20\textwidth}
-        \fontsize{6pt}{9pt}\selectfont
-        \textbf{\orgname}%
-        \ifdefempty{\orgaddress}{}{\\
-        \orgaddress}%
-    \end{minipage}%
-    \begin{minipage}[t]{0.22\textwidth}
-        \fontsize{6pt}{9pt}\selectfont
-        \orgwebsite%
-        \ifdefempty{\orgemail}{}{\\
-        \orgemail}%
-        \ifdefempty{\orgphone}{}{\\
-        \orgphone}%
-    \end{minipage}%
-    }%
-}
-\fancyhead[R]{%
-    \ifdefempty{\brandlogo}{}{%
-        \raisebox{-0.6cm}[0pt][0pt]{\includegraphics[height=0.855cm]{\brandlogo}}%
-    }%
-}
-
-% Footer — document title and page number (language-aware)
-\fancyfoot[C]{%
-    \wf@setlang%
-    \fontsize{6pt}{9pt}\selectfont\color{brandsecondary}%
-    \doctitle\ \textbullet\ \wf@page\ \thepage\ \wf@of\ \pageref{LastPage}%
-}
-
-% Header/footer rules
 \renewcommand{\headrulewidth}{0pt}
 \renewcommand{\footrulewidth}{0pt}
 

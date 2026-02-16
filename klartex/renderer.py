@@ -51,6 +51,7 @@ def render(
     template_name: str,
     data: dict,
     branding: str | Branding = "default",
+    branding_dir: str | Path | None = None,
 ) -> bytes:
     """Render a template with data and branding to PDF bytes.
 
@@ -58,6 +59,7 @@ def render(
         template_name: Name of the template (e.g. "protokoll")
         data: Template data as a dict (validated against schema)
         branding: Branding name (str) or Branding object
+        branding_dir: Directory to load branding YAML from (default: built-in)
 
     Returns:
         PDF file contents as bytes
@@ -75,9 +77,11 @@ def render(
 
     # Load branding
     if isinstance(branding, str):
-        brand = load_branding(branding, BRANDING_DIR)
+        brand, resolved_branding_dir = load_branding(
+            branding, Path(branding_dir) if branding_dir else BRANDING_DIR
+        )
     else:
-        brand = branding
+        brand, resolved_branding_dir = branding, BRANDING_DIR
 
     # Escape user data for LaTeX safety
     escaped_data = escape_data(data)
@@ -100,8 +104,9 @@ def render(
         tex_path = tmp / "document.tex"
         tex_path.write_text(tex_source)
 
-        # Symlink cls so xelatex can find it
+        # Symlink cls and branding dir so xelatex can find cls, logos, fonts
         (tmp / "klartex-base.cls").symlink_to(CLS_DIR / "klartex-base.cls")
+        (tmp / "branding").symlink_to(resolved_branding_dir)
 
         # Run xelatex twice (for page references)
         for _ in range(2):

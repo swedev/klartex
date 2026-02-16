@@ -5,6 +5,7 @@
   "type": "object",
   "required": ["invoice_number", "date", "due_date", "recipient", "lines"],
   "properties": {
+    "header": { "type": "string", "enum": ["standard", "minimal", "none"], "default": "standard", "description": "Header layout" },
     "invoice_number": { "type": "string" },
     "date": { "type": "string", "description": "Invoice date (YYYY-MM-DD)" },
     "due_date": { "type": "string", "description": "Due date (YYYY-MM-DD)" },

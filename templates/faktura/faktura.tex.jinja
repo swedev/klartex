@@ -1,6 +1,7 @@
 \documentclass{klartex-base}
 
 %% include '_branding_preamble.jinja'
+%% include '_header_' ~ data.get('header', 'standard') ~ '.jinja'
 
 \setdoctitle{Faktura \VAR{data.invoice_number}}
 

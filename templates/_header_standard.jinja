@@ -1,0 +1,31 @@
+\makeatletter
+\fancyhead[L]{%
+    \ifdefempty{\orgname}{}{%
+    \color{brandsecondary}%
+    \begin{minipage}[t]{0.20\textwidth}
+        \fontsize{6pt}{9pt}\selectfont
+        \textbf{\orgname}%
+        \ifdefempty{\orgaddress}{}{\\
+        \orgaddress}%
+    \end{minipage}%
+    \begin{minipage}[t]{0.22\textwidth}
+        \fontsize{6pt}{9pt}\selectfont
+        \orgwebsite%
+        \ifdefempty{\orgemail}{}{\\
+        \orgemail}%
+        \ifdefempty{\orgphone}{}{\\
+        \orgphone}%
+    \end{minipage}%
+    }%
+}
+\fancyhead[R]{%
+    \ifdefempty{\brandlogo}{}{%
+        \raisebox{-0.6cm}[0pt][0pt]{\includegraphics[height=0.855cm]{\brandlogo}}%
+    }%
+}
+\fancyfoot[C]{%
+    \wf@setlang%
+    \fontsize{6pt}{9pt}\selectfont\color{brandsecondary}%
+    \doctitle\ \textbullet\ \wf@page\ \thepage\ \wf@of\ \pageref{LastPage}%
+}
+\makeatother

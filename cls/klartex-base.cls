@@ -87,8 +87,8 @@
     \fi
 }
 
-% Path to assets
-\graphicspath{{assets/}{../assets/}{./}}
+% Graphics search path
+\graphicspath{{./}}
 
 % Header and footer setup
 \pagestyle{fancy}

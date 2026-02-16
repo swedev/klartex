@@ -17,7 +17,6 @@ from klartex.tex_escape import escape_data
 _ROOT = Path(__file__).resolve().parent.parent
 TEMPLATES_DIR = _ROOT / "templates"
 CLS_DIR = _ROOT / "cls"
-ASSETS_DIR = _ROOT / "assets"
 BRANDING_DIR = _ROOT / "branding"
 
 # Template registry (discovered at import time)
@@ -101,9 +100,8 @@ def render(
         tex_path = tmp / "document.tex"
         tex_path.write_text(tex_source)
 
-        # Symlink cls and assets so xelatex can find them
+        # Symlink cls so xelatex can find it
         (tmp / "klartex-base.cls").symlink_to(CLS_DIR / "klartex-base.cls")
-        (tmp / "assets").symlink_to(ASSETS_DIR)
 
         # Run xelatex twice (for page references)
         for _ in range(2):

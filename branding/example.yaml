@@ -1,0 +1,16 @@
+name: "Ekbackens Koloniförening"
+org_number: "802481-1234"
+address:
+  line1: "Storgatan 12"
+  line2: "123 45 Staden"
+website: "www.ekbacken.se"
+email: "info@ekbacken.se"
+phone: ""
+logo: ""
+colors:
+  primary: "2E7D32"
+  secondary: "666666"
+  accent: "2E7D32"
+font:
+  family: "Lato"
+lang: "sv"

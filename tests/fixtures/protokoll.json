@@ -1,0 +1,36 @@
+{
+  "meeting_type": "Styrelsemöte",
+  "meeting_number": "3/2026",
+  "date": "2026-02-10",
+  "time_start": "18:00",
+  "time_end": "19:30",
+  "location": "Föreningslokalen",
+  "chair": "Anna Andersson",
+  "secretary": "Erik Eriksson",
+  "adjusters": ["Maria Karlsson", "Johan Svensson"],
+  "attendees": ["Anna Andersson", "Erik Eriksson", "Maria Karlsson", "Johan Svensson", "Lisa Nilsson"],
+  "agenda_items": [
+    {
+      "title": "Mötets öppnande",
+      "discussion": "Ordförande Anna Andersson öppnade mötet och hälsade alla välkomna."
+    },
+    {
+      "title": "Val av justerare",
+      "decision": "Maria Karlsson och Johan Svensson valdes till justerare."
+    },
+    {
+      "title": "Ekonomisk rapport",
+      "discussion": "Kassören presenterade den ekonomiska rapporten för Q4. Föreningen har ett positivt resultat.",
+      "decision": "Styrelsen godkände den ekonomiska rapporten."
+    },
+    {
+      "title": "Planering av vårevent",
+      "discussion": "Diskussion om datum och upplägg för vårfesten. Förslag på 15 maj.",
+      "decision": "Vårfesten planeras till den 15 maj. Erik ansvarar för bokning av lokal."
+    },
+    {
+      "title": "Mötets avslutande",
+      "discussion": "Ordförande tackade för visat intresse och avslutade mötet."
+    }
+  ]
+}

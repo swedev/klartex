@@ -1,0 +1,46 @@
+{
+  "title": "Konsultavtal",
+  "party1": {
+    "name": "Uppdragsgivaren AB",
+    "org_number": "556789-0123",
+    "address_line1": "Storgatan 10",
+    "address_line2": "111 22 Stockholm",
+    "signatory": "Anna Andersson, VD"
+  },
+  "party2": {
+    "name": "Konsulten AB",
+    "org_number": "556456-7890",
+    "address_line1": "Lilla vägen 3",
+    "address_line2": "222 33 Göteborg",
+    "signatory": "Erik Eriksson, Konsultchef"
+  },
+  "preamble": "Detta avtal reglerar villkoren för konsulttjänster mellan parterna.",
+  "clauses": [
+    {
+      "title": "Uppdrag",
+      "body": "Konsulten åtar sig att utföra de tjänster som specificeras i bilaga 1."
+    },
+    {
+      "title": "Avtalstid",
+      "body": "Avtalet gäller från och med 2026-03-01 till och med 2026-12-31.",
+      "subclauses": [
+        "Avtalet kan förlängas med 12 månader i taget om ingen part säger upp det senast 3 månader före avtalstidens utgång.",
+        "Uppsägning ska ske skriftligen."
+      ]
+    },
+    {
+      "title": "Ersättning",
+      "body": "Konsulten erhåller ersättning enligt överenskommen timtaxa.",
+      "subclauses": [
+        "Fakturering sker månadsvis i efterskott.",
+        "Betalningsvillkor: 30 dagar netto."
+      ]
+    },
+    {
+      "title": "Sekretess",
+      "body": "Parterna förbinder sig att inte utan den andra partens medgivande röja konfidentiell information som erhållits inom ramen för detta avtal."
+    }
+  ],
+  "signatures": true,
+  "lang": "sv"
+}

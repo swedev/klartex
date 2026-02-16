@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Avtal",
+  "description": "Avtal / Agreement",
+  "type": "object",
+  "required": ["title", "party1", "party2", "clauses"],
+  "properties": {
+    "title": { "type": "string", "description": "Agreement title" },
+    "party1": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "org_number": { "type": "string" },
+        "address_line1": { "type": "string" },
+        "address_line2": { "type": "string" },
+        "signatory": { "type": "string", "description": "Name of person signing" }
+      }
+    },
+    "party2": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "org_number": { "type": "string" },
+        "address_line1": { "type": "string" },
+        "address_line2": { "type": "string" },
+        "signatory": { "type": "string", "description": "Name of person signing" }
+      }
+    },
+    "preamble": { "type": "string", "description": "Introductory text before clauses" },
+    "clauses": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["title", "body"],
+        "properties": {
+          "title": { "type": "string" },
+          "body": { "type": "string" },
+          "subclauses": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      },
+      "minItems": 1
+    },
+    "signatures": { "type": "boolean", "default": true, "description": "Include signature block" },
+    "lang": { "type": "string", "default": "sv", "description": "sv or en" }
+  }
+}

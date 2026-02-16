@@ -1,0 +1,7 @@
+services:
+  klartex:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./branding:/app/branding

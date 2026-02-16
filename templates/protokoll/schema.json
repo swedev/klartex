@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Protokoll",
+  "description": "Mötesprotokoll / Meeting minutes",
+  "type": "object",
+  "required": ["meeting_type", "date", "attendees", "agenda_items"],
+  "properties": {
+    "meeting_type": {
+      "type": "string",
+      "description": "Type of meeting, e.g. Styrelsemöte, Årsmöte"
+    },
+    "meeting_number": {
+      "type": "string",
+      "description": "Meeting number, e.g. 3/2026"
+    },
+    "date": {
+      "type": "string",
+      "description": "Meeting date (YYYY-MM-DD)"
+    },
+    "time_start": {
+      "type": "string",
+      "description": "Start time, e.g. 18:00"
+    },
+    "time_end": {
+      "type": "string",
+      "description": "End time, e.g. 19:30"
+    },
+    "location": {
+      "type": "string"
+    },
+    "chair": {
+      "type": "string",
+      "description": "Meeting chair / Ordförande"
+    },
+    "secretary": {
+      "type": "string",
+      "description": "Secretary / Sekreterare"
+    },
+    "adjusters": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Justerare"
+    },
+    "attendees": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "agenda_items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["title"],
+        "properties": {
+          "title": { "type": "string" },
+          "discussion": { "type": "string" },
+          "decision": { "type": "string" }
+        }
+      },
+      "minItems": 1
+    }
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Faktura",
+  "description": "Faktura / Invoice",
+  "type": "object",
+  "required": ["invoice_number", "date", "due_date", "recipient", "lines"],
+  "properties": {
+    "invoice_number": { "type": "string" },
+    "date": { "type": "string", "description": "Invoice date (YYYY-MM-DD)" },
+    "due_date": { "type": "string", "description": "Due date (YYYY-MM-DD)" },
+    "reference": { "type": "string", "description": "Customer reference / Er referens" },
+    "our_reference": { "type": "string", "description": "Our reference / Vår referens" },
+    "payment_terms": { "type": "string", "description": "e.g. 30 dagar netto" },
+    "currency": { "type": "string", "default": "SEK" },
+    "recipient": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "org_number": { "type": "string" },
+        "address_line1": { "type": "string" },
+        "address_line2": { "type": "string" }
+      }
+    },
+    "lines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["description", "quantity", "unit_price"],
+        "properties": {
+          "description": { "type": "string" },
+          "quantity": { "type": "number" },
+          "unit": { "type": "string", "default": "st" },
+          "unit_price": { "type": "number" },
+          "vat_percent": { "type": "number", "default": 25 }
+        }
+      },
+      "minItems": 1
+    },
+    "bankgiro": { "type": "string" },
+    "plusgiro": { "type": "string" },
+    "iban": { "type": "string" },
+    "bic": { "type": "string" },
+    "note": { "type": "string", "description": "Footer note" }
+  }
+}

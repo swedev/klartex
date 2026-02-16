@@ -1,0 +1,69 @@
+\documentclass{klartex-base}
+
+%% include '_branding_preamble.jinja'
+
+\BLOCK{if data.get('lang', 'sv') == 'en'}
+\setdoclang{en}
+\BLOCK{else}
+\setdoclang{sv}
+\BLOCK{endif}
+
+\setdoctitle{\VAR{data.title}}
+
+\begin{document}
+
+\makedoctitle{\VAR{data.party1.name}}{\VAR{data.party2.name}}{\VAR{data.title}}
+
+\noindent
+\begin{minipage}[t]{0.45\textwidth}
+\textbf{\VAR{data.party1.name}}\\[0.3em]
+\BLOCK{if data.party1.org_number}
+Org.nr: \VAR{data.party1.org_number}\\
+\BLOCK{endif}
+\BLOCK{if data.party1.address_line1}
+\VAR{data.party1.address_line1}\\
+\BLOCK{endif}
+\BLOCK{if data.party1.address_line2}
+\VAR{data.party1.address_line2}
+\BLOCK{endif}
+\end{minipage}%
+\hfill
+\begin{minipage}[t]{0.45\textwidth}
+\textbf{\VAR{data.party2.name}}\\[0.3em]
+\BLOCK{if data.party2.org_number}
+Org.nr: \VAR{data.party2.org_number}\\
+\BLOCK{endif}
+\BLOCK{if data.party2.address_line1}
+\VAR{data.party2.address_line1}\\
+\BLOCK{endif}
+\BLOCK{if data.party2.address_line2}
+\VAR{data.party2.address_line2}
+\BLOCK{endif}
+\end{minipage}
+
+\BLOCK{if data.preamble}
+\vspace{1.5em}
+\noindent \VAR{data.preamble}
+\BLOCK{endif}
+
+\vspace{1em}
+
+\begin{clauses}
+\BLOCK{for clause in data.clauses}
+\clause{\VAR{clause.title}}
+\VAR{clause.body}
+\BLOCK{if clause.get('subclauses')}
+\begin{subclauses}
+\BLOCK{for sub in clause.subclauses}
+\item \VAR{sub}
+\BLOCK{endfor}
+\end{subclauses}
+\BLOCK{endif}
+\BLOCK{endfor}
+\end{clauses}
+
+\BLOCK{if data.get('signatures', true)}
+\signatureblock{\VAR{data.party1.name}}{\VAR{data.party2.name}}{\VAR{data.party1.get('signatory', '')}}{\VAR{data.party2.get('signatory', '')}}
+\BLOCK{endif}
+
+\end{document}

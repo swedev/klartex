@@ -1,0 +1,16 @@
+name: ""
+org_number: ""
+address:
+  line1: ""
+  line2: ""
+website: ""
+email: ""
+phone: ""
+logo: ""
+colors:
+  primary: "1A1A1A"
+  secondary: "666666"
+  accent: "0066CC"
+font:
+  family: "Lato"
+lang: "sv"

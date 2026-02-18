@@ -1,0 +1,130 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Klartex Recipe",
+  "description": "Schema for YAML recipe files that define composable document templates",
+  "type": "object",
+  "required": ["template", "document", "components"],
+  "additionalProperties": false,
+  "properties": {
+    "template": {
+      "type": "object",
+      "required": ["name", "description"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Template identifier (must match directory name)"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of the template"
+        },
+        "lang": {
+          "type": "string",
+          "enum": ["sv", "en"],
+          "default": "sv",
+          "description": "Default document language"
+        }
+      }
+    },
+    "document": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Jinja expression for the document title (rendered with data context)"
+        },
+        "header": {
+          "type": "string",
+          "default": "standard",
+          "description": "Header layout to use. Can be a literal value (standard, minimal, none) or a Jinja expression (e.g. {{ data.header | default('standard') }}) resolved at render time."
+        },
+        "metadata": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["label", "field"],
+            "additionalProperties": false,
+            "properties": {
+              "label": {
+                "type": "string",
+                "description": "Display label for the metadata field"
+              },
+              "field": {
+                "type": "string",
+                "description": "Dot-notation path into the data object"
+              },
+              "optional": {
+                "type": "boolean",
+                "default": false,
+                "description": "If true, skip this row when the field is missing"
+              },
+              "suffix_fields": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Additional data fields appended to the value (e.g. time_start, time_end)"
+              },
+              "suffix_separator": {
+                "type": "string",
+                "default": ", ",
+                "description": "Separator between suffix field values"
+              }
+            }
+          },
+          "description": "Metadata fields displayed in a table at the top of the document"
+        }
+      }
+    },
+    "components": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type"],
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Component type name (e.g. 'klausuler', 'signaturblock', 'titelsida')"
+          },
+          "data_map": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Mapping from component parameter names to dot-notation data paths"
+          },
+          "options": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Static options passed to the component"
+          }
+        }
+      },
+      "description": "Ordered list of components to render in the document body"
+    },
+    "content_fields": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["type"],
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["text", "list", "table"],
+            "description": "Field type"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Mapping of content field names to their types"
+    },
+    "schema": {
+      "type": "string",
+      "description": "Relative path to JSON Schema file for template data validation"
+    }
+  }
+}

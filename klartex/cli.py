@@ -18,6 +18,7 @@ def render_cmd(
     output: Path = typer.Option("output.pdf", "--output", "-o", help="Output PDF path"),
     branding: str = typer.Option("default", "--branding", "-b", help="Branding name"),
     branding_dir: Path = typer.Option(None, "--branding-dir", help="Directory with branding YAML files"),
+    engine: str = typer.Option("auto", "--engine", "-e", help="Rendering engine: auto, legacy, or recipe"),
 ):
     """Render a template to PDF."""
     if not data.exists():
@@ -26,7 +27,7 @@ def render_cmd(
 
     raw = json.loads(data.read_text())
     try:
-        pdf_bytes = render(template, raw, branding=branding, branding_dir=branding_dir)
+        pdf_bytes = render(template, raw, branding=branding, branding_dir=branding_dir, engine=engine)
     except Exception as e:
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(1)
@@ -40,7 +41,14 @@ def list_templates():
     """List available templates."""
     registry = get_registry()
     for name, info in sorted(registry.items()):
-        typer.echo(f"  {name:20s} {info.description}")
+        engine_indicator = ""
+        if info.has_legacy and info.has_recipe:
+            engine_indicator = " [legacy+recipe]"
+        elif info.has_recipe:
+            engine_indicator = " [recipe]"
+        else:
+            engine_indicator = " [legacy]"
+        typer.echo(f"  {name:20s} {info.description}{engine_indicator}")
 
 
 @app.command("schema")

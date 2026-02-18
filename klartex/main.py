@@ -14,13 +14,20 @@ class RenderRequest(BaseModel):
     data: dict
     branding: str = "default"
     branding_dir: str | None = None
+    engine: str = "auto"
 
 
 @app.post("/render")
 def render_pdf(req: RenderRequest):
     """Render a template to PDF."""
     try:
-        pdf_bytes = render(req.template, req.data, branding=req.branding, branding_dir=req.branding_dir)
+        pdf_bytes = render(
+            req.template,
+            req.data,
+            branding=req.branding,
+            branding_dir=req.branding_dir,
+            engine=req.engine,
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -38,7 +45,15 @@ def list_templates():
     """List available templates."""
     registry = get_registry()
     return [
-        {"name": info.name, "description": info.description}
+        {
+            "name": info.name,
+            "description": info.description,
+            "engines": (
+                ["legacy", "recipe"] if info.has_legacy and info.has_recipe
+                else ["recipe"] if info.has_recipe
+                else ["legacy"]
+            ),
+        }
         for info in sorted(registry.values(), key=lambda i: i.name)
     ]
 

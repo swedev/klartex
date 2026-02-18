@@ -1,0 +1,95 @@
+\documentclass{klartex-base}
+
+%% include '_branding_preamble.jinja'
+%% include '_header_' ~ header ~ '.jinja'
+
+\BLOCK{if lang == 'en'}
+\setdoclang{en}
+\BLOCK{endif}
+
+\setdoctitle{\VAR{title}}
+
+\begin{document}
+
+\BLOCK{for comp in components}
+%# ---- Component: \VAR{comp.type} ----
+\BLOCK{if comp.type == 'heading'}
+\begin{center}
+{\Large\bfseries \VAR{comp.data.get('title', '')}}\\[0.5em]
+\BLOCK{if brand.name}
+{\normalsize \VAR{brand.name}}\\[0.3em]
+\BLOCK{endif}
+\BLOCK{if comp.data.get('subtitle')}
+{\normalsize \VAR{comp.options.get('subtitle_prefix', '')}\VAR{comp.data.subtitle}}\\[1em]
+\BLOCK{else}
+\vspace{1em}
+\BLOCK{endif}
+\end{center}
+
+\BLOCK{elif comp.type == 'metadata_table'}
+\noindent
+\begin{tabular}{@{}ll}
+\BLOCK{for meta in metadata}
+\textbf{\VAR{meta.label}} & \BLOCK{if meta.value is iterable and meta.value is not string}\VAR{meta.value | join(', ')}\BLOCK{else}\VAR{meta.value}\BLOCK{endif} \\
+\BLOCK{endfor}
+\end{tabular}
+
+\BLOCK{elif comp.type == 'attendees'}
+\vspace{1em}
+\noindent\textbf{Narvarande:} \VAR{comp.data.get('attendees', []) | join(', ')}
+
+\BLOCK{if comp.data.get('adjusters')}
+\noindent\textbf{Justerare:} \VAR{comp.data.adjusters | join(', ')}
+\BLOCK{endif}
+
+\vspace{1em}
+
+\BLOCK{elif comp.type == 'klausuler'}
+\begin{clauses}
+\BLOCK{set items = comp.data.get('items', []) }
+\BLOCK{set title_field = comp.options.get('item_title_field', 'title') }
+\BLOCK{set body_field = comp.options.get('item_body_field', 'body') }
+\BLOCK{set decision_field = comp.options.get('item_decision_field', '') }
+\BLOCK{set decision_label = comp.options.get('decision_label', 'Beslut:') }
+\BLOCK{for item in items}
+\clause{\VAR{item[title_field]}}
+\BLOCK{if item.get(body_field)}
+\VAR{item[body_field]}
+\BLOCK{endif}
+\BLOCK{if decision_field and item.get(decision_field)}
+
+\textbf{\VAR{decision_label}} \VAR{item[decision_field]}
+\BLOCK{endif}
+\BLOCK{if item.get('subclauses')}
+\begin{subclauses}
+\BLOCK{for sub in item.subclauses}
+\item \VAR{sub}
+\BLOCK{endfor}
+\end{subclauses}
+\BLOCK{endif}
+\BLOCK{endfor}
+\end{clauses}
+
+\BLOCK{elif comp.type == 'signaturblock'}
+\signatureblock{\VAR{comp.data.get('party1_name', '')}}{\VAR{comp.data.get('party2_name', '')}}{\VAR{comp.data.get('party1_signatory', '')}}{\VAR{comp.data.get('party2_signatory', '')}}
+
+\BLOCK{elif comp.type == 'titelsida'}
+\makedoctitle{\VAR{comp.data.get('party1', '')}}{\VAR{comp.data.get('party2', '')}}{\VAR{comp.data.get('title', '')}}
+
+\BLOCK{elif comp.type == 'adjuster_signatures'}
+\BLOCK{if comp.data.get('adjusters')}
+\vspace{2cm}
+\noindent
+\BLOCK{for adjuster in comp.data.adjusters}
+\begin{minipage}[t]{0.45\textwidth}
+Justerare\\[1cm]
+\dottedline\\[0.3cm]
+\VAR{adjuster}
+\end{minipage}\BLOCK{if not loop.last}\hfill\BLOCK{endif}
+\BLOCK{endfor}
+\BLOCK{endif}
+
+\BLOCK{endif}
+\BLOCK{endfor}
+
+\end{document}

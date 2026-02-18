@@ -88,6 +88,69 @@ lang: "en"
 
 Then use `--branding myorg` or `"branding": "myorg"` in API calls.
 
+## Architecture
+
+Klartex uses a three-layer architecture:
+
+1. **Document level** -- `klartex-base.cls` handles page setup, branding, headers/footers
+2. **Component level** -- Reusable `.sty` packages providing structured LaTeX macros (e.g. `klartex-signaturblock.sty`, `klartex-klausuler.sty`, `klartex-titelsida.sty`)
+3. **Recipe level** -- YAML files that declare which components and content fields to combine
+
+Existing monolithic `.tex.jinja` templates continue to work unchanged. New templates can be defined as YAML recipes instead of writing full LaTeX/Jinja files.
+
+### Rendering Engine
+
+The `engine` parameter controls which rendering path is used:
+
+- `auto` (default): Uses `.tex.jinja` if it exists, otherwise `recipe.yaml`
+- `legacy`: Forces `.tex.jinja` path
+- `recipe`: Forces `recipe.yaml` path
+
+```bash
+# CLI
+klartex render --template protokoll --data data.json --engine recipe
+
+# API
+curl -X POST http://localhost:8000/render \
+  -H "Content-Type: application/json" \
+  -d '{"template": "protokoll", "data": {...}, "engine": "recipe"}'
+```
+
+```python
+# Python
+pdf_bytes = render("protokoll", data, engine="recipe")
+```
+
+### Creating a YAML Recipe Template
+
+Create a `recipe.yaml` in the template directory (e.g. `templates/my-template/recipe.yaml`):
+
+```yaml
+template:
+  name: my-template
+  description: "Template description"
+  lang: en
+
+document:
+  title: "{{ data.title }}"
+  header: standard
+  metadata:
+    - label: "Date:"
+      field: date
+
+components:
+  - type: klausuler
+    data_map:
+      items: agenda_items
+    options:
+      item_title_field: title
+      item_body_field: body
+
+schema: schema.json
+```
+
+Available components: `heading`, `metadata_table`, `attendees`, `klausuler`, `signaturblock`, `titelsida`, `adjuster_signatures`.
+
 ## License
 
 MIT

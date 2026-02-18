@@ -1,0 +1,57 @@
+# Protokoll (Meeting Minutes) — recipe definition
+# This is a YAML equivalent of protokoll.tex.jinja
+
+template:
+  name: protokoll
+  description: "Motesprotokoll / Meeting minutes"
+  lang: sv
+
+document:
+  title: "{{ data.meeting_type }} -- {{ data.date }}"
+  header: "{{ data.header | default('standard') }}"
+  metadata:
+    - label: "Datum:"
+      field: date
+      suffix_fields: [time_start, time_end]
+      suffix_separator: " -- "
+    - label: "Plats:"
+      field: location
+      optional: true
+    - label: "Ordforande:"
+      field: chair
+      optional: true
+    - label: "Sekreterare:"
+      field: secretary
+      optional: true
+
+components:
+  - type: heading
+    data_map:
+      title: meeting_type
+      subtitle: meeting_number
+    options:
+      subtitle_prefix: "Nr "
+
+  - type: metadata_table
+    options:
+      source: document.metadata
+
+  - type: attendees
+    data_map:
+      attendees: attendees
+      adjusters: adjusters
+
+  - type: klausuler
+    data_map:
+      items: agenda_items
+    options:
+      item_title_field: title
+      item_body_field: discussion
+      item_decision_field: decision
+      decision_label: "Beslut:"
+
+  - type: adjuster_signatures
+    data_map:
+      adjusters: adjusters
+
+schema: schema.json

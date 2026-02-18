@@ -163,6 +163,13 @@ def prepare_recipe_context(
     except jinja2.TemplateError:
         rendered_title = recipe.document.title
 
+    # Resolve header (may contain Jinja expression like {{ data.header | default('standard') }})
+    try:
+        header_template = title_env.from_string(recipe.document.header)
+        rendered_header = header_template.render(data=data)
+    except jinja2.TemplateError:
+        rendered_header = recipe.document.header
+
     # Resolve metadata fields
     resolved_metadata = []
     for meta in recipe.document.metadata:
@@ -171,9 +178,23 @@ def prepare_recipe_context(
         optional = meta.get("optional", False)
         if optional and value is None:
             continue
+
+        # Build display value with optional suffix fields (e.g., time_start/time_end)
+        display_value = value if value is not None else ""
+        suffix_fields = meta.get("suffix_fields", [])
+        if suffix_fields:
+            separator = meta.get("suffix_separator", ", ")
+            suffix_parts = []
+            for sf in suffix_fields:
+                sv = _resolve_path(data, sf)
+                if sv is not None:
+                    suffix_parts.append(str(sv))
+            if suffix_parts:
+                display_value = f"{display_value}, {separator.join(suffix_parts)}"
+
         resolved_metadata.append({
             "label": meta["label"],
-            "value": value if value is not None else "",
+            "value": display_value,
         })
 
     # Resolve component data
@@ -200,7 +221,7 @@ def prepare_recipe_context(
         "data": data,
         "brand": brand,
         "title": rendered_title,
-        "header": recipe.document.header,
+        "header": rendered_header,
         "metadata": resolved_metadata,
         "components": resolved_components,
         "sty_packages": sty_packages,

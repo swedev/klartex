@@ -63,7 +63,7 @@
 
 % Language support (default: Swedish)
 \newcommand{\wf@lang}{sv}
-\newcommand{\setdoclang}[1]{\renewcommand{\wf@lang}{#1}}
+\newcommand{\setdoclang}[1]{\renewcommand{\wf@lang}{#1}\wf@setlang}
 
 % Language-dependent strings
 \newcommand{\wf@and}{Och}

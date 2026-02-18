@@ -179,8 +179,9 @@ def _compile_tex(tex_source: str, branding_dir: Path) -> bytes:
         import os
 
         env = os.environ.copy()
-        # TEXINPUTS: current dir, cls/ dir, then system default (trailing colon)
-        env["TEXINPUTS"] = f".:{CLS_DIR}:"
+        existing_texinputs = env.get("TEXINPUTS", "")
+        # Prepend current dir and cls/ dir, preserve existing paths, trailing colon for system default
+        env["TEXINPUTS"] = f".:{CLS_DIR}:{existing_texinputs}"
 
         # Run xelatex twice (for page references)
         for _ in range(2):

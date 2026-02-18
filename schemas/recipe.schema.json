@@ -37,9 +37,8 @@
         },
         "header": {
           "type": "string",
-          "enum": ["standard", "minimal", "none"],
           "default": "standard",
-          "description": "Header layout to use"
+          "description": "Header layout to use. Can be a literal value (standard, minimal, none) or a Jinja expression (e.g. {{ data.header | default('standard') }}) resolved at render time."
         },
         "metadata": {
           "type": "array",
@@ -60,6 +59,16 @@
                 "type": "boolean",
                 "default": false,
                 "description": "If true, skip this row when the field is missing"
+              },
+              "suffix_fields": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Additional data fields appended to the value (e.g. time_start, time_end)"
+              },
+              "suffix_separator": {
+                "type": "string",
+                "default": ", ",
+                "description": "Separator between suffix field values"
               }
             }
           },

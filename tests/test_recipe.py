@@ -35,7 +35,7 @@ class TestLoadRecipe:
 
     def test_recipe_document_section(self):
         recipe = load_recipe(TEMPLATES_DIR / "protokoll" / "recipe.yaml")
-        assert recipe.document.header == "standard"
+        assert "standard" in recipe.document.header
         assert len(recipe.document.metadata) > 0
 
     def test_recipe_component_specs_resolved(self):

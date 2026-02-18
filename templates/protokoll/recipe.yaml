@@ -8,10 +8,12 @@ template:
 
 document:
   title: "{{ data.meeting_type }} -- {{ data.date }}"
-  header: standard
+  header: "{{ data.header | default('standard') }}"
   metadata:
     - label: "Datum:"
       field: date
+      suffix_fields: [time_start, time_end]
+      suffix_separator: " -- "
     - label: "Plats:"
       field: location
       optional: true

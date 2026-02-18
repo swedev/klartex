@@ -30,7 +30,7 @@
 \noindent
 \begin{tabular}{@{}ll}
 \BLOCK{for meta in metadata}
-\textbf{\VAR{meta.label}} & \VAR{meta.value}\BLOCK{if meta.value is iterable and meta.value is not string}\VAR{meta.value | join(', ')}\BLOCK{endif} \\
+\textbf{\VAR{meta.label}} & \BLOCK{if meta.value is iterable and meta.value is not string}\VAR{meta.value | join(', ')}\BLOCK{else}\VAR{meta.value}\BLOCK{endif} \\
 \BLOCK{endfor}
 \end{tabular}
 

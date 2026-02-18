@@ -1,0 +1,55 @@
+% klartex-signaturblock.sty - Signature block component
+% Provides \signatureblock and \dottedline commands
+%
+% Usage: \usepackage{klartex-signaturblock}
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{klartex-signaturblock}[2026/02/18 Klartex Signature Block Component]
+
+% Dependencies
+\RequirePackage{graphicx}
+
+% Language-dependent strings for signatures
+% These use the wf@ prefix namespace from klartex-base.cls.
+% When loaded via klartex-base.cls, the class defines these commands first.
+% When loaded standalone, we provide defaults.
+\providecommand{\wf@signatures}{Underskrifter}
+\providecommand{\wf@sigintro}{Detta avtal har upprättats i två (2) likalydande exemplar, av vilka parterna tagit var sitt.}
+\providecommand{\wf@locationdate}{Ort och datum}
+\providecommand{\wf@signature}{Underskrift}
+
+% Dotted line for signatures
+\providecommand{\dottedline}[1][6cm]{\makebox[#1]{\dotfill}}
+
+% Signature block (language-aware)
+% Args: #1=Party1 name, #2=Party2 name, #3=Party1 signatory, #4=Party2 signatory
+\providecommand{\signatureblock}[4]{%
+    \clearpage
+    \section*{\wf@signatures}
+    \addcontentsline{toc}{section}{\wf@signatures}
+
+    \wf@sigintro
+
+    \vspace{1.5cm}
+
+    \noindent
+    \begin{minipage}[t]{0.45\textwidth}
+        \textbf{#1}\\[0.5cm]
+        \wf@locationdate\\[1cm]
+        \dottedline\\[0.5cm]
+        \wf@signature\\[1cm]
+        \dottedline\\[0.3cm]
+        #3
+    \end{minipage}%
+    \hfill
+    \begin{minipage}[t]{0.45\textwidth}
+        \textbf{#2}\\[0.5cm]
+        \wf@locationdate\\[1cm]
+        \dottedline\\[0.5cm]
+        \wf@signature\\[1cm]
+        \dottedline\\[0.3cm]
+        #4
+    \end{minipage}
+}
+
+\endinput

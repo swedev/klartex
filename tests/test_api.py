@@ -24,6 +24,20 @@ def test_list_templates():
     assert "avtal" in names
 
 
+def test_list_templates_includes_engines():
+    """Templates should include engine information."""
+    resp = client.get("/templates")
+    assert resp.status_code == 200
+    templates = {t["name"]: t for t in resp.json()}
+
+    # protokoll has both engines
+    assert "legacy" in templates["protokoll"]["engines"]
+    assert "recipe" in templates["protokoll"]["engines"]
+
+    # faktura has only legacy
+    assert templates["faktura"]["engines"] == ["legacy"]
+
+
 def test_get_schema():
     resp = client.get("/templates/protokoll/schema")
     assert resp.status_code == 200
@@ -42,6 +56,24 @@ def test_render_endpoint():
     resp = client.post("/render", json={"template": "protokoll", "data": data})
     assert resp.status_code == 200
     assert resp.headers["content-type"] == "application/pdf"
+    assert resp.content[:5] == b"%PDF-"
+
+
+@pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+def test_render_with_engine_recipe():
+    """API should support engine='recipe'."""
+    data = json.loads((FIXTURES / "protokoll.json").read_text())
+    resp = client.post("/render", json={"template": "protokoll", "data": data, "engine": "recipe"})
+    assert resp.status_code == 200
+    assert resp.content[:5] == b"%PDF-"
+
+
+@pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+def test_render_with_engine_legacy():
+    """API should support engine='legacy'."""
+    data = json.loads((FIXTURES / "protokoll.json").read_text())
+    resp = client.post("/render", json={"template": "protokoll", "data": data, "engine": "legacy"})
+    assert resp.status_code == 200
     assert resp.content[:5] == b"%PDF-"
 
 

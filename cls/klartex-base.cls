@@ -3,7 +3,7 @@
 % https://github.com/swedev/klartex
 
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesClass{klartex-base}[2026/02/16 Klartex Document Base Class]
+\ProvidesClass{klartex-base}[2026/02/18 Klartex Document Base Class]
 
 % Base class
 \LoadClass[10pt,a4paper]{article}
@@ -112,40 +112,6 @@
 \setlist[enumerate]{leftmargin=*, labelsep=0.5em}
 \setlist[itemize]{leftmargin=*, labelsep=0.5em}
 
-% Legal clause numbering
-\newcounter{clausecounter}
-\newcounter{subclausecounter}[clausecounter]
-
-\newlist{clauses}{enumerate}{1}
-\setlist[clauses]{
-    label=\textbf{\arabic{clausecounter}.},
-    ref=\arabic{clausecounter},
-    leftmargin=1.0cm,
-    labelwidth=0.76cm,
-    labelsep=0.24cm,
-    itemindent=0pt,
-    align=left,
-    before=\setcounter{clausecounter}{0},
-    itemsep=20pt,
-    parsep=0pt,
-    topsep=12pt
-}
-\newcommand{\clause}[1]{\stepcounter{clausecounter}\item \textbf{#1}}
-
-\newlist{subclauses}{enumerate}{1}
-\setlist[subclauses]{
-    label=\arabic{clausecounter}.\arabic*.,
-    ref=\arabic{clausecounter}.\arabic*,
-    leftmargin=0pt,
-    labelwidth=0.76cm,
-    labelsep=0.24cm,
-    itemindent=0pt,
-    align=left,
-    itemsep=0.5em,
-    parsep=0pt,
-    topsep=0.5em
-}
-
 % Hyperlink setup
 \hypersetup{
     colorlinks=true,
@@ -153,52 +119,11 @@
     urlcolor=brandprimary,
 }
 
-% Title page command (language-aware)
-\newcommand{\makedoctitle}[3]{%
-    \wf@setlang%
-    \begin{center}
-        \vspace*{4cm}
-        {\Large\bfseries #1}\\[1em]
-        \wf@and\\[1em]
-        {\Large\bfseries #2}\\[4cm]
-        {\LARGE\bfseries #3}
-    \end{center}
-    \thispagestyle{fancy}
-    \newpage
-}
-
-% Dotted line for signatures
-\newcommand{\dottedline}[1][6cm]{\makebox[#1]{\dotfill}}
-
-% Signature block (language-aware)
-\newcommand{\signatureblock}[4]{%
-    \wf@setlang%
-    \clearpage
-    \section*{\wf@signatures}
-    \addcontentsline{toc}{section}{\wf@signatures}
-
-    \wf@sigintro
-
-    \vspace{1.5cm}
-
-    \noindent
-    \begin{minipage}[t]{0.45\textwidth}
-        \textbf{#1}\\[0.5cm]
-        \wf@locationdate\\[1cm]
-        \dottedline\\[0.5cm]
-        \wf@signature\\[1cm]
-        \dottedline\\[0.3cm]
-        #3
-    \end{minipage}%
-    \hfill
-    \begin{minipage}[t]{0.45\textwidth}
-        \textbf{#2}\\[0.5cm]
-        \wf@locationdate\\[1cm]
-        \dottedline\\[0.5cm]
-        \wf@signature\\[1cm]
-        \dottedline\\[0.3cm]
-        #4
-    \end{minipage}
-}
+% Load extracted components
+% These .sty files use \providecommand so the language strings
+% defined above take precedence (no redefinition conflicts).
+\RequirePackage{klartex-klausuler}
+\RequirePackage{klartex-titelsida}
+\RequirePackage{klartex-signaturblock}
 
 \endinput

@@ -1,0 +1,46 @@
+% klartex-klausuler.sty - Legal clause numbering component
+% Provides clause/subclause environments and \clause command
+%
+% Usage: \usepackage{klartex-klausuler}
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{klartex-klausuler}[2026/02/18 Klartex Clause Numbering Component]
+
+% Dependencies
+\RequirePackage{enumitem}
+
+% Legal clause numbering
+\newcounter{clausecounter}
+\newcounter{subclausecounter}[clausecounter]
+
+\newlist{clauses}{enumerate}{1}
+\setlist[clauses]{
+    label=\textbf{\arabic{clausecounter}.},
+    ref=\arabic{clausecounter},
+    leftmargin=1.0cm,
+    labelwidth=0.76cm,
+    labelsep=0.24cm,
+    itemindent=0pt,
+    align=left,
+    before=\setcounter{clausecounter}{0},
+    itemsep=20pt,
+    parsep=0pt,
+    topsep=12pt
+}
+\newcommand{\clause}[1]{\stepcounter{clausecounter}\item \textbf{#1}}
+
+\newlist{subclauses}{enumerate}{1}
+\setlist[subclauses]{
+    label=\arabic{clausecounter}.\arabic*.,
+    ref=\arabic{clausecounter}.\arabic*,
+    leftmargin=0pt,
+    labelwidth=0.76cm,
+    labelsep=0.24cm,
+    itemindent=0pt,
+    align=left,
+    itemsep=0.5em,
+    parsep=0pt,
+    topsep=0.5em
+}
+
+\endinput

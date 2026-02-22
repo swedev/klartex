@@ -35,14 +35,17 @@ pdf_bytes = render("protokoll", data)
 ### As CLI
 
 ```bash
-# Render a template
-klartex render --template protokoll --data data.json -o output.pdf
+# Render (block engine is default)
+klartex -d data.json
+
+# Pipe JSON via stdin
+cat data.json | klartex
+
+# With explicit template
+klartex -d data.json -t protokoll
 
 # With external page template
-klartex render -t _block -d data.json --page-template myorg.tex.jinja
-
-# Page template via stdin
-cat myorg.tex.jinja | klartex render -t _block -d data.json --page-template -
+klartex -d data.json --page-template myorg.tex.jinja
 
 # List templates
 klartex templates

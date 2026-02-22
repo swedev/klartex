@@ -9,38 +9,47 @@ import typer
 
 from klartex.renderer import render, get_registry
 
-app = typer.Typer(help="Klartex — PDF generation via LaTeX")
+app = typer.Typer(help="Klartex — PDF generation via LaTeX", invoke_without_command=True)
 
 
-@app.command("render")
-def render_cmd(
-    template: str = typer.Option(..., "--template", "-t", help="Template name"),
-    data: Path = typer.Option(..., "--data", "-d", help="Path to JSON data file"),
+@app.callback()
+def main(
+    ctx: typer.Context,
+    data: Optional[Path] = typer.Option(None, "--data", "-d", help="Path to JSON data file (or omit for stdin)"),
+    template: str = typer.Option("_block", "--template", "-t", help="Template name"),
     output: Path = typer.Option("output.pdf", "--output", "-o", help="Output PDF path"),
     page_template: Optional[str] = typer.Option(
         None,
         "--page-template",
-        help="Page template file (path or '-' for stdin). Overrides data.page_template.",
+        help="Page template file path. Overrides data.page_template.",
     ),
 ):
-    """Render a template to PDF."""
-    if not data.exists():
-        typer.echo(f"Error: data file not found: {data}", err=True)
-        raise typer.Exit(1)
+    """Render JSON data to PDF. Reads from stdin if no --data is given."""
+    if ctx.invoked_subcommand is not None:
+        return
+
+    # Read data from file or stdin
+    if data is not None:
+        if not data.exists():
+            typer.echo(f"Error: data file not found: {data}", err=True)
+            raise typer.Exit(1)
+        raw_text = data.read_text()
+    else:
+        if sys.stdin.isatty():
+            typer.echo("Error: no data provided. Use -d <file> or pipe JSON to stdin.", err=True)
+            raise typer.Exit(1)
+        raw_text = sys.stdin.read()
 
     # Read page template source if provided
     page_template_source = None
     if page_template is not None:
-        if page_template == "-":
-            page_template_source = sys.stdin.read()
-        else:
-            pt_path = Path(page_template)
-            if not pt_path.exists():
-                typer.echo(f"Error: page template file not found: {page_template}", err=True)
-                raise typer.Exit(1)
-            page_template_source = pt_path.read_text()
+        pt_path = Path(page_template)
+        if not pt_path.exists():
+            typer.echo(f"Error: page template file not found: {page_template}", err=True)
+            raise typer.Exit(1)
+        page_template_source = pt_path.read_text()
 
-    raw = json.loads(data.read_text())
+    raw = json.loads(raw_text)
     try:
         pdf_bytes = render(template, raw, page_template_source=page_template_source)
     except Exception as e:

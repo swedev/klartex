@@ -1,5 +1,6 @@
 {
   "title": "Konsultavtal",
+  "lang": "sv",
   "party1": {
     "name": "Uppdragsgivaren AB",
     "org_number": "556789-0123",
@@ -14,33 +15,63 @@
     "address_line2": "222 33 Göteborg",
     "signatory": "Erik Eriksson, Konsultchef"
   },
-  "preamble": "Detta avtal reglerar villkoren för konsulttjänster mellan parterna.",
-  "clauses": [
+  "body": [
     {
-      "title": "Uppdrag",
-      "body": "Konsulten åtar sig att utföra de tjänster som specificeras i bilaga 1."
+      "type": "preamble",
+      "text": "Detta avtal reglerar villkoren för konsulttjänster mellan parterna."
     },
     {
+      "type": "clause",
+      "title": "Uppdrag",
+      "items": [
+        "Konsulten åtar sig att utföra de tjänster som specificeras i bilaga 1."
+      ]
+    },
+    {
+      "type": "clause",
       "title": "Avtalstid",
-      "body": "Avtalet gäller från och med 2026-03-01 till och med 2026-12-31.",
-      "subclauses": [
+      "items": [
+        "Avtalet gäller från och med 2026-03-01 till och med 2026-12-31.",
         "Avtalet kan förlängas med 12 månader i taget om ingen part säger upp det senast 3 månader före avtalstidens utgång.",
         "Uppsägning ska ske skriftligen."
       ]
     },
     {
+      "type": "clause",
       "title": "Ersättning",
-      "body": "Konsulten erhåller ersättning enligt överenskommen timtaxa.",
-      "subclauses": [
-        "Fakturering sker månadsvis i efterskott.",
-        "Betalningsvillkor: 30 dagar netto."
+      "items": [
+        "Konsulten erhåller ersättning enligt överenskommen timtaxa.",
+        {
+          "title": "Fakturering",
+          "items": [
+            "Fakturering sker månadsvis i efterskott.",
+            {
+              "title": "Fakturauppgifter",
+              "text": "Varje faktura ska innehålla:",
+              "list": "bullet",
+              "items": [
+                "Avtalsnummer och referensperson",
+                "Aktuell period",
+                "Specifikation av utförda timmar per uppdrag",
+                "Tillämplig timtaxa"
+              ]
+            },
+            "Fakturor ska skickas elektroniskt i PDF-format.",
+            "Betalningsvillkor: 30 dagar netto."
+          ]
+        },
+        "Vid försenad betalning utgår dröjsmålsränta enligt räntelagen."
       ]
     },
     {
+      "type": "clause",
       "title": "Sekretess",
-      "body": "Parterna förbinder sig att inte utan den andra partens medgivande röja konfidentiell information som erhållits inom ramen för detta avtal."
+      "items": [
+        "Parterna förbinder sig att inte utan den andra partens medgivande röja konfidentiell information som erhållits inom ramen för detta avtal."
+      ]
+    },
+    {
+      "type": "signatures"
     }
-  ],
-  "signatures": true,
-  "lang": "sv"
+  ]
 }

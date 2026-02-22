@@ -1,52 +1,91 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Avtal",
-  "description": "Avtal / Agreement",
+  "description": "Avtal / Agreement — composable block-based format",
   "type": "object",
-  "required": ["title", "party1", "party2", "clauses"],
+  "required": ["title", "party1", "party2", "body"],
+  "definitions": {
+    "party": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "org_number": { "type": "string" },
+        "address_line1": { "type": "string" },
+        "address_line2": { "type": "string" },
+        "signatory": { "type": "string", "description": "Name of person signing" }
+      }
+    },
+    "clause_item": {
+      "description": "A clause item — plain string, or object with nested items. Use 'title' for a bold heading, 'text' for plain inline text.",
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "object",
+          "required": ["items"],
+          "anyOf": [
+            { "required": ["title"] },
+            { "required": ["text"] }
+          ],
+          "properties": {
+            "title": { "type": "string", "description": "Bold heading for the sub-clause" },
+            "text": { "type": "string", "description": "Plain (non-bold) text under the heading" },
+            "list": { "type": "string", "enum": ["numbered", "bullet"], "default": "numbered", "description": "List style for child items" },
+            "items": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/clause_item" },
+              "minItems": 1
+            }
+          }
+        }
+      ]
+    }
+  },
   "properties": {
     "header": { "type": "string", "enum": ["standard", "minimal", "none"], "default": "standard", "description": "Header layout" },
     "title": { "type": "string", "description": "Agreement title" },
-    "party1": {
-      "type": "object",
-      "required": ["name"],
-      "properties": {
-        "name": { "type": "string" },
-        "org_number": { "type": "string" },
-        "address_line1": { "type": "string" },
-        "address_line2": { "type": "string" },
-        "signatory": { "type": "string", "description": "Name of person signing" }
-      }
-    },
-    "party2": {
-      "type": "object",
-      "required": ["name"],
-      "properties": {
-        "name": { "type": "string" },
-        "org_number": { "type": "string" },
-        "address_line1": { "type": "string" },
-        "address_line2": { "type": "string" },
-        "signatory": { "type": "string", "description": "Name of person signing" }
-      }
-    },
-    "preamble": { "type": "string", "description": "Introductory text before clauses" },
-    "clauses": {
+    "lang": { "type": "string", "default": "sv", "description": "sv or en" },
+    "party1": { "$ref": "#/definitions/party" },
+    "party2": { "$ref": "#/definitions/party" },
+    "body": {
       "type": "array",
+      "description": "Ordered list of document blocks",
       "items": {
-        "type": "object",
-        "required": ["title", "body"],
-        "properties": {
-          "title": { "type": "string" },
-          "body": { "type": "string" },
-          "subclauses": {
-            "type": "array",
-            "items": { "type": "string" }
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["type", "text"],
+            "properties": {
+              "type": { "type": "string", "enum": ["preamble", "text"] },
+              "text": { "type": "string" }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": ["type", "title", "items"],
+            "properties": {
+              "type": { "type": "string", "enum": ["clause"] },
+              "title": { "type": "string" },
+              "items": {
+                "type": "array",
+                "items": { "$ref": "#/definitions/clause_item" },
+                "minItems": 1
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": ["type"],
+            "properties": {
+              "type": { "type": "string", "enum": ["signatures"] }
+            },
+            "additionalProperties": false
           }
-        }
+        ]
       },
       "minItems": 1
-    },
-    "signatures": { "type": "boolean", "default": true, "description": "Include signature block" },
-    "lang": { "type": "string", "default": "sv", "description": "sv or en" }
+    }
   }
 }

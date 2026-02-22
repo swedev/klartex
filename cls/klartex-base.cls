@@ -120,12 +120,13 @@
 }
 
 % Fieldset-style box (like HTML <fieldset> with <legend>)
-% Usage: \fieldset{Label}{Content}
+% Usage: \fieldset[group]{Label}{Content}
+% Optional group name — boxes in the same group get equal height.
 \RequirePackage[most]{tcolorbox}
-\newcommand{\fieldset}[2]{%
+\newcommand{\fieldset}[3][]{%
     \begin{tcolorbox}[
         enhanced,
-        title={\small\textbf{#1}},
+        title={\small\textbf{#2}},
         attach boxed title to top left={xshift=0.6em, yshift=-\tcboxedtitleheight/2},
         boxed title style={colback=white, frame hidden, size=small},
         colback=white,
@@ -136,9 +137,10 @@
         top=1.6em,
         bottom=1.2em,
         left=1.2em,
-        right=1.2em
+        right=1.2em,
+        equal height group/.expand once={#1}
     ]
-    #2
+    #3
     \end{tcolorbox}%
 }
 

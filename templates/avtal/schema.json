@@ -9,10 +9,12 @@
       "type": "object",
       "required": ["name"],
       "properties": {
-        "name": { "type": "string" },
-        "org_number": { "type": "string" },
-        "address_line1": { "type": "string" },
-        "address_line2": { "type": "string" },
+        "name": { "type": "string", "description": "Party name (company or person)" },
+        "org_number": { "type": "string", "description": "Organization number (for companies)" },
+        "id_number": { "type": "string", "description": "Personal identity number (for individuals)" },
+        "address": { "type": "string", "description": "Full address as a single line" },
+        "address_line1": { "type": "string", "description": "Street address" },
+        "address_line2": { "type": "string", "description": "Postal code and city" },
         "signatory": { "type": "string", "description": "Name of person signing" }
       }
     },
@@ -54,6 +56,33 @@
         "oneOf": [
           {
             "type": "object",
+            "required": ["type"],
+            "properties": {
+              "type": { "type": "string", "enum": ["title_page"] }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": ["type"],
+            "properties": {
+              "type": { "type": "string", "enum": ["parties"] },
+              "label1": { "type": "string", "default": "Part 1", "description": "Label for party 1 fieldset" },
+              "label2": { "type": "string", "default": "Part 2", "description": "Label for party 2 fieldset" }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": ["type", "text"],
+            "properties": {
+              "type": { "type": "string", "enum": ["heading"] },
+              "text": { "type": "string" }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
             "required": ["type", "text"],
             "properties": {
               "type": { "type": "string", "enum": ["preamble", "text"] },
@@ -79,7 +108,8 @@
             "type": "object",
             "required": ["type"],
             "properties": {
-              "type": { "type": "string", "enum": ["signatures"] }
+              "type": { "type": "string", "enum": ["signatures"] },
+              "new_page": { "type": "boolean", "default": true, "description": "Start signatures on a new page" }
             },
             "additionalProperties": false
           }

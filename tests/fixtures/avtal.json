@@ -9,13 +9,22 @@
     "signatory": "Anna Andersson, VD"
   },
   "party2": {
-    "name": "Konsulten AB",
-    "org_number": "556456-7890",
-    "address_line1": "Lilla vägen 3",
-    "address_line2": "222 33 Göteborg",
-    "signatory": "Erik Eriksson, Konsultchef"
+    "name": "Erik Eriksson",
+    "id_number": "850101-1234",
+    "address": "Lilla vägen 3, 222 33 Göteborg",
+    "signatory": "Erik Eriksson"
   },
   "body": [
+    {
+      "type": "title_page"
+    },
+    {
+      "type": "heading",
+      "text": "Konsultavtal"
+    },
+    {
+      "type": "parties"
+    },
     {
       "type": "preamble",
       "text": "Detta avtal reglerar villkoren för konsulttjänster mellan parterna."
@@ -71,7 +80,8 @@
       ]
     },
     {
-      "type": "signatures"
+      "type": "signatures",
+      "new_page": false
     }
   ]
 }

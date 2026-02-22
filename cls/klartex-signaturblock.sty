@@ -22,9 +22,12 @@
 \providecommand{\dottedline}[1][6cm]{\makebox[#1]{\dotfill}}
 
 % Signature block (language-aware)
-% Args: #1=Party1 name, #2=Party2 name, #3=Party1 signatory, #4=Party2 signatory
-\providecommand{\signatureblock}[4]{%
-    \clearpage
+% Args: *=no page break, #1=Party1 name, #2=Party2 name, #3=Party1 signatory, #4=Party2 signatory
+\makeatletter
+\providecommand{\signatureblock}{\@ifstar{\signatureblock@nobreak}{\signatureblock@break}}
+\newcommand{\signatureblock@break}[4]{\clearpage\signatureblock@body{#1}{#2}{#3}{#4}}
+\newcommand{\signatureblock@nobreak}[4]{\vspace{1.5cm}\signatureblock@body{#1}{#2}{#3}{#4}}
+\newcommand{\signatureblock@body}[4]{%
     \section*{\wf@signatures}
     \addcontentsline{toc}{section}{\wf@signatures}
 
@@ -51,5 +54,6 @@
         #4
     \end{minipage}
 }
+\makeatother
 
 \endinput

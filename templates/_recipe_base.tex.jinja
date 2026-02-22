@@ -1,7 +1,7 @@
 \documentclass{klartex-base}
 
 %% include '_branding_preamble.jinja'
-%% include '_header_' ~ header ~ '.jinja'
+%% include page_template_include
 
 \BLOCK{if lang == 'en'}
 \setdoclang{en}
@@ -87,6 +87,100 @@ Justerare\\[1cm]
 \VAR{adjuster}
 \end{minipage}\BLOCK{if not loop.last}\hfill\BLOCK{endif}
 \BLOCK{endfor}
+\BLOCK{endif}
+
+\BLOCK{elif comp.type == 'invoice_header'}
+\begin{flushright}
+{\Large\bfseries FAKTURA}\\[0.5em]
+{\normalsize Nr: \VAR{comp.data.get('invoice_number', '')}}\\
+{\normalsize Datum: \VAR{comp.data.get('date', '')}}\\
+{\normalsize Förfallodatum: \VAR{comp.data.get('due_date', '')}}
+\end{flushright}
+
+\vspace{1em}
+
+\BLOCK{elif comp.type == 'invoice_recipient'}
+\noindent
+\begin{minipage}[t]{0.45\textwidth}
+\textbf{Mottagare}\\[0.3em]
+\VAR{comp.data.get('recipient', {}).get('name', '')}\\
+\BLOCK{if comp.data.get('recipient', {}).get('org_number')}
+Org.nr: \VAR{comp.data.recipient.org_number}\\
+\BLOCK{endif}
+\BLOCK{if comp.data.get('recipient', {}).get('address_line1')}
+\VAR{comp.data.recipient.address_line1}\\
+\BLOCK{endif}
+\BLOCK{if comp.data.get('recipient', {}).get('address_line2')}
+\VAR{comp.data.recipient.address_line2}
+\BLOCK{endif}
+\end{minipage}%
+\hfill
+\begin{minipage}[t]{0.45\textwidth}
+\BLOCK{if comp.data.get('reference')}
+\textbf{Er referens:} \VAR{comp.data.reference}\\
+\BLOCK{endif}
+\BLOCK{if comp.data.get('our_reference')}
+\textbf{Vår referens:} \VAR{comp.data.our_reference}\\
+\BLOCK{endif}
+\BLOCK{if comp.data.get('payment_terms')}
+\textbf{Betalningsvillkor:} \VAR{comp.data.payment_terms}
+\BLOCK{endif}
+\end{minipage}
+
+\vspace{2em}
+
+\BLOCK{elif comp.type == 'invoice_table'}
+\begin{tabularx}{\textwidth}{Xrrrrr}
+\toprule
+\textbf{Beskrivning} & \textbf{Antal} & \textbf{Enhet} & \textbf{À-pris} & \textbf{Moms} & \textbf{Belopp} \\
+\midrule
+\BLOCK{for line in comp.data.get('lines', [])}
+\VAR{line.description} & \VAR{line.quantity} & \VAR{line.get('unit', 'st')} & \VAR{"{:,.2f}".format(line.unit_price)} & \VAR{line.get('vat_percent', 25)}\% & \VAR{"{:,.2f}".format(line.quantity * line.unit_price)} \\
+\BLOCK{endfor}
+\bottomrule
+\end{tabularx}
+
+\vspace{1em}
+
+\BLOCK{set subtotal = namespace(val=0) }
+\BLOCK{set vat_total = namespace(val=0) }
+\BLOCK{for line in comp.data.get('lines', [])}
+\BLOCK{set subtotal.val = subtotal.val + line.quantity * line.unit_price}
+\BLOCK{set vat_total.val = vat_total.val + line.quantity * line.unit_price * line.get('vat_percent', 25) / 100}
+\BLOCK{endfor}
+
+\begin{flushright}
+\begin{tabular}{lr}
+\textbf{Summa exkl. moms:} & \VAR{"{:,.2f}".format(subtotal.val)} \VAR{comp.data.get('currency', 'SEK')} \\
+\textbf{Moms:} & \VAR{"{:,.2f}".format(vat_total.val)} \VAR{comp.data.get('currency', 'SEK')} \\
+\midrule
+\textbf{Att betala:} & \textbf{\VAR{"{:,.2f}".format(subtotal.val + vat_total.val)} \VAR{comp.data.get('currency', 'SEK')}} \\
+\end{tabular}
+\end{flushright}
+
+\vspace{2em}
+
+\BLOCK{elif comp.type == 'payment_info'}
+\noindent\textbf{Betalningsinformation}\\[0.3em]
+\begin{tabular}{@{}ll}
+\BLOCK{if comp.data.get('bankgiro')}
+\textbf{Bankgiro:} & \VAR{comp.data.bankgiro} \\
+\BLOCK{endif}
+\BLOCK{if comp.data.get('plusgiro')}
+\textbf{Plusgiro:} & \VAR{comp.data.plusgiro} \\
+\BLOCK{endif}
+\BLOCK{if comp.data.get('iban')}
+\textbf{IBAN:} & \VAR{comp.data.iban} \\
+\BLOCK{endif}
+\BLOCK{if comp.data.get('bic')}
+\textbf{BIC:} & \VAR{comp.data.bic} \\
+\BLOCK{endif}
+\end{tabular}
+
+\BLOCK{elif comp.type == 'invoice_note'}
+\BLOCK{if comp.data.get('note')}
+\vspace{1em}
+\noindent\textit{\VAR{comp.data.note}}
 \BLOCK{endif}
 
 \BLOCK{endif}

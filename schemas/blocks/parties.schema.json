@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Parties Block",
+  "description": "Side-by-side display of two contract parties",
+  "type": "object",
+  "required": ["type", "party1", "party2"],
+  "additionalProperties": false,
+  "properties": {
+    "type": { "type": "string", "const": "parties" },
+    "label1": { "type": "string", "default": "Part 1", "description": "Label for party 1" },
+    "label2": { "type": "string", "default": "Part 2", "description": "Label for party 2" },
+    "party1": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "org_number": { "type": "string" },
+        "id_number": { "type": "string" },
+        "address": { "type": "string" },
+        "address_line1": { "type": "string" },
+        "address_line2": { "type": "string" },
+        "signatory": { "type": "string" }
+      }
+    },
+    "party2": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "org_number": { "type": "string" },
+        "id_number": { "type": "string" },
+        "address": { "type": "string" },
+        "address_line1": { "type": "string" },
+        "address_line2": { "type": "string" },
+        "signatory": { "type": "string" }
+      }
+    }
+  }
+}

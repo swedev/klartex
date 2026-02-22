@@ -1,0 +1,94 @@
+{
+  "lang": "sv",
+  "page_template": "formal",
+  "body": [
+    {
+      "type": "title_page",
+      "party1": "Uppdragsgivaren AB",
+      "party2": "Erik Eriksson",
+      "title": "Konsultavtal"
+    },
+    {
+      "type": "heading",
+      "text": "Konsultavtal"
+    },
+    {
+      "type": "parties",
+      "party1": {
+        "name": "Uppdragsgivaren AB",
+        "org_number": "556789-0123",
+        "address_line1": "Storgatan 10",
+        "address_line2": "111 22 Stockholm",
+        "signatory": "Anna Andersson, VD"
+      },
+      "party2": {
+        "name": "Erik Eriksson",
+        "id_number": "850101-1234",
+        "address": "Lilla vagen 3, 222 33 Goteborg",
+        "signatory": "Erik Eriksson"
+      }
+    },
+    {
+      "type": "preamble",
+      "text": "Detta avtal reglerar villkoren for konsulttjanster mellan parterna."
+    },
+    {
+      "type": "clause",
+      "title": "Uppdrag",
+      "items": [
+        "Konsulten atar sig att utfora de tjanster som specificeras i bilaga 1."
+      ]
+    },
+    {
+      "type": "clause",
+      "title": "Avtalstid",
+      "items": [
+        "Avtalet galler fran och med 2026-03-01 till och med 2026-12-31.",
+        "Avtalet kan forlangas med 12 manader i taget om ingen part sager upp det senast 3 manader fore avtalstidens utgang.",
+        "Uppsagning ska ske skriftligen."
+      ]
+    },
+    {
+      "type": "clause",
+      "title": "Ersattning",
+      "items": [
+        "Konsulten erhaller ersattning enligt overenskommen timtaxa.",
+        {
+          "title": "Fakturering",
+          "items": [
+            "Fakturering sker manadsvis i efterskott.",
+            {
+              "title": "Fakturauppgifter",
+              "text": "Varje faktura ska innehalla:",
+              "list": "bullet",
+              "items": [
+                "Avtalsnummer och referensperson",
+                "Aktuell period",
+                "Specifikation av utforda timmar per uppdrag",
+                "Tillambar timtaxa"
+              ]
+            },
+            "Fakturor ska skickas elektroniskt i PDF-format.",
+            "Betalningsvillkor: 30 dagar netto."
+          ]
+        },
+        "Vid forsenad betalning utgar drojsmalsranta enligt rantelagen."
+      ]
+    },
+    {
+      "type": "clause",
+      "title": "Sekretess",
+      "items": [
+        "Parterna forbinder sig att inte utan den andra partens medgivande roja konfidentiell information som erhallits inom ramen for detta avtal."
+      ]
+    },
+    {
+      "type": "signatures",
+      "new_page": false,
+      "parties": [
+        { "name": "Uppdragsgivaren AB", "signatory": "Anna Andersson, VD" },
+        { "name": "Erik Eriksson", "signatory": "Erik Eriksson" }
+      ]
+    }
+  ]
+}

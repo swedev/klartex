@@ -15,10 +15,10 @@ def test_discover_all_templates():
     registry = get_registry()
     assert "protokoll" in registry
     assert "faktura" in registry
-    assert "avtal" in registry
+    assert "_block" in registry
 
 
-@pytest.mark.parametrize("template_name", ["protokoll", "faktura", "avtal"])
+@pytest.mark.parametrize("template_name", ["protokoll", "faktura"])
 def test_fixture_validates(template_name):
     registry = get_registry()
     fixture_path = FIXTURES / f"{template_name}.json"

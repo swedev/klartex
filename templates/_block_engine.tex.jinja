@@ -1,15 +1,26 @@
 \documentclass{klartex-base}
 
 %% include '_branding_preamble.jinja'
-%% include '_header_' ~ data.get('header', 'standard') ~ '.jinja'
+%% include page_template_include
 
-\BLOCK{if data.get('lang', 'sv') == 'en'}
+%# --- Apply page template overrides ---
+\BLOCK{if not page_template.page_numbers}
+\fancyfoot[C]{}
+\BLOCK{endif}
+\BLOCK{if not page_template.first_page_header}
+\fancypagestyle{plain}{\fancyhead{}\renewcommand{\headrulewidth}{0pt}}
+\thispagestyle{plain}
+\BLOCK{endif}
+
+\BLOCK{if lang == 'en'}
 \setdoclang{en}
 \BLOCK{else}
 \setdoclang{sv}
 \BLOCK{endif}
 
-\setdoctitle{\VAR{data.title}}
+\BLOCK{if doc_title}
+\setdoctitle{\VAR{doc_title}}
+\BLOCK{endif}
 
 \begin{document}
 
@@ -67,14 +78,27 @@ Personnr: \VAR{party.id_number}\\
 
 %# --- Body blocks ---
 \BLOCK{set clause_started = [false] }
-\BLOCK{for block in data.body}
+\BLOCK{for block in body}
 
 \BLOCK{if block.type == 'title_page'}
 \BLOCK{if clause_started[0]}
 \end{clauses}
 \BLOCK{set _ = clause_started.__setitem__(0, false) }
 \BLOCK{endif}
-\makedoctitle{\VAR{data.party1.name}}{\VAR{data.party2.name}}{\VAR{data.title}}
+\makedoctitle{\VAR{block.get('party1', '')}}{\VAR{block.get('party2', '')}}{\VAR{block.get('title', '')}}
+
+\BLOCK{elif block.type == 'heading'}
+\BLOCK{if clause_started[0]}
+\end{clauses}
+\BLOCK{set _ = clause_started.__setitem__(0, false) }
+\BLOCK{endif}
+\BLOCK{if block.get('level', 1) == 1}
+{\fontsize{24pt}{29pt}\selectfont\bfseries \VAR{block.text}\par}\vspace{3em}
+\BLOCK{elif block.get('level', 1) == 2}
+{\Large\bfseries \VAR{block.text}\par}\vspace{1.5em}
+\BLOCK{else}
+{\large\bfseries \VAR{block.text}\par}\vspace{1em}
+\BLOCK{endif}
 
 \BLOCK{elif block.type == 'parties'}
 \BLOCK{if clause_started[0]}
@@ -83,19 +107,12 @@ Personnr: \VAR{party.id_number}\\
 \BLOCK{endif}
 \noindent
 \begin{minipage}[t]{0.48\textwidth}
-\VAR{render_party(data.party1, block.get("label1", "Part 1"), "parties")}
+\VAR{render_party(block.party1, block.get("label1", "Part 1"), "parties")}
 \end{minipage}%
 \hspace{0.04\textwidth}%
 \begin{minipage}[t]{0.48\textwidth}
-\VAR{render_party(data.party2, block.get("label2", "Part 2"), "parties")}
+\VAR{render_party(block.party2, block.get("label2", "Part 2"), "parties")}
 \end{minipage}
-
-\BLOCK{elif block.type == 'heading'}
-\BLOCK{if clause_started[0]}
-\end{clauses}
-\BLOCK{set _ = clause_started.__setitem__(0, false) }
-\BLOCK{endif}
-{\fontsize{24pt}{29pt}\selectfont\bfseries \VAR{block.text}\par}\vspace{3em}
 
 \BLOCK{elif block.type == 'preamble' or block.type == 'text'}
 \BLOCK{if clause_started[0]}
@@ -124,10 +141,41 @@ Personnr: \VAR{party.id_number}\\
 \BLOCK{set _ = clause_started.__setitem__(0, false) }
 \BLOCK{endif}
 \BLOCK{if block.get("new_page", true)}
-\signatureblock{\VAR{data.party1.name}}{\VAR{data.party2.name}}{\VAR{data.party1.get('signatory', '')}}{\VAR{data.party2.get('signatory', '')}}
+\signatureblock{\VAR{block.parties[0].name}}{\VAR{block.parties[1].name}}{\VAR{block.parties[0].get('signatory', '')}}{\VAR{block.parties[1].get('signatory', '')}}
 \BLOCK{else}
-\signatureblock*{\VAR{data.party1.name}}{\VAR{data.party2.name}}{\VAR{data.party1.get('signatory', '')}}{\VAR{data.party2.get('signatory', '')}}
+\signatureblock*{\VAR{block.parties[0].name}}{\VAR{block.parties[1].name}}{\VAR{block.parties[0].get('signatory', '')}}{\VAR{block.parties[1].get('signatory', '')}}
 \BLOCK{endif}
+
+\BLOCK{elif block.type == 'metadata_table'}
+\BLOCK{if clause_started[0]}
+\end{clauses}
+\BLOCK{set _ = clause_started.__setitem__(0, false) }
+\BLOCK{endif}
+\noindent
+\begin{tabular}{@{}ll}
+\BLOCK{for entry in block.entries}
+\textbf{\VAR{entry.label}} & \VAR{entry.value} \\
+\BLOCK{endfor}
+\end{tabular}
+
+\BLOCK{elif block.type == 'attendees'}
+\BLOCK{if clause_started[0]}
+\end{clauses}
+\BLOCK{set _ = clause_started.__setitem__(0, false) }
+\BLOCK{endif}
+\vspace{1em}
+\noindent\textbf{Narvarande:} \VAR{block.attendees | join(', ')}
+\BLOCK{if block.get('adjusters')}
+\noindent\textbf{Justerare:} \VAR{block.adjusters | join(', ')}
+\BLOCK{endif}
+\vspace{1em}
+
+\BLOCK{elif block.type == 'latex'}
+\BLOCK{if clause_started[0]}
+\end{clauses}
+\BLOCK{set _ = clause_started.__setitem__(0, false) }
+\BLOCK{endif}
+\VAR{block.source}
 
 \BLOCK{endif}
 \BLOCK{endfor}

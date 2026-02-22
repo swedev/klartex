@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Signatures Block",
+  "description": "Signature block for exactly two parties",
+  "type": "object",
+  "required": ["type", "parties"],
+  "additionalProperties": false,
+  "properties": {
+    "type": { "type": "string", "const": "signatures" },
+    "new_page": { "type": "boolean", "default": true, "description": "Start signatures on a new page" },
+    "parties": {
+      "type": "array",
+      "description": "Parties to sign",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string", "description": "Party/company name" },
+          "signatory": { "type": "string", "description": "Name of person signing" }
+        }
+      },
+      "minItems": 2,
+      "maxItems": 2
+    }
+  }
+}

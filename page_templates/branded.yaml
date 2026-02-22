@@ -1,0 +1,6 @@
+name: branded
+description: "Full org header with contact details, logo, and page numbers"
+include: _header_standard.jinja
+defaults:
+  page_numbers: true
+  first_page_header: true

@@ -12,6 +12,7 @@ import jsonschema
 from klartex.branding import Branding, load_branding
 from klartex.registry import discover_templates
 from klartex.tex_escape import escape_data
+from klartex.block_engine import BLOCK_ENGINE_TEMPLATE
 
 # Paths relative to this package
 _ROOT = Path(__file__).resolve().parent.parent
@@ -52,7 +53,6 @@ def render(
     data: dict,
     branding: str | Branding = "default",
     branding_dir: str | Path | None = None,
-    engine: str = "auto",
 ) -> bytes:
     """Render a template with data and branding to PDF bytes.
 
@@ -61,10 +61,6 @@ def render(
         data: Template data as a dict (validated against schema)
         branding: Branding name (str) or Branding object
         branding_dir: Directory to load branding YAML from (default: built-in)
-        engine: Rendering engine selection:
-            - "auto" (default): Use .tex.jinja if it exists, otherwise recipe.yaml
-            - "legacy": Force .tex.jinja path. Error if not available.
-            - "recipe": Force recipe path. Error if not available.
 
     Returns:
         PDF file contents as bytes
@@ -88,62 +84,57 @@ def render(
     else:
         brand, resolved_branding_dir = branding, BRANDING_DIR
 
+    # Validate block types and payloads before escaping (escaping mangles underscores)
+    if template_info.is_block_engine:
+        from klartex.block_engine import KNOWN_BLOCK_TYPES
+        from klartex.components import get_component
+
+        for i, block in enumerate(data.get("body", [])):
+            block_type = block.get("type")
+            if not block_type:
+                raise ValueError(f"Block at index {i} is missing 'type'")
+            if block_type not in KNOWN_BLOCK_TYPES:
+                available = ", ".join(sorted(KNOWN_BLOCK_TYPES))
+                raise ValueError(
+                    f"Unknown block type '{block_type}' at index {i}. "
+                    f"Available: {available}"
+                )
+            # Validate block payload against its specific schema
+            spec = get_component(block_type)
+            block_schema = spec.get_block_schema()
+            if block_schema:
+                try:
+                    jsonschema.validate(block, block_schema)
+                except jsonschema.ValidationError as e:
+                    raise ValueError(
+                        f"Invalid '{block_type}' block at index {i}: {e.message}"
+                    ) from e
+
     # Escape user data for LaTeX safety
     escaped_data = escape_data(data)
 
-    # Determine which rendering path to use
-    use_recipe = _select_engine(template_info, engine)
+    # Block engine path
+    if template_info.is_block_engine:
+        for i, block in enumerate(data.get("body", [])):
+            # Restore block type (escaping mangles underscores: title_page → title\_page)
+            escaped_data["body"][i]["type"] = block["type"]
+            # Restore raw source on latex blocks (must not be escaped)
+            if block.get("type") == "latex" and "source" in block:
+                escaped_data["body"][i]["source"] = block["source"]
+        tex_source = _render_block_engine(escaped_data, brand)
+        return _compile_tex(tex_source, resolved_branding_dir)
 
-    if use_recipe:
-        tex_source = _render_recipe(template_info, escaped_data, brand)
-    else:
-        tex_source = _render_legacy(template_name, escaped_data, brand)
-
-    # Compile in temp directory
+    # Recipe path
+    tex_source = _render_recipe(template_info, escaped_data, brand)
     return _compile_tex(tex_source, resolved_branding_dir)
 
 
-def _select_engine(template_info, engine: str) -> bool:
-    """Determine whether to use recipe rendering.
+def _render_block_engine(escaped_data: dict, brand: Branding) -> str:
+    """Render using the universal block engine path."""
+    from klartex.block_engine import prepare_block_context
 
-    Returns True for recipe path, False for legacy path.
-    """
-    if engine == "auto":
-        # Prefer .tex.jinja for backward compatibility
-        if template_info.has_legacy:
-            return False
-        if template_info.has_recipe:
-            return True
-        raise ValueError(
-            f"Template '{template_info.name}' has neither .tex.jinja nor recipe.yaml"
-        )
-    elif engine == "legacy":
-        if not template_info.has_legacy:
-            raise ValueError(
-                f"Template '{template_info.name}' has no .tex.jinja file "
-                f"(required for engine='legacy')"
-            )
-        return False
-    elif engine == "recipe":
-        if not template_info.has_recipe:
-            raise ValueError(
-                f"Template '{template_info.name}' has no recipe.yaml file "
-                f"(required for engine='recipe')"
-            )
-        return True
-    else:
-        raise ValueError(
-            f"Invalid engine '{engine}'. Must be 'auto', 'legacy', or 'recipe'."
-        )
-
-
-def _render_legacy(template_name: str, escaped_data: dict, brand: Branding) -> str:
-    """Render using the monolithic .tex.jinja path."""
-    context = {
-        "data": escaped_data,
-        "brand": brand,
-    }
-    template = _jinja_env.get_template(f"{template_name}/{template_name}.tex.jinja")
+    context = prepare_block_context(escaped_data, brand)
+    template = _jinja_env.get_template("_block_engine.tex.jinja")
     return template.render(context)
 
 

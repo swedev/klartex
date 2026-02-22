@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Block Engine Document",
+  "description": "Universal block-based document format. The agent composes body[] freely from typed blocks.",
+  "type": "object",
+  "required": ["body"],
+  "additionalProperties": false,
+  "properties": {
+    "page_template": {
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Page template name (e.g. 'formal', 'clean', 'none')"
+        },
+        {
+          "type": "object",
+          "required": ["name"],
+          "properties": {
+            "name": { "type": "string", "description": "Page template name" },
+            "page_numbers": { "type": "boolean", "description": "Override: show page numbers" },
+            "first_page_header": { "type": "boolean", "description": "Override: show header on first page" }
+          },
+          "additionalProperties": false
+        }
+      ],
+      "default": "formal"
+    },
+    "lang": {
+      "type": "string",
+      "enum": ["sv", "en"],
+      "default": "sv",
+      "description": "Document language"
+    },
+    "body": {
+      "type": "array",
+      "description": "Ordered list of document blocks",
+      "items": {
+        "type": "object",
+        "required": ["type"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Block type name"
+          }
+        }
+      },
+      "minItems": 1
+    }
+  }
+}

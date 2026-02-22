@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Title Page Block",
+  "description": "Full-page title with party names and document title",
+  "type": "object",
+  "required": ["type"],
+  "additionalProperties": false,
+  "properties": {
+    "type": { "type": "string", "const": "title_page" },
+    "party1": { "type": "string", "description": "First party name" },
+    "party2": { "type": "string", "description": "Second party name" },
+    "title": { "type": "string", "description": "Document title" }
+  }
+}

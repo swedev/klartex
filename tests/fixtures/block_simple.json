@@ -1,0 +1,15 @@
+{
+  "page_template": "formal",
+  "lang": "sv",
+  "body": [
+    { "type": "heading", "text": "Testdokument" },
+    { "type": "text", "text": "Detta ar ett enkelt testdokument skapat via block-motorn." },
+    {
+      "type": "signatures",
+      "parties": [
+        { "name": "Foretaget AB", "signatory": "Anna Andersson" },
+        { "name": "Erik Eriksson", "signatory": "Erik Eriksson" }
+      ]
+    }
+  ]
+}

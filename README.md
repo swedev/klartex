@@ -12,7 +12,7 @@ Klartex tar JSON-data + mallnamn + valfri branding och producerar PDF via XeLaTe
 |------|-------------|
 | `protokoll` | Mötesprotokoll med dagordning, beslut och justerare |
 | `faktura` | Faktura med rader, moms och betalningsinformation |
-| `avtal` | Avtal med klausuler, underparagrafer och signaturer |
+| `_block` | Universell blockmotor — agenten komponerar dokumentet fritt |
 
 ## Installation
 
@@ -92,34 +92,14 @@ Använd sedan `--branding minforening` eller `"branding": "minforening"` i API-a
 
 Klartex har en trelagers-arkitektur:
 
-1. **Dokumentniva** -- `klartex-base.cls` hanterar siduppstallning, branding, sidhuvud/sidfot
-2. **Komponentniva** -- Atervandningsbara `.sty`-paket som ger strukturerade LaTeX-makron (t.ex. `klartex-signaturblock.sty`, `klartex-klausuler.sty`, `klartex-titelsida.sty`)
-3. **Receptniva** -- YAML-filer som deklarerar vilka komponenter och innehallsfalt som ska kombineras
+1. **Dokumentnivå** — `klartex-base.cls` hanterar siduppställning, branding, sidhuvud/sidfot
+2. **Komponentnivå** — Återanvändbara `.sty`-paket som ger strukturerade LaTeX-makron (t.ex. `klartex-signaturblock.sty`, `klartex-klausuler.sty`, `klartex-titelsida.sty`)
+3. **Receptnivå** — YAML-filer som deklarerar vilka komponenter och innehållsfält som ska kombineras
 
-Befintliga monolitiska `.tex.jinja`-mallar fungerar som tidigare. Nya mallar kan defineras som YAML-recept istallet for att skriva fullstandiga LaTeX/Jinja-filer.
+### Renderingsvägar
 
-### Renderingsmotor
-
-Parametern `engine` styr vilken renderingsvag som anvands:
-
-- `auto` (standard): Anvander `.tex.jinja` om den finns, annars `recipe.yaml`
-- `legacy`: Tvingas anvanda `.tex.jinja`
-- `recipe`: Tvingas anvanda `recipe.yaml`
-
-```bash
-# CLI
-klartex render --template protokoll --data data.json --engine recipe
-
-# API
-curl -X POST http://localhost:8000/render \
-  -H "Content-Type: application/json" \
-  -d '{"template": "protokoll", "data": {...}, "engine": "recipe"}'
-```
-
-```python
-# Python
-pdf_bytes = render("protokoll", data, engine="recipe")
-```
+- **Recipe-mallar** (`protokoll`, `faktura`, `avtal`) — YAML-recept som deklarerar komponenter och mappningar
+- **Block engine** (`_block`) — Agenten komponerar `body[]` fritt från typade block
 
 ### Skapa en YAML-receptmall
 
@@ -133,7 +113,7 @@ template:
 
 document:
   title: "{{ data.title }}"
-  header: standard
+  page_template: formal
   metadata:
     - label: "Datum:"
       field: date
@@ -149,7 +129,7 @@ components:
 schema: schema.json
 ```
 
-Tillgangliga komponenter: `heading`, `metadata_table`, `attendees`, `klausuler`, `signaturblock`, `titelsida`, `adjuster_signatures`.
+Tillgängliga komponenter: `heading`, `metadata_table`, `attendees`, `klausuler`, `signaturblock`, `titelsida`, `adjuster_signatures`, `invoice_header`, `invoice_recipient`, `invoice_table`, `payment_info`, `invoice_note`.
 
 ## Licens
 

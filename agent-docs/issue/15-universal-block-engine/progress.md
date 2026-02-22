@@ -33,9 +33,25 @@
 
 110 tests passed (up from 63 baseline), 0 failures.
 
+## Post-Completion: Page Template Source Injection Refactor
+
+**Date:** 2026-02-23
+
+Simplified the page template system from path-based include to source injection:
+
+- Removed `_is_external_path()`, `include_path` from `PageTemplate`
+- Removed `_get_jinja_env()` and `_resolve_extra_dirs()` from renderer (external path machinery)
+- Added `read_page_template_source()` — reads `.tex.jinja` file content by name
+- Both rendering paths (block engine + recipe) read template file content and inject it as `page_template_source` in the Jinja context
+- Meta-templates changed from `%% include page_template_include` to `\VAR{page_template_source}`
+- Added `--page-template` CLI flag with stdin support (`-`)
+- Added `page_template_source` field to API `RenderRequest`
+- Added caller's `cwd` to `TEXINPUTS` so relative asset paths (logos etc.) work
+- 111 tests pass
+
 ## Notes
 
 - All block types render correctly through the block engine
 - Legacy avtal, protokoll (both engines), and faktura continue to work
-- Page template system is backward compatible with legacy header enum values
+- Page templates are now injected as source content, not resolved via filesystem paths
 - Block engine is accessed via template: "_block" sentinel

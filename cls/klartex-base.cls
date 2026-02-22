@@ -1,5 +1,4 @@
 % klartex-base.cls - Klartex Document Base Class
-% Generalized from wingframe.cls for branded document generation
 % https://github.com/swedev/klartex
 
 \NeedsTeXFormat{LaTeX2e}
@@ -41,56 +40,47 @@
 \hbadness=800
 
 % Font — no default override; fontspec uses Latin Modern automatically.
-% Branding can set a custom font via \setmainfont in the preamble.
+% Page templates can set a custom font via \setmainfont in the preamble.
 
 % Brand colors — configurable via \definecolor in document preamble
 \definecolor{brandprimary}{HTML}{1A1A1A}
 \definecolor{brandsecondary}{HTML}{666666}
 \definecolor{brandaccent}{HTML}{0066CC}
 
-% Organization information — set via \renewcommand in document
-\newcommand{\orgname}{}
-\newcommand{\orgaddress}{}
-\newcommand{\orgwebsite}{}
-\newcommand{\orgemail}{}
-\newcommand{\orgphone}{}
-\newcommand{\orgnumber}{}
-\newcommand{\brandlogo}{}
-
 % Document metadata
 \newcommand{\doctitle}{}
 \newcommand{\setdoctitle}[1]{\renewcommand{\doctitle}{#1}}
 
 % Language support (default: Swedish)
-\newcommand{\wf@lang}{sv}
-\newcommand{\setdoclang}[1]{\renewcommand{\wf@lang}{#1}\wf@setlang}
+\newcommand{\kx@lang}{sv}
+\newcommand{\setdoclang}[1]{\renewcommand{\kx@lang}{#1}\kx@setlang}
 
 % Language-dependent strings
-\newcommand{\wf@and}{Och}
-\newcommand{\wf@page}{Sida}
-\newcommand{\wf@of}{av}
-\newcommand{\wf@signatures}{Underskrifter}
-\newcommand{\wf@sigintro}{Detta avtal har upprättats i två (2) likalydande exemplar, av vilka parterna tagit var sitt.}
-\newcommand{\wf@locationdate}{Ort och datum}
-\newcommand{\wf@signature}{Underskrift}
+\newcommand{\kx@and}{Och}
+\newcommand{\kx@page}{Sida}
+\newcommand{\kx@of}{av}
+\newcommand{\kx@signatures}{Underskrifter}
+\newcommand{\kx@sigintro}{Detta avtal har upprättats i två (2) likalydande exemplar, av vilka parterna tagit var sitt.}
+\newcommand{\kx@locationdate}{Ort och datum}
+\newcommand{\kx@signature}{Underskrift}
 
-\newcommand{\wf@lang@en}{en}
-\newcommand{\wf@setlang}{%
-    \ifx\wf@lang\wf@lang@en
-        \renewcommand{\wf@and}{And}%
-        \renewcommand{\wf@page}{Page}%
-        \renewcommand{\wf@of}{of}%
-        \renewcommand{\wf@signatures}{Signatures}%
-        \renewcommand{\wf@sigintro}{This Agreement has been executed in two (2) original copies of which the parties have kept one each.}%
-        \renewcommand{\wf@locationdate}{Location and Date}%
-        \renewcommand{\wf@signature}{Signature}%
+\newcommand{\kx@lang@en}{en}
+\newcommand{\kx@setlang}{%
+    \ifx\kx@lang\kx@lang@en
+        \renewcommand{\kx@and}{And}%
+        \renewcommand{\kx@page}{Page}%
+        \renewcommand{\kx@of}{of}%
+        \renewcommand{\kx@signatures}{Signatures}%
+        \renewcommand{\kx@sigintro}{This Agreement has been executed in two (2) original copies of which the parties have kept one each.}%
+        \renewcommand{\kx@locationdate}{Location and Date}%
+        \renewcommand{\kx@signature}{Signature}%
     \fi
 }
 
 % Graphics search path
 \graphicspath{{./}}
 
-% Header and footer setup — layout is injected via branding preamble
+% Header and footer setup — layout is injected via page template
 \pagestyle{fancy}
 \fancyhf{}
 \renewcommand{\headrulewidth}{0pt}
@@ -150,5 +140,7 @@
 \RequirePackage{klartex-klausuler}
 \RequirePackage{klartex-titelsida}
 \RequirePackage{klartex-signaturblock}
+\RequirePackage{klartex-dagordning}
+\RequirePackage{klartex-namnrollista}
 
 \endinput

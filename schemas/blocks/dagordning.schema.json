@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Dagordning Block",
+  "description": "§-numbered agenda with optional discussion and decisions",
+  "type": "object",
+  "required": ["type", "items"],
+  "additionalProperties": false,
+  "properties": {
+    "type": { "type": "string", "const": "dagordning" },
+    "items": {
+      "type": "array",
+      "description": "Agenda items",
+      "items": {
+        "type": "object",
+        "required": ["title"],
+        "additionalProperties": false,
+        "properties": {
+          "title": { "type": "string", "description": "Agenda item title" },
+          "discussion": { "type": "string", "description": "Discussion text" },
+          "decision": { "type": "string", "description": "Decision text" }
+        }
+      },
+      "minItems": 1
+    }
+  }
+}

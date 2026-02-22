@@ -1,3 +1,9 @@
+\providecommand{\orgname}{}
+\providecommand{\orgaddress}{}
+\providecommand{\orgwebsite}{}
+\providecommand{\orgemail}{}
+\providecommand{\orgphone}{}
+\providecommand{\brandlogo}{}
 \makeatletter
 \fancyhead[L]{%
     \ifdefempty{\orgname}{}{%
@@ -24,8 +30,8 @@
     }%
 }
 \fancyfoot[C]{%
-    \wf@setlang%
+    \kx@setlang%
     \fontsize{6pt}{9pt}\selectfont\color{brandsecondary}%
-    \doctitle\ \textbullet\ \wf@page\ \thepage\ \wf@of\ \pageref{LastPage}%
+    \doctitle\ \textbullet\ \kx@page\ \thepage\ \kx@of\ \pageref{LastPage}%
 }
 \makeatother

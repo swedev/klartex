@@ -1,7 +1,7 @@
 \documentclass{klartex-base}
+\providecommand{\orgname}{}
 
-%% include '_branding_preamble.jinja'
-%% include page_template_include
+\VAR{page_template_source}
 
 \BLOCK{if lang == 'en'}
 \setdoclang{en}
@@ -16,9 +16,7 @@
 \BLOCK{if comp.type == 'heading'}
 \begin{center}
 {\Large\bfseries \VAR{comp.data.get('title', '')}}\\[0.5em]
-\BLOCK{if brand.name}
-{\normalsize \VAR{brand.name}}\\[0.3em]
-\BLOCK{endif}
+\ifdefempty{\orgname}{}{{\normalsize \orgname}\\[0.3em]}
 \BLOCK{if comp.data.get('subtitle')}
 {\normalsize \VAR{comp.options.get('subtitle_prefix', '')}\VAR{comp.data.subtitle}}\\[1em]
 \BLOCK{else}

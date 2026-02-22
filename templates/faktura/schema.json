@@ -5,7 +5,7 @@
   "type": "object",
   "required": ["invoice_number", "date", "due_date", "recipient", "lines"],
   "properties": {
-    "page_template": { "type": "string", "enum": ["formal", "clean", "branded", "none"], "default": "formal", "description": "Page template" },
+    "page_template": { "type": "string", "enum": ["formal", "clean", "none"], "default": "formal", "description": "Page template" },
     "invoice_number": { "type": "string" },
     "date": { "type": "string", "description": "Invoice date (YYYY-MM-DD)" },
     "due_date": { "type": "string", "description": "Due date (YYYY-MM-DD)" },

@@ -35,10 +35,10 @@ The header layout system works as follows:
 4. **Base class**: `klartex-base.cls` sets up `fancyhdr` with empty headers/footers and zero rule widths. The header snippets override these.
 
 Key conventions from existing headers:
-- All snippets use `\makeatletter` / `\makeatother` (needed for `\wf@` internal commands)
+- All snippets use `\makeatletter` / `\makeatother` (needed for `\kx@` internal commands)
 - Font size: 6pt/9pt for header/footer text
 - Colors: `brandsecondary` for text, `brandprimary` for main content
-- Footer always includes page numbers via `\wf@page \thepage \wf@of \pageref{LastPage}`
+- Footer always includes page numbers via `\kx@page \thepage \kx@of \pageref{LastPage}`
 - Logo height: 0.855cm with -0.6cm vertical adjustment
 - `\ifdefempty` (from etoolbox) for conditional checks on brand fields
 

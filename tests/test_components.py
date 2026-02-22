@@ -44,6 +44,7 @@ class TestComponentRegistry:
         for block_type in [
             "heading", "text", "preamble", "title_page", "parties",
             "clause", "signatures", "metadata_table", "attendees", "latex",
+            "dagordning", "namnrollista",
         ]:
             assert block_type in components, f"Missing block type: {block_type}"
 
@@ -65,6 +66,28 @@ class TestComponentRegistry:
         schema = spec.get_block_schema()
         assert schema is not None
         assert "parties" in schema["properties"]
+
+    def test_dagordning_block_schema(self):
+        spec = get_component("dagordning")
+        schema = spec.get_block_schema()
+        assert schema is not None
+        assert schema["title"] == "Dagordning Block"
+        assert "items" in schema["properties"]
+
+    def test_namnrollista_block_schema(self):
+        spec = get_component("namnrollista")
+        schema = spec.get_block_schema()
+        assert schema is not None
+        assert schema["title"] == "Namnrollista Block"
+        assert "people" in schema["properties"]
+
+    def test_dagordning_component_sty(self):
+        spec = get_component("dagordning")
+        assert spec.sty_package == "klartex-dagordning"
+
+    def test_namnrollista_component_sty(self):
+        spec = get_component("namnrollista")
+        assert spec.sty_package == "klartex-namnrollista"
 
     def test_recipe_component_no_block_schema(self):
         """Recipe-only components (klausuler, signaturblock) don't need block schemas."""

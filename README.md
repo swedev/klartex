@@ -4,7 +4,7 @@
 
 PDF-generering via LaTeX — strukturerad data in, professionella dokument ut.
 
-Klartex tar JSON-data + mallnamn + valfri branding och producerar PDF via XeLaTeX. Kan användas som Python-bibliotek, CLI-verktyg eller HTTP-tjänst.
+Klartex tar JSON-data + mallnamn och producerar PDF via XeLaTeX. Kan användas som Python-bibliotek, CLI-verktyg eller HTTP-tjänst.
 
 ## Mallar
 
@@ -29,7 +29,7 @@ Kräver XeLaTeX (`brew install --cask mactex` eller `apt install texlive-xetex`)
 ```python
 from klartex import render
 
-pdf_bytes = render("protokoll", data, branding="default")
+pdf_bytes = render("protokoll", data)
 ```
 
 ### Som CLI
@@ -37,6 +37,12 @@ pdf_bytes = render("protokoll", data, branding="default")
 ```bash
 # Rendera en mall
 klartex render --template protokoll --data data.json -o output.pdf
+
+# Med extern sidmall (page template)
+klartex render -t _block -d data.json --page-template minforening.tex.jinja
+
+# Sidmall via stdin
+cat minforening.tex.jinja | klartex render -t _block -d data.json --page-template -
 
 # Lista mallar
 klartex templates
@@ -61,6 +67,12 @@ curl -X POST http://localhost:8000/render \
   -d '{"template": "protokoll", "data": {...}}' \
   -o output.pdf
 
+# Rendera med extern sidmall
+curl -X POST http://localhost:8000/render \
+  -H "Content-Type: application/json" \
+  -d '{"template": "_block", "data": {...}, "page_template_source": "\\definecolor{brandprimary}{HTML}{2E5A1C}\\n..."}' \
+  -o output.pdf
+
 # Lista mallar
 curl http://localhost:8000/templates
 
@@ -68,31 +80,43 @@ curl http://localhost:8000/templates
 curl http://localhost:8000/templates/protokoll/schema
 ```
 
-## Branding
+## Sidmallar (Page Templates)
 
-Skapa en YAML-fil i `branding/`:
+Sidmallar styr sidhuvud, sidfot, färger och logotyp. Tre inbyggda finns:
 
-```yaml
-name: "Min Förening"
-org_number: "802481-1234"
-address:
-  line1: "Storgatan 12"
-  line2: "123 45 Staden"
-logo: "logos/logo.pdf"
-colors:
-  primary: "2E7D32"
-  secondary: "666666"
-  accent: "0066CC"
-lang: "sv"
+| Sidmall | Beskrivning |
+|---------|-------------|
+| `formal` | Organisationsnamn och kontaktinfo i sidhuvud, logotyp, sidnummer i sidfot |
+| `clean` | Enbart logotyp i sidhuvud, sidnummer i sidfot |
+| `none` | Inget sidhuvud, enbart sidnummer i sidfot |
+
+### Egen sidmall
+
+Skapa en `.tex.jinja`-fil som definierar `\fancyhead`/`\fancyfoot`:
+
+```latex
+\definecolor{brandprimary}{HTML}{2E5A1C}
+\definecolor{brandsecondary}{HTML}{555555}
+\providecommand{\orgname}{}
+\renewcommand{\orgname}{Min Förening}
+\makeatletter
+\fancyhead[L]{\fontsize{6pt}{9pt}\selectfont\textbf{\orgname}}
+\fancyhead[R]{\includegraphics[height=0.855cm]{logo.pdf}}
+\fancyfoot[C]{%
+    \kx@setlang%
+    \fontsize{6pt}{9pt}\selectfont\color{brandsecondary}%
+    \doctitle\ \textbullet\ \kx@page\ \thepage\ \kx@of\ \pageref{LastPage}%
+}
+\makeatother
 ```
 
-Använd sedan `--branding minforening` eller `"branding": "minforening"` i API-anrop.
+Använd sedan `--page-template minforening.tex.jinja` i CLI eller `"page_template_source": "..."` i API-anrop. Logotyper och andra filer hittas relativt till arbetsmappen.
 
 ## Arkitektur
 
 Klartex har en trelagers-arkitektur:
 
-1. **Dokumentnivå** — `klartex-base.cls` hanterar siduppställning, branding, sidhuvud/sidfot
+1. **Dokumentnivå** — `klartex-base.cls` hanterar siduppställning och grundläggande sidhuvud/sidfot. Sidmallar (`.tex.jinja`) injiceras i preambeln och styr färger, logotyp och layout.
 2. **Komponentnivå** — Återanvändbara `.sty`-paket som ger strukturerade LaTeX-makron (t.ex. `klartex-signaturblock.sty`, `klartex-klausuler.sty`, `klartex-titelsida.sty`)
 3. **Receptnivå** — YAML-filer som deklarerar vilka komponenter och innehållsfält som ska kombineras
 

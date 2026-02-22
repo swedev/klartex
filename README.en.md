@@ -4,7 +4,7 @@
 
 PDF generation via LaTeX — structured data in, professional documents out.
 
-Klartex takes JSON data + template name + optional branding and produces PDF via XeLaTeX. Can be used as a Python library, CLI tool, or HTTP service.
+Klartex takes JSON data + template name and produces PDF via XeLaTeX. Can be used as a Python library, CLI tool, or HTTP service.
 
 ## Templates
 
@@ -29,7 +29,7 @@ Requires XeLaTeX (`brew install --cask mactex` or `apt install texlive-xetex`).
 ```python
 from klartex import render
 
-pdf_bytes = render("protokoll", data, branding="default")
+pdf_bytes = render("protokoll", data)
 ```
 
 ### As CLI
@@ -37,6 +37,12 @@ pdf_bytes = render("protokoll", data, branding="default")
 ```bash
 # Render a template
 klartex render --template protokoll --data data.json -o output.pdf
+
+# With external page template
+klartex render -t _block -d data.json --page-template myorg.tex.jinja
+
+# Page template via stdin
+cat myorg.tex.jinja | klartex render -t _block -d data.json --page-template -
 
 # List templates
 klartex templates
@@ -61,6 +67,12 @@ curl -X POST http://localhost:8000/render \
   -d '{"template": "protokoll", "data": {...}}' \
   -o output.pdf
 
+# Render with external page template
+curl -X POST http://localhost:8000/render \
+  -H "Content-Type: application/json" \
+  -d '{"template": "_block", "data": {...}, "page_template_source": "\\definecolor{brandprimary}{HTML}{2E5A1C}\\n..."}' \
+  -o output.pdf
+
 # List templates
 curl http://localhost:8000/templates
 
@@ -68,31 +80,43 @@ curl http://localhost:8000/templates
 curl http://localhost:8000/templates/protokoll/schema
 ```
 
-## Branding
+## Page Templates
 
-Create a YAML file in `branding/`:
+Page templates control headers, footers, colors, and logos. Three built-in templates are available:
 
-```yaml
-name: "My Organization"
-org_number: "802481-1234"
-address:
-  line1: "Main Street 12"
-  line2: "123 45 City"
-logo: "logos/logo.pdf"
-colors:
-  primary: "2E7D32"
-  secondary: "666666"
-  accent: "0066CC"
-lang: "en"
+| Page Template | Description |
+|---------------|-------------|
+| `formal` | Org name and contact info in header, logo, page numbers in footer |
+| `clean` | Logo only in header, page numbers in footer |
+| `none` | No header, page numbers only in footer |
+
+### Custom page template
+
+Create a `.tex.jinja` file that defines `\fancyhead`/`\fancyfoot`:
+
+```latex
+\definecolor{brandprimary}{HTML}{2E5A1C}
+\definecolor{brandsecondary}{HTML}{555555}
+\providecommand{\orgname}{}
+\renewcommand{\orgname}{My Organization}
+\makeatletter
+\fancyhead[L]{\fontsize{6pt}{9pt}\selectfont\textbf{\orgname}}
+\fancyhead[R]{\includegraphics[height=0.855cm]{logo.pdf}}
+\fancyfoot[C]{%
+    \kx@setlang%
+    \fontsize{6pt}{9pt}\selectfont\color{brandsecondary}%
+    \doctitle\ \textbullet\ \kx@page\ \thepage\ \kx@of\ \pageref{LastPage}%
+}
+\makeatother
 ```
 
-Then use `--branding myorg` or `"branding": "myorg"` in API calls.
+Then use `--page-template myorg.tex.jinja` in CLI or `"page_template_source": "..."` in API calls. Logos and other files are resolved relative to the working directory.
 
 ## Architecture
 
 Klartex uses a three-layer architecture:
 
-1. **Document level** — `klartex-base.cls` handles page setup, branding, headers/footers
+1. **Document level** — `klartex-base.cls` handles page setup and basic headers/footers. Page templates (`.tex.jinja`) are injected into the preamble and control colors, logos, and layout.
 2. **Component level** — Reusable `.sty` packages providing structured LaTeX macros (e.g. `klartex-signaturblock.sty`, `klartex-klausuler.sty`, `klartex-titelsida.sty`)
 3. **Recipe level** — YAML files that declare which components and content fields to combine
 

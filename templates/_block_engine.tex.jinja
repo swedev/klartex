@@ -1,7 +1,6 @@
 \documentclass{klartex-base}
 
-%% include '_branding_preamble.jinja'
-%% include page_template_include
+\VAR{page_template_source}
 
 %# --- Apply page template overrides ---
 \BLOCK{if not page_template.page_numbers}
@@ -169,6 +168,36 @@ Personnr: \VAR{party.id_number}\\
 \noindent\textbf{Justerare:} \VAR{block.adjusters | join(', ')}
 \BLOCK{endif}
 \vspace{1em}
+
+\BLOCK{elif block.type == 'dagordning'}
+\BLOCK{if clause_started[0]}
+\end{clauses}
+\BLOCK{set _ = clause_started.__setitem__(0, false) }
+\BLOCK{endif}
+\begin{dagordning}
+\BLOCK{for item in block["items"]}
+\punkt{\VAR{item.title}}
+\BLOCK{if item.get('discussion')}
+
+\noindent \VAR{item.discussion}
+\BLOCK{endif}
+\BLOCK{if item.get('decision')}
+
+\noindent \textbf{Beslut:} \VAR{item.decision}
+\BLOCK{endif}
+\BLOCK{endfor}
+\end{dagordning}
+
+\BLOCK{elif block.type == 'namnrollista'}
+\BLOCK{if clause_started[0]}
+\end{clauses}
+\BLOCK{set _ = clause_started.__setitem__(0, false) }
+\BLOCK{endif}
+\namnrollista{\VAR{block.title}}{%
+\BLOCK{for person in block.people}
+\person{\VAR{person.name}}{\VAR{person.role}}{\VAR{person.get('note', '')}}
+\BLOCK{endfor}
+}
 
 \BLOCK{elif block.type == 'latex'}
 \BLOCK{if clause_started[0]}

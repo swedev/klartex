@@ -14,20 +14,14 @@ app = FastAPI(title="Klartex", description="PDF generation via LaTeX")
 class RenderRequest(BaseModel):
     template: str
     data: dict
-    branding: str = "default"
-    branding_dir: str | None = None
+    page_template_source: str | None = None
 
 
 @app.post("/render")
 def render_pdf(req: RenderRequest):
     """Render a template to PDF."""
     try:
-        pdf_bytes = render(
-            req.template,
-            req.data,
-            branding=req.branding,
-            branding_dir=req.branding_dir,
-        )
+        pdf_bytes = render(req.template, req.data, page_template_source=req.page_template_source)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:

@@ -1,0 +1,33 @@
+% klartex-namnrollista.sty - Name/role table component
+% Provides \namnrollista and \person commands for board listings etc.
+%
+% Usage: \usepackage{klartex-namnrollista}
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{klartex-namnrollista}[2026/02/22 Klartex Namnrollista Component]
+
+% Dependencies
+\RequirePackage{tabularx}
+\RequirePackage{booktabs}
+
+% \namnrollista{Title}{rows using \person}
+\newcommand{\namnrollista}[2]{%
+    \vspace{1em}
+    \noindent\textbf{#1}\par\vspace{0.5em}
+    \noindent
+    \begin{tabularx}{\textwidth}{@{}lXl@{}}
+    \toprule
+    \textbf{Namn} & \textbf{Roll} & \textbf{Notering} \\
+    \midrule
+    #2
+    \bottomrule
+    \end{tabularx}
+    \vspace{1em}
+}
+
+% \person{name}{role}{note}
+\newcommand{\person}[3]{%
+    #1 & #2 & #3 \\
+}
+
+\endinput

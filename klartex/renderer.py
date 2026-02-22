@@ -1,7 +1,6 @@
 """Core rendering pipeline: JSON data -> .tex -> PDF."""
 
 import json
-import shutil
 import subprocess
 import tempfile
 from pathlib import Path
@@ -9,7 +8,6 @@ from pathlib import Path
 import jinja2
 import jsonschema
 
-from klartex.branding import Branding, load_branding
 from klartex.registry import discover_templates
 from klartex.tex_escape import escape_data
 from klartex.block_engine import BLOCK_ENGINE_TEMPLATE
@@ -18,7 +16,6 @@ from klartex.block_engine import BLOCK_ENGINE_TEMPLATE
 _ROOT = Path(__file__).resolve().parent.parent
 TEMPLATES_DIR = _ROOT / "templates"
 CLS_DIR = _ROOT / "cls"
-BRANDING_DIR = _ROOT / "branding"
 
 # Template registry (discovered at import time)
 _registry = None
@@ -44,23 +41,23 @@ _jinja_env = jinja2.Environment(
     trim_blocks=True,
     lstrip_blocks=True,
     autoescape=False,
-    loader=jinja2.FileSystemLoader(str(TEMPLATES_DIR)),
+    loader=jinja2.FileSystemLoader([str(TEMPLATES_DIR)]),
 )
 
 
 def render(
     template_name: str,
     data: dict,
-    branding: str | Branding = "default",
-    branding_dir: str | Path | None = None,
+    page_template_source: str | None = None,
 ) -> bytes:
-    """Render a template with data and branding to PDF bytes.
+    """Render a template with data to PDF bytes.
 
     Args:
         template_name: Name of the template (e.g. "protokoll")
         data: Template data as a dict (validated against schema)
-        branding: Branding name (str) or Branding object
-        branding_dir: Directory to load branding YAML from (default: built-in)
+        page_template_source: Optional raw .tex.jinja content for the page
+            template. When set, this is used directly instead of looking up
+            the built-in page template from data["page_template"].
 
     Returns:
         PDF file contents as bytes
@@ -75,14 +72,6 @@ def render(
 
     # Validate data against schema
     jsonschema.validate(data, template_info.schema)
-
-    # Load branding
-    if isinstance(branding, str):
-        brand, resolved_branding_dir = load_branding(
-            branding, Path(branding_dir) if branding_dir else BRANDING_DIR
-        )
-    else:
-        brand, resolved_branding_dir = branding, BRANDING_DIR
 
     # Validate block types and payloads before escaping (escaping mangles underscores)
     if template_info.is_block_engine:
@@ -121,35 +110,38 @@ def render(
             # Restore raw source on latex blocks (must not be escaped)
             if block.get("type") == "latex" and "source" in block:
                 escaped_data["body"][i]["source"] = block["source"]
-        tex_source = _render_block_engine(escaped_data, brand)
-        return _compile_tex(tex_source, resolved_branding_dir)
+        tex_source = _render_block_engine(escaped_data, page_template_source)
+        return _compile_tex(tex_source)
 
     # Recipe path
-    tex_source = _render_recipe(template_info, escaped_data, brand)
-    return _compile_tex(tex_source, resolved_branding_dir)
+    tex_source = _render_recipe(template_info, escaped_data, page_template_source)
+    return _compile_tex(tex_source)
 
 
-def _render_block_engine(escaped_data: dict, brand: Branding) -> str:
+def _render_block_engine(
+    escaped_data: dict, page_template_source: str | None = None
+) -> str:
     """Render using the universal block engine path."""
     from klartex.block_engine import prepare_block_context
 
-    context = prepare_block_context(escaped_data, brand)
+    context = prepare_block_context(escaped_data, page_template_source)
     template = _jinja_env.get_template("_block_engine.tex.jinja")
     return template.render(context)
 
 
-def _render_recipe(template_info, escaped_data: dict, brand: Branding) -> str:
+def _render_recipe(
+    template_info, escaped_data: dict, page_template_source: str | None = None
+) -> str:
     """Render using the YAML recipe path."""
     from klartex.recipe import load_recipe, prepare_recipe_context
 
     recipe = load_recipe(template_info.recipe_path)
-    context = prepare_recipe_context(recipe, escaped_data, brand)
-
+    context = prepare_recipe_context(recipe, escaped_data, page_template_source)
     template = _jinja_env.get_template("_recipe_base.tex.jinja")
     return template.render(context)
 
 
-def _compile_tex(tex_source: str, branding_dir: Path) -> bytes:
+def _compile_tex(tex_source: str) -> bytes:
     """Compile LaTeX source to PDF bytes."""
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp = Path(tmpdir)
@@ -163,16 +155,13 @@ def _compile_tex(tex_source: str, branding_dir: Path) -> bytes:
         # Also symlink klartex-base.cls at top level for \documentclass{klartex-base}
         (tmp / "klartex-base.cls").symlink_to(CLS_DIR / "klartex-base.cls")
 
-        # Symlink branding dir so xelatex can find logos, fonts
-        (tmp / "branding").symlink_to(branding_dir)
-
-        # Build environment with cls/ on TEXINPUTS so \RequirePackage finds .sty files
+        # Build environment with cls/ and caller's cwd on TEXINPUTS
         import os
 
         env = os.environ.copy()
         existing_texinputs = env.get("TEXINPUTS", "")
-        # Prepend current dir and cls/ dir, preserve existing paths, trailing colon for system default
-        env["TEXINPUTS"] = f".:{CLS_DIR}:{existing_texinputs}"
+        cwd = os.getcwd()
+        env["TEXINPUTS"] = f".:{CLS_DIR}:{cwd}:{existing_texinputs}"
 
         # Run xelatex twice (for page references)
         for _ in range(2):

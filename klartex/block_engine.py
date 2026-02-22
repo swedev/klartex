@@ -21,9 +21,8 @@ Data shape::
 
 from typing import Any
 
-from klartex.branding import Branding
 from klartex.components import _COMPONENTS
-from klartex.page_templates import load_page_template
+from klartex.page_templates import load_page_template, read_page_template_source
 
 # Block types recognized by the block engine template
 KNOWN_BLOCK_TYPES = {
@@ -36,7 +35,7 @@ BLOCK_ENGINE_TEMPLATE = "_block"
 
 def prepare_block_context(
     data: dict,
-    brand: Branding,
+    page_template_source: str | None = None,
 ) -> dict[str, Any]:
     """Build the Jinja context for the block engine meta-template.
 
@@ -44,7 +43,8 @@ def prepare_block_context(
         data: User data with ``page_template``, ``lang``, and ``body[]``.
               Data should already be escaped via ``escape_data()`` before
               calling this function.
-        brand: Branding configuration.
+        page_template_source: Optional raw .tex.jinja content. When set,
+              overrides the built-in page template lookup.
 
     Returns:
         Context dict for rendering ``_block_engine.tex.jinja``.
@@ -60,14 +60,17 @@ def prepare_block_context(
     page_template_spec = data.get("page_template", "formal")
     page_tmpl = load_page_template(page_template_spec)
 
+    # Read template source: caller-provided or built-in file
+    if page_template_source is None:
+        page_template_source = read_page_template_source(page_tmpl.name)
+
     # Extract document title from body blocks (first heading or title_page)
     doc_title = _extract_doc_title(data["body"])
 
     return {
         "body": data["body"],
-        "brand": brand,
         "lang": data.get("lang", "sv"),
-        "page_template_include": page_tmpl.include,
+        "page_template_source": page_template_source,
         "page_template": page_tmpl,
         "doc_title": doc_title,
     }

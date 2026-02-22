@@ -1,6 +1,0 @@
-name: none
-description: "No header, page numbers only in footer"
-include: _header_none.jinja
-defaults:
-  page_numbers: true
-  first_page_header: false

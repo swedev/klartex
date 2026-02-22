@@ -10,13 +10,13 @@
 \RequirePackage{graphicx}
 
 % Language-dependent strings for signatures
-% These use the wf@ prefix namespace from klartex-base.cls.
+% These use the kx@ prefix namespace from klartex-base.cls.
 % When loaded via klartex-base.cls, the class defines these commands first.
 % When loaded standalone, we provide defaults.
-\providecommand{\wf@signatures}{Underskrifter}
-\providecommand{\wf@sigintro}{Detta avtal har upprättats i två (2) likalydande exemplar, av vilka parterna tagit var sitt.}
-\providecommand{\wf@locationdate}{Ort och datum}
-\providecommand{\wf@signature}{Underskrift}
+\providecommand{\kx@signatures}{Underskrifter}
+\providecommand{\kx@sigintro}{Detta avtal har upprättats i två (2) likalydande exemplar, av vilka parterna tagit var sitt.}
+\providecommand{\kx@locationdate}{Ort och datum}
+\providecommand{\kx@signature}{Underskrift}
 
 % Dotted line for signatures
 \providecommand{\dottedline}[1][6cm]{\makebox[#1]{\dotfill}}
@@ -28,28 +28,28 @@
 \newcommand{\signatureblock@break}[4]{\clearpage\signatureblock@body{#1}{#2}{#3}{#4}}
 \newcommand{\signatureblock@nobreak}[4]{\vspace{1.5cm}\signatureblock@body{#1}{#2}{#3}{#4}}
 \newcommand{\signatureblock@body}[4]{%
-    \section*{\wf@signatures}
-    \addcontentsline{toc}{section}{\wf@signatures}
+    \section*{\kx@signatures}
+    \addcontentsline{toc}{section}{\kx@signatures}
 
-    \wf@sigintro
+    \kx@sigintro
 
     \vspace{1.5cm}
 
     \noindent
     \begin{minipage}[t]{0.45\textwidth}
         \textbf{#1}\\[0.5cm]
-        \wf@locationdate\\[1cm]
+        \kx@locationdate\\[1cm]
         \dottedline\\[0.5cm]
-        \wf@signature\\[1cm]
+        \kx@signature\\[1cm]
         \dottedline\\[0.3cm]
         #3
     \end{minipage}%
     \hfill
     \begin{minipage}[t]{0.45\textwidth}
         \textbf{#2}\\[0.5cm]
-        \wf@locationdate\\[1cm]
+        \kx@locationdate\\[1cm]
         \dottedline\\[0.5cm]
-        \wf@signature\\[1cm]
+        \kx@signature\\[1cm]
         \dottedline\\[0.3cm]
         #4
     \end{minipage}

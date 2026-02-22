@@ -1,6 +1,0 @@
-name: formal
-description: "Logo top-left, org name in header, page numbers in footer"
-include: _header_standard.jinja
-defaults:
-  page_numbers: true
-  first_page_header: true

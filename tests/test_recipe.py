@@ -8,7 +8,6 @@ import pytest
 import jsonschema
 
 from klartex.recipe import load_recipe, prepare_recipe_context, Recipe
-from klartex.branding import Branding
 
 FIXTURES = Path(__file__).parent / "fixtures"
 TEMPLATES_DIR = Path(__file__).parent.parent / "templates"
@@ -77,12 +76,9 @@ class TestPrepareRecipeContext:
     def test_context_has_required_keys(self):
         recipe = load_recipe(TEMPLATES_DIR / "protokoll" / "recipe.yaml")
         data = json.loads((FIXTURES / "protokoll.json").read_text())
-        brand = Branding()
-
-        ctx = prepare_recipe_context(recipe, data, brand)
+        ctx = prepare_recipe_context(recipe, data)
         assert "recipe" in ctx
         assert "data" in ctx
-        assert "brand" in ctx
         assert "title" in ctx
         assert "components" in ctx
         assert "metadata" in ctx
@@ -90,18 +86,14 @@ class TestPrepareRecipeContext:
     def test_title_rendered_from_data(self):
         recipe = load_recipe(TEMPLATES_DIR / "protokoll" / "recipe.yaml")
         data = json.loads((FIXTURES / "protokoll.json").read_text())
-        brand = Branding()
-
-        ctx = prepare_recipe_context(recipe, data, brand)
+        ctx = prepare_recipe_context(recipe, data)
         assert "Styrelsemöte" in ctx["title"]
         assert "2026-02-10" in ctx["title"]
 
     def test_metadata_resolved(self):
         recipe = load_recipe(TEMPLATES_DIR / "protokoll" / "recipe.yaml")
         data = json.loads((FIXTURES / "protokoll.json").read_text())
-        brand = Branding()
-
-        ctx = prepare_recipe_context(recipe, data, brand)
+        ctx = prepare_recipe_context(recipe, data)
         labels = [m["label"] for m in ctx["metadata"]]
         assert "Datum:" in labels
 
@@ -109,18 +101,14 @@ class TestPrepareRecipeContext:
         recipe = load_recipe(TEMPLATES_DIR / "protokoll" / "recipe.yaml")
         data = json.loads((FIXTURES / "protokoll.json").read_text())
         del data["location"]  # This is optional in the recipe
-        brand = Branding()
-
-        ctx = prepare_recipe_context(recipe, data, brand)
+        ctx = prepare_recipe_context(recipe, data)
         labels = [m["label"] for m in ctx["metadata"]]
         assert "Plats:" not in labels
 
     def test_component_data_extracted(self):
         recipe = load_recipe(TEMPLATES_DIR / "protokoll" / "recipe.yaml")
         data = json.loads((FIXTURES / "protokoll.json").read_text())
-        brand = Branding()
-
-        ctx = prepare_recipe_context(recipe, data, brand)
+        ctx = prepare_recipe_context(recipe, data)
         # Find the klausuler component
         klausuler = [c for c in ctx["components"] if c["type"] == "klausuler"]
         assert len(klausuler) == 1

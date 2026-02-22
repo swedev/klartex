@@ -14,13 +14,12 @@ from typing import Any
 import jsonschema
 import yaml
 
-from klartex.branding import Branding
 from klartex.components import (
     ComponentSpec,
     extract_component_data,
     get_component,
 )
-from klartex.page_templates import load_page_template
+from klartex.page_templates import load_page_template, read_page_template_source
 
 # Path to the recipe format schema
 _SCHEMA_PATH = Path(__file__).resolve().parent.parent / "schemas" / "recipe.schema.json"
@@ -135,18 +134,17 @@ def load_recipe(path: Path) -> Recipe:
 def prepare_recipe_context(
     recipe: Recipe,
     data: dict,
-    brand: Branding,
+    page_template_source: str | None = None,
 ) -> dict[str, Any]:
     """Build a template context dict for the Jinja meta-template.
 
     The context includes the recipe structure, resolved component data,
-    and branding. Data should already be escaped via escape_data() before
-    calling this function.
+    and page template settings. Data should already be escaped via
+    escape_data() before calling this function.
 
     Args:
         recipe: Parsed recipe
         data: Template data (already escaped for LaTeX)
-        brand: Branding configuration
 
     Returns:
         Context dict for rendering _recipe_base.tex.jinja
@@ -220,12 +218,15 @@ def prepare_recipe_context(
     # Resolve page template
     page_tmpl = load_page_template(rendered_page_template)
 
+    # Read template source: caller-provided or built-in file
+    if page_template_source is None:
+        page_template_source = read_page_template_source(page_tmpl.name)
+
     return {
         "recipe": recipe,
         "data": data,
-        "brand": brand,
         "title": rendered_title,
-        "page_template_include": page_tmpl.include,
+        "page_template_source": page_template_source,
         "metadata": resolved_metadata,
         "components": resolved_components,
         "sty_packages": sty_packages,

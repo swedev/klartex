@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Namnrollista Block",
+  "description": "Name/role/note table for board listings etc.",
+  "type": "object",
+  "required": ["type", "title", "people"],
+  "additionalProperties": false,
+  "properties": {
+    "type": { "type": "string", "const": "namnrollista" },
+    "title": { "type": "string", "description": "Table heading" },
+    "people": {
+      "type": "array",
+      "description": "People entries",
+      "items": {
+        "type": "object",
+        "required": ["name", "role"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "description": "Person name" },
+          "role": { "type": "string", "description": "Role or title" },
+          "note": { "type": "string", "description": "Additional note (e.g. term info)" }
+        }
+      },
+      "minItems": 1
+    }
+  }
+}

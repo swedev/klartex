@@ -1,0 +1,32 @@
+% klartex-dagordning.sty - Association agenda (dagordning) component
+% Provides §-numbered agenda items with optional discussion and decisions
+%
+% Usage: \usepackage{klartex-dagordning}
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{klartex-dagordning}[2026/02/22 Klartex Dagordning Component]
+
+% Dependencies
+\RequirePackage{enumitem}
+
+% Agenda numbering with § prefix
+\newcounter{dagordningcounter}
+
+\newlist{dagordning}{enumerate}{1}
+\setlist[dagordning]{
+    label=\textsection~\arabic{dagordningcounter},
+    ref=\textsection~\arabic{dagordningcounter},
+    leftmargin=1.4cm,
+    labelwidth=1.1cm,
+    labelsep=0.3cm,
+    itemindent=0pt,
+    align=left,
+    before=\setcounter{dagordningcounter}{0},
+    itemsep=12pt,
+    parsep=0pt,
+    topsep=12pt
+}
+
+\newcommand{\punkt}[1]{\stepcounter{dagordningcounter}\item \textbf{#1}}
+
+\endinput

@@ -38,7 +38,7 @@
         "page_template": {
           "type": "string",
           "default": "formal",
-          "description": "Page template to use. Can be a literal value (formal, clean, branded, none) or a Jinja expression (e.g. {{ data.page_template | default('formal') }}) resolved at render time."
+          "description": "Page template to use. Can be a literal value (formal, clean, none) or a Jinja expression (e.g. {{ data.page_template | default('formal') }}) resolved at render time."
         },
         "metadata": {
           "type": "array",

@@ -7,19 +7,9 @@ from pathlib import Path
 import pytest
 
 from klartex.block_engine import prepare_block_context, BLOCK_ENGINE_TEMPLATE
-from klartex.branding import Branding
-from klartex.page_templates import reset_cache
 
 FIXTURES = Path(__file__).parent / "fixtures"
 HAS_XELATEX = shutil.which("xelatex") is not None
-
-
-@pytest.fixture(autouse=True)
-def clear_cache():
-    """Reset caches before each test."""
-    reset_cache()
-    yield
-    reset_cache()
 
 
 class TestPrepareBlockContext:
@@ -31,36 +21,43 @@ class TestPrepareBlockContext:
             "lang": "sv",
             "body": [{"type": "heading", "text": "Test"}],
         }
-        ctx = prepare_block_context(data, Branding())
+        ctx = prepare_block_context(data)
         assert "body" in ctx
-        assert "brand" in ctx
         assert "lang" in ctx
-        assert "page_template_include" in ctx
+        assert "page_template_source" in ctx
         assert "doc_title" in ctx
 
     def test_missing_body_raises(self):
         with pytest.raises(ValueError, match="body"):
-            prepare_block_context({"page_template": "formal"}, Branding())
+            prepare_block_context({"page_template": "formal"})
 
     def test_default_page_template(self):
         data = {"body": [{"type": "heading", "text": "Test"}]}
-        ctx = prepare_block_context(data, Branding())
-        assert ctx["page_template_include"] == "_header_standard.jinja"
+        ctx = prepare_block_context(data)
+        # page_template_source is now the raw file content
+        assert "fancyhead" in ctx["page_template_source"] or "fancyfoot" in ctx["page_template_source"]
 
     def test_page_template_object(self):
         data = {
             "page_template": {"name": "clean", "page_numbers": False},
             "body": [{"type": "heading", "text": "Test"}],
         }
-        ctx = prepare_block_context(data, Branding())
-        assert ctx["page_template_include"] == "_header_minimal.jinja"
+        ctx = prepare_block_context(data)
+        assert isinstance(ctx["page_template_source"], str)
+        assert len(ctx["page_template_source"]) > 0
         assert ctx["page_template"].page_numbers is False
+
+    def test_caller_provided_source_overrides(self):
+        data = {"body": [{"type": "heading", "text": "Test"}]}
+        custom_source = "% custom page template"
+        ctx = prepare_block_context(data, page_template_source=custom_source)
+        assert ctx["page_template_source"] == custom_source
 
     def test_doc_title_from_heading(self):
         data = {
             "body": [{"type": "heading", "text": "My Document"}],
         }
-        ctx = prepare_block_context(data, Branding())
+        ctx = prepare_block_context(data)
         assert ctx["doc_title"] == "My Document"
 
     def test_doc_title_from_title_page(self):
@@ -70,17 +67,17 @@ class TestPrepareBlockContext:
                 {"type": "heading", "text": "Different"},
             ],
         }
-        ctx = prepare_block_context(data, Branding())
+        ctx = prepare_block_context(data)
         assert ctx["doc_title"] == "Agreement"
 
     def test_lang_defaults_to_sv(self):
         data = {"body": [{"type": "heading", "text": "Test"}]}
-        ctx = prepare_block_context(data, Branding())
+        ctx = prepare_block_context(data)
         assert ctx["lang"] == "sv"
 
     def test_lang_en(self):
         data = {"lang": "en", "body": [{"type": "heading", "text": "Test"}]}
-        ctx = prepare_block_context(data, Branding())
+        ctx = prepare_block_context(data)
         assert ctx["lang"] == "en"
 
 
@@ -246,6 +243,90 @@ class TestBlockEngineRendering:
         }
         pdf = render(BLOCK_ENGINE_TEMPLATE, data)
         assert pdf[:5] == b"%PDF-"
+
+
+    @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+    def test_dagordning_block(self):
+        """Dagordning block with discussion and decisions renders."""
+        from klartex.renderer import render
+
+        data = {
+            "body": [
+                {"type": "heading", "text": "Styrelsemöte"},
+                {
+                    "type": "dagordning",
+                    "items": [
+                        {"title": "Mötets öppnande"},
+                        {
+                            "title": "Val av justerare",
+                            "decision": "Anna och Erik valdes.",
+                        },
+                        {
+                            "title": "Ekonomisk rapport",
+                            "discussion": "Kassören presenterade rapporten.",
+                            "decision": "Styrelsen godkände rapporten.",
+                        },
+                        {"title": "Mötets avslutande"},
+                    ],
+                },
+            ],
+        }
+        pdf = render(BLOCK_ENGINE_TEMPLATE, data)
+        assert pdf[:5] == b"%PDF-"
+
+    @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+    def test_namnrollista_block(self):
+        """Namnrollista block renders a name/role table."""
+        from klartex.renderer import render
+
+        data = {
+            "body": [
+                {"type": "heading", "text": "Förening"},
+                {
+                    "type": "namnrollista",
+                    "title": "Styrelsen 2025/2026",
+                    "people": [
+                        {"name": "Anna Andersson", "role": "Ordförande", "note": "omval 2 år"},
+                        {"name": "Erik Eriksson", "role": "Kassör"},
+                    ],
+                },
+            ],
+        }
+        pdf = render(BLOCK_ENGINE_TEMPLATE, data)
+        assert pdf[:5] == b"%PDF-"
+
+    @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+    def test_dagordning_fixture(self):
+        """Full dagordning fixture with both block types renders."""
+        from klartex.renderer import render
+
+        data = json.loads((FIXTURES / "block_dagordning.json").read_text())
+        pdf = render(BLOCK_ENGINE_TEMPLATE, data)
+        assert pdf[:5] == b"%PDF-"
+
+    def test_invalid_dagordning_no_items_raises(self):
+        """Dagordning block without items should fail validation."""
+        from klartex.renderer import render
+
+        data = {
+            "body": [
+                {"type": "dagordning"},
+            ],
+        }
+        with pytest.raises(ValueError, match="Invalid 'dagordning' block"):
+            render(BLOCK_ENGINE_TEMPLATE, data)
+
+    def test_invalid_namnrollista_no_people_raises(self):
+        """Namnrollista block without people should fail validation."""
+        from klartex.renderer import render
+
+        data = {
+            "body": [
+                {"type": "namnrollista", "title": "Board"},
+            ],
+        }
+        with pytest.raises(ValueError, match="Invalid 'namnrollista' block"):
+            render(BLOCK_ENGINE_TEMPLATE, data)
 
 
 class TestRecipeTemplatesStillWork:

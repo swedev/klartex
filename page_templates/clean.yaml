@@ -1,6 +1,0 @@
-name: clean
-description: "Logo only in header, page numbers in footer, no org details"
-include: _header_minimal.jinja
-defaults:
-  page_numbers: true
-  first_page_header: true

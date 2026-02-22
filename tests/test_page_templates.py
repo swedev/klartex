@@ -6,16 +6,8 @@ from klartex.page_templates import (
     PageTemplate,
     list_page_templates,
     load_page_template,
-    reset_cache,
+    read_page_template_source,
 )
-
-
-@pytest.fixture(autouse=True)
-def clear_cache():
-    """Reset the page template cache before each test."""
-    reset_cache()
-    yield
-    reset_cache()
 
 
 class TestLoadPageTemplate:
@@ -24,23 +16,16 @@ class TestLoadPageTemplate:
     def test_load_formal(self):
         pt = load_page_template("formal")
         assert pt.name == "formal"
-        assert pt.include == "_header_standard.jinja"
         assert pt.page_numbers is True
 
     def test_load_clean(self):
         pt = load_page_template("clean")
         assert pt.name == "clean"
-        assert pt.include == "_header_minimal.jinja"
 
     def test_load_none(self):
         pt = load_page_template("none")
         assert pt.name == "none"
-        assert pt.include == "_header_none.jinja"
-
-    def test_load_branded(self):
-        pt = load_page_template("branded")
-        assert pt.name == "branded"
-        assert pt.include == "_header_standard.jinja"
+        assert pt.first_page_header is False
 
     def test_unknown_raises(self):
         with pytest.raises(ValueError, match="Unknown page template"):
@@ -76,6 +61,22 @@ class TestPageTemplateOverrides:
         assert pt.first_page_header is False
 
 
+class TestReadPageTemplateSource:
+    """Tests for reading page template file content."""
+
+    def test_read_formal(self):
+        source = read_page_template_source("formal")
+        assert "fancyhead" in source or "fancyfoot" in source
+
+    def test_read_clean(self):
+        source = read_page_template_source("clean")
+        assert len(source) > 0
+
+    def test_read_nonexistent_raises(self):
+        with pytest.raises(FileNotFoundError):
+            read_page_template_source("nonexistent")
+
+
 class TestListPageTemplates:
     """Tests for listing available page templates."""
 
@@ -84,8 +85,12 @@ class TestListPageTemplates:
         names = [t["name"] for t in templates]
         assert "formal" in names
         assert "clean" in names
-        assert "branded" in names
         assert "none" in names
+
+    def test_does_not_include_branded(self):
+        templates = list_page_templates()
+        names = [t["name"] for t in templates]
+        assert "branded" not in names
 
     def test_includes_description(self):
         templates = list_page_templates()

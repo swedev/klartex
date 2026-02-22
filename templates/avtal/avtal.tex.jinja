@@ -15,56 +15,93 @@
 
 \makedoctitle{\VAR{data.party1.name}}{\VAR{data.party2.name}}{\VAR{data.title}}
 
+%# --- Macro for rendering a party fieldset ---
+\BLOCK{macro render_party(party, label)}
+\fieldset{\VAR{label}}{%
+\textbf{\VAR{party.name}}\\[0.3em]
+\BLOCK{if party.org_number}
+Org.nr: \VAR{party.org_number}\\
+\BLOCK{endif}
+\BLOCK{if party.address_line1}
+\VAR{party.address_line1}\\
+\BLOCK{endif}
+\BLOCK{if party.address_line2}
+\VAR{party.address_line2}
+\BLOCK{endif}
+}
+\BLOCK{endmacro}
+
 \noindent
-\begin{minipage}[t]{0.45\textwidth}
-\textbf{\VAR{data.party1.name}}\\[0.3em]
-\BLOCK{if data.party1.org_number}
-Org.nr: \VAR{data.party1.org_number}\\
-\BLOCK{endif}
-\BLOCK{if data.party1.address_line1}
-\VAR{data.party1.address_line1}\\
-\BLOCK{endif}
-\BLOCK{if data.party1.address_line2}
-\VAR{data.party1.address_line2}
-\BLOCK{endif}
+\begin{minipage}[t]{0.48\textwidth}
+\VAR{render_party(data.party1, "Part 1")}
 \end{minipage}%
-\hfill
-\begin{minipage}[t]{0.45\textwidth}
-\textbf{\VAR{data.party2.name}}\\[0.3em]
-\BLOCK{if data.party2.org_number}
-Org.nr: \VAR{data.party2.org_number}\\
-\BLOCK{endif}
-\BLOCK{if data.party2.address_line1}
-\VAR{data.party2.address_line1}\\
-\BLOCK{endif}
-\BLOCK{if data.party2.address_line2}
-\VAR{data.party2.address_line2}
-\BLOCK{endif}
+\hspace{0.04\textwidth}%
+\begin{minipage}[t]{0.48\textwidth}
+\VAR{render_party(data.party2, "Part 2")}
 \end{minipage}
 
-\BLOCK{if data.preamble}
-\vspace{1.5em}
-\noindent \VAR{data.preamble}
+%# --- Recursive macro for clause items ---
+\BLOCK{macro render_items(item_list, list_type="numbered")}
+\BLOCK{if list_type == "bullet"}
+\begin{itemize}[leftmargin=1.2em, itemsep=0.2em, topsep=0.3em]
+\BLOCK{else}
+\begin{subclauses}
+\BLOCK{endif}
+\BLOCK{for item in item_list}
+\BLOCK{if item is string}
+\item \VAR{item}
+\BLOCK{else}
+\BLOCK{if item.get("title")}
+\item \textbf{\VAR{item.title}}
+\BLOCK{if item.get("text")}
+\\ \VAR{item.text}
+\BLOCK{endif}
+\BLOCK{else}
+\item \VAR{item.text}
+\BLOCK{endif}
+\VAR{render_items(item["items"], item.get("list", "numbered"))}
+\BLOCK{endif}
+\BLOCK{endfor}
+\BLOCK{if list_type == "bullet"}
+\end{itemize}
+\BLOCK{else}
+\end{subclauses}
+\BLOCK{endif}
+\BLOCK{endmacro}
+
+%# --- Body blocks ---
+\BLOCK{set clause_started = [false] }
+\BLOCK{for block in data.body}
+
+\BLOCK{if block.type == 'preamble' or block.type == 'text'}
+\BLOCK{if clause_started[0]}
+\end{clauses}
+\BLOCK{set _ = clause_started.__setitem__(0, false) }
 \BLOCK{endif}
 
 \vspace{1em}
+\noindent \VAR{block.text}
 
+\BLOCK{elif block.type == 'clause'}
+\BLOCK{if not clause_started[0]}
 \begin{clauses}
-\BLOCK{for clause in data.clauses}
-\clause{\VAR{clause.title}}
-\VAR{clause.body}
-\BLOCK{if clause.get('subclauses')}
-\begin{subclauses}
-\BLOCK{for sub in clause.subclauses}
-\item \VAR{sub}
-\BLOCK{endfor}
-\end{subclauses}
+\BLOCK{set _ = clause_started.__setitem__(0, true) }
+\BLOCK{endif}
+\clause{\VAR{block.title}}
+\VAR{render_items(block["items"])}
+
+\BLOCK{elif block.type == 'signatures'}
+\BLOCK{if clause_started[0]}
+\end{clauses}
+\BLOCK{set _ = clause_started.__setitem__(0, false) }
+\BLOCK{endif}
+\signatureblock{\VAR{data.party1.name}}{\VAR{data.party2.name}}{\VAR{data.party1.get('signatory', '')}}{\VAR{data.party2.get('signatory', '')}}
+
 \BLOCK{endif}
 \BLOCK{endfor}
-\end{clauses}
 
-\BLOCK{if data.get('signatures', true)}
-\signatureblock{\VAR{data.party1.name}}{\VAR{data.party2.name}}{\VAR{data.party1.get('signatory', '')}}{\VAR{data.party2.get('signatory', '')}}
+\BLOCK{if clause_started[0]}
+\end{clauses}
 \BLOCK{endif}
 
 \end{document}

@@ -27,20 +27,60 @@
     parsep=0pt,
     topsep=12pt
 }
-\newcommand{\clause}[1]{\stepcounter{clausecounter}\item \textbf{#1}\\}
+\newcommand{\clause}[1]{\stepcounter{clausecounter}\item \textbf{#1}}
 
-\newlist{subclauses}{enumerate}{1}
-\setlist[subclauses]{
+% Subclauses: single list with 4 nestable levels.
+% LaTeX tracks depth automatically — just nest \begin{subclauses} inside itself.
+\newlist{subclauses}{enumerate}{4}
+% leftmargin is cumulative (added to parent's indent), so each level only
+% needs enough for its own label + a small extra indent step (~0.3cm).
+%   Level 1: "3.1."         labelwidth=1.0cm
+%   Level 2: "3.1.2."       labelwidth=1.3cm  (+0.3cm indent)
+%   Level 3: "3.1.2.1."     labelwidth=1.6cm  (+0.3cm indent)
+%   Level 4: "3.1.2.1.3."   labelwidth=1.9cm  (+0.3cm indent)
+\setlist[subclauses,1]{
     label=\arabic{clausecounter}.\arabic*.,
     ref=\arabic{clausecounter}.\arabic*,
-    leftmargin=0pt,
-    labelwidth=0.76cm,
-    labelsep=0.24cm,
-    itemindent=0pt,
+    leftmargin=0.6cm,
+    labelwidth=1.0cm,
+    labelsep=0.1cm,
     align=left,
     itemsep=0.5em,
     parsep=0pt,
     topsep=0.5em
+}
+\setlist[subclauses,2]{
+    label=\arabic{clausecounter}.\arabic{subclausesi}.\arabic*.,
+    ref=\arabic{clausecounter}.\arabic{subclausesi}.\arabic*,
+    leftmargin=0.6cm,
+    labelwidth=1.3cm,
+    labelsep=0.1cm,
+    align=left,
+    itemsep=0.3em,
+    parsep=0pt,
+    topsep=0.3em
+}
+\setlist[subclauses,3]{
+    label=\arabic{clausecounter}.\arabic{subclausesi}.\arabic{subclausesii}.\arabic*.,
+    ref=\arabic{clausecounter}.\arabic{subclausesi}.\arabic{subclausesii}.\arabic*,
+    leftmargin=0.6cm,
+    labelwidth=1.6cm,
+    labelsep=0.1cm,
+    align=left,
+    itemsep=0.3em,
+    parsep=0pt,
+    topsep=0.3em
+}
+\setlist[subclauses,4]{
+    label=\arabic{clausecounter}.\arabic{subclausesi}.\arabic{subclausesii}.\arabic{subclausesiii}.\arabic*.,
+    ref=\arabic{clausecounter}.\arabic{subclausesi}.\arabic{subclausesii}.\arabic{subclausesiii}.\arabic*,
+    leftmargin=0.6cm,
+    labelwidth=1.9cm,
+    labelsep=0.1cm,
+    align=left,
+    itemsep=0.3em,
+    parsep=0pt,
+    topsep=0.3em
 }
 
 \endinput

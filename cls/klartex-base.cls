@@ -36,9 +36,9 @@
 \setstretch{1.3}
 
 % Prefer line breaks over tight word spacing
-\tolerance=2000
-\emergencystretch=2em
-\hbadness=2000
+\tolerance=800
+\emergencystretch=3em
+\hbadness=800
 
 % Font — no default override; fontspec uses Latin Modern automatically.
 % Branding can set a custom font via \setmainfont in the preamble.
@@ -117,6 +117,29 @@
     colorlinks=true,
     linkcolor=brandprimary,
     urlcolor=brandprimary,
+}
+
+% Fieldset-style box (like HTML <fieldset> with <legend>)
+% Usage: \fieldset{Label}{Content}
+\RequirePackage[most]{tcolorbox}
+\newcommand{\fieldset}[2]{%
+    \begin{tcolorbox}[
+        enhanced,
+        title={\small\textbf{#1}},
+        attach boxed title to top left={xshift=0.6em, yshift=-\tcboxedtitleheight/2},
+        boxed title style={colback=white, frame hidden, size=small},
+        colback=white,
+        colframe=black!20,
+        coltitle=black,
+        boxrule=0.4pt,
+        arc=4pt,
+        top=1.6em,
+        bottom=1.2em,
+        left=1.2em,
+        right=1.2em
+    ]
+    #2
+    \end{tcolorbox}%
 }
 
 % Load extracted components

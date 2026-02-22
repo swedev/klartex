@@ -38,6 +38,39 @@ class TestComponentRegistry:
         assert "heading" in components
         assert len(components) >= 5
 
+    def test_block_types_registered(self):
+        """Block engine block types should be registered."""
+        components = list_components()
+        for block_type in [
+            "heading", "text", "preamble", "title_page", "parties",
+            "clause", "signatures", "metadata_table", "attendees", "latex",
+        ]:
+            assert block_type in components, f"Missing block type: {block_type}"
+
+    def test_block_schema_loadable(self):
+        """Block types with schemas should load valid JSON."""
+        spec = get_component("heading")
+        schema = spec.get_block_schema()
+        assert schema is not None
+        assert schema["title"] == "Heading Block"
+
+    def test_clause_block_schema(self):
+        spec = get_component("clause")
+        schema = spec.get_block_schema()
+        assert schema is not None
+        assert "items" in schema["properties"]
+
+    def test_signatures_block_schema(self):
+        spec = get_component("signatures")
+        schema = spec.get_block_schema()
+        assert schema is not None
+        assert "parties" in schema["properties"]
+
+    def test_recipe_component_no_block_schema(self):
+        """Recipe-only components (klausuler, signaturblock) don't need block schemas."""
+        spec = get_component("klausuler")
+        assert spec.block_schema_path is None or spec.get_block_schema() is not None
+
 
 class TestResolveDataPath:
     """Tests for dot-notation data path resolution."""

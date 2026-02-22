@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Attendees Block",
+  "description": "Attendee and adjuster list",
+  "type": "object",
+  "required": ["type", "attendees"],
+  "additionalProperties": false,
+  "properties": {
+    "type": { "type": "string", "const": "attendees" },
+    "attendees": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "description": "List of attendee names"
+    },
+    "adjusters": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "List of adjuster names"
+    }
+  }
+}

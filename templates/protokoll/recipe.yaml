@@ -8,7 +8,7 @@ template:
 
 document:
   title: "{{ data.meeting_type }} -- {{ data.date }}"
-  header: "{{ data.header | default('standard') }}"
+  page_template: "{{ data.page_template | default('formal') }}"
   metadata:
     - label: "Datum:"
       field: date

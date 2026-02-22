@@ -20,6 +20,7 @@ from klartex.components import (
     extract_component_data,
     get_component,
 )
+from klartex.page_templates import load_page_template
 
 # Path to the recipe format schema
 _SCHEMA_PATH = Path(__file__).resolve().parent.parent / "schemas" / "recipe.schema.json"
@@ -51,7 +52,7 @@ class RecipeDocument:
     """Document-level settings from a recipe."""
 
     title: str = ""
-    header: str = "standard"
+    page_template: str = "formal"
     metadata: list[dict[str, Any]] = field(default_factory=list)
 
 
@@ -98,7 +99,7 @@ def load_recipe(path: Path) -> Recipe:
     doc_raw = raw.get("document", {})
     document = RecipeDocument(
         title=doc_raw.get("title", ""),
-        header=doc_raw.get("header", "standard"),
+        page_template=doc_raw.get("page_template", "formal"),
         metadata=doc_raw.get("metadata", []),
     )
 
@@ -163,12 +164,12 @@ def prepare_recipe_context(
     except jinja2.TemplateError:
         rendered_title = recipe.document.title
 
-    # Resolve header (may contain Jinja expression like {{ data.header | default('standard') }})
+    # Resolve page template (may contain Jinja expression like {{ data.page_template | default('formal') }})
     try:
-        header_template = title_env.from_string(recipe.document.header)
-        rendered_header = header_template.render(data=data)
+        pt_template = title_env.from_string(recipe.document.page_template)
+        rendered_page_template = pt_template.render(data=data)
     except jinja2.TemplateError:
-        rendered_header = recipe.document.header
+        rendered_page_template = recipe.document.page_template
 
     # Resolve metadata fields
     resolved_metadata = []
@@ -216,12 +217,15 @@ def prepare_recipe_context(
             sty_packages.append(comp.spec.sty_package)
             seen.add(comp.spec.sty_package)
 
+    # Resolve page template
+    page_tmpl = load_page_template(rendered_page_template)
+
     return {
         "recipe": recipe,
         "data": data,
         "brand": brand,
         "title": rendered_title,
-        "header": rendered_header,
+        "page_template_include": page_tmpl.include,
         "metadata": resolved_metadata,
         "components": resolved_components,
         "sty_packages": sty_packages,

@@ -12,7 +12,7 @@ Klartex takes JSON data + template name + optional branding and produces PDF via
 |----------|-------------|
 | `protokoll` | Meeting minutes with agenda, decisions, and adjusters |
 | `faktura` | Invoice with line items, VAT, and payment information |
-| `avtal` | Agreement with clauses, subclauses, and signatures |
+| `_block` | Universal block engine — the agent composes the document freely |
 
 ## Installation
 
@@ -92,34 +92,14 @@ Then use `--branding myorg` or `"branding": "myorg"` in API calls.
 
 Klartex uses a three-layer architecture:
 
-1. **Document level** -- `klartex-base.cls` handles page setup, branding, headers/footers
-2. **Component level** -- Reusable `.sty` packages providing structured LaTeX macros (e.g. `klartex-signaturblock.sty`, `klartex-klausuler.sty`, `klartex-titelsida.sty`)
-3. **Recipe level** -- YAML files that declare which components and content fields to combine
+1. **Document level** — `klartex-base.cls` handles page setup, branding, headers/footers
+2. **Component level** — Reusable `.sty` packages providing structured LaTeX macros (e.g. `klartex-signaturblock.sty`, `klartex-klausuler.sty`, `klartex-titelsida.sty`)
+3. **Recipe level** — YAML files that declare which components and content fields to combine
 
-Existing monolithic `.tex.jinja` templates continue to work unchanged. New templates can be defined as YAML recipes instead of writing full LaTeX/Jinja files.
+### Rendering paths
 
-### Rendering Engine
-
-The `engine` parameter controls which rendering path is used:
-
-- `auto` (default): Uses `.tex.jinja` if it exists, otherwise `recipe.yaml`
-- `legacy`: Forces `.tex.jinja` path
-- `recipe`: Forces `recipe.yaml` path
-
-```bash
-# CLI
-klartex render --template protokoll --data data.json --engine recipe
-
-# API
-curl -X POST http://localhost:8000/render \
-  -H "Content-Type: application/json" \
-  -d '{"template": "protokoll", "data": {...}, "engine": "recipe"}'
-```
-
-```python
-# Python
-pdf_bytes = render("protokoll", data, engine="recipe")
-```
+- **Recipe templates** (`protokoll`, `faktura`, `avtal`) — YAML recipes declaring components and data mappings
+- **Block engine** (`_block`) — The agent composes `body[]` freely from typed blocks
 
 ### Creating a YAML Recipe Template
 
@@ -133,7 +113,7 @@ template:
 
 document:
   title: "{{ data.title }}"
-  header: standard
+  page_template: formal
   metadata:
     - label: "Date:"
       field: date
@@ -149,7 +129,7 @@ components:
 schema: schema.json
 ```
 
-Available components: `heading`, `metadata_table`, `attendees`, `klausuler`, `signaturblock`, `titelsida`, `adjuster_signatures`.
+Available components: `heading`, `metadata_table`, `attendees`, `klausuler`, `signaturblock`, `titelsida`, `adjuster_signatures`, `invoice_header`, `invoice_recipient`, `invoice_table`, `payment_info`, `invoice_note`.
 
 ## License
 

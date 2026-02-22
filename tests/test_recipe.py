@@ -35,7 +35,7 @@ class TestLoadRecipe:
 
     def test_recipe_document_section(self):
         recipe = load_recipe(TEMPLATES_DIR / "protokoll" / "recipe.yaml")
-        assert "standard" in recipe.document.header
+        assert "formal" in recipe.document.page_template
         assert len(recipe.document.metadata) > 0
 
     def test_recipe_component_specs_resolved(self):
@@ -137,7 +137,7 @@ class TestRecipeEscaping:
 
         data = json.loads((FIXTURES / "protokoll.json").read_text())
         data["agenda_items"][0]["discussion"] = "Budget: 50% of $1000 for A & B"
-        pdf_bytes = render("protokoll", data, engine="recipe")
+        pdf_bytes = render("protokoll", data)
         assert pdf_bytes[:5] == b"%PDF-"
 
     @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
@@ -147,7 +147,7 @@ class TestRecipeEscaping:
 
         data = json.loads((FIXTURES / "protokoll.json").read_text())
         data["agenda_items"][0]["title"] = r"\input{/etc/passwd}"
-        pdf_bytes = render("protokoll", data, engine="recipe")
+        pdf_bytes = render("protokoll", data)
         assert pdf_bytes[:5] == b"%PDF-"
 
     @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
@@ -157,5 +157,5 @@ class TestRecipeEscaping:
 
         data = json.loads((FIXTURES / "protokoll.json").read_text())
         data["attendees"][0] = "Name {with} braces"
-        pdf_bytes = render("protokoll", data, engine="recipe")
+        pdf_bytes = render("protokoll", data)
         assert pdf_bytes[:5] == b"%PDF-"

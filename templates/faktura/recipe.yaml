@@ -1,0 +1,42 @@
+# Faktura (Invoice) — recipe definition
+
+template:
+  name: faktura
+  description: "Faktura / Invoice"
+  lang: sv
+
+document:
+  title: "Faktura {{ data.invoice_number }}"
+  page_template: "{{ data.page_template | default('formal') }}"
+
+components:
+  - type: invoice_header
+    data_map:
+      invoice_number: invoice_number
+      date: date
+      due_date: due_date
+
+  - type: invoice_recipient
+    data_map:
+      recipient: recipient
+      reference: reference
+      our_reference: our_reference
+      payment_terms: payment_terms
+
+  - type: invoice_table
+    data_map:
+      lines: lines
+      currency: currency
+
+  - type: payment_info
+    data_map:
+      bankgiro: bankgiro
+      plusgiro: plusgiro
+      iban: iban
+      bic: bic
+
+  - type: invoice_note
+    data_map:
+      note: note
+
+schema: schema.json

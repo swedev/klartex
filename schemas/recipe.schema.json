@@ -35,10 +35,10 @@
           "type": "string",
           "description": "Jinja expression for the document title (rendered with data context)"
         },
-        "header": {
+        "page_template": {
           "type": "string",
-          "default": "standard",
-          "description": "Header layout to use. Can be a literal value (standard, minimal, none) or a Jinja expression (e.g. {{ data.header | default('standard') }}) resolved at render time."
+          "default": "formal",
+          "description": "Page template to use. Can be a literal value (formal, clean, branded, none) or a Jinja expression (e.g. {{ data.page_template | default('formal') }}) resolved at render time."
         },
         "metadata": {
           "type": "array",

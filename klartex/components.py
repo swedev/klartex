@@ -2,12 +2,17 @@
 
 Each component defines:
 - sty_package: The .sty package to load (or None if no extra package needed)
-- latex_macro: The primary LaTeX macro/environment name
-- extract_data: Function to extract relevant data from the template data dict
+- block_schema_path: Path to the JSON Schema file for this block type
+- description: Human-readable description
 """
 
+import json
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
+
+# Path to block schema files
+_SCHEMAS_DIR = Path(__file__).resolve().parent.parent / "schemas" / "blocks"
 
 
 @dataclass
@@ -17,6 +22,16 @@ class ComponentSpec:
     name: str
     sty_package: str | None = None
     description: str = ""
+    block_schema_path: str | None = None
+
+    def get_block_schema(self) -> dict | None:
+        """Load and return the JSON Schema for this block type, or None."""
+        if not self.block_schema_path:
+            return None
+        path = _SCHEMAS_DIR / self.block_schema_path
+        if not path.exists():
+            return None
+        return json.loads(path.read_text())
 
 
 # Registry of known component types
@@ -24,37 +39,108 @@ _COMPONENTS: dict[str, ComponentSpec] = {
     "heading": ComponentSpec(
         name="heading",
         sty_package=None,
-        description="Centered heading with optional subtitle",
+        description="Large bold heading text",
+        block_schema_path="heading.schema.json",
+    ),
+    "text": ComponentSpec(
+        name="text",
+        sty_package=None,
+        description="Free-form text paragraph (also known as preamble)",
+        block_schema_path="text.schema.json",
+    ),
+    "preamble": ComponentSpec(
+        name="preamble",
+        sty_package=None,
+        description="Introductory text paragraph (alias for text)",
+        block_schema_path="text.schema.json",
+    ),
+    "title_page": ComponentSpec(
+        name="title_page",
+        sty_package="klartex-titelsida",
+        description="Full-page title with party names and document title",
+        block_schema_path="title_page.schema.json",
+    ),
+    "parties": ComponentSpec(
+        name="parties",
+        sty_package=None,
+        description="Side-by-side display of two contract parties",
+        block_schema_path="parties.schema.json",
+    ),
+    "clause": ComponentSpec(
+        name="clause",
+        sty_package="klartex-klausuler",
+        description="Numbered legal clause with title and items",
+        block_schema_path="clause.schema.json",
+    ),
+    "signatures": ComponentSpec(
+        name="signatures",
+        sty_package="klartex-signaturblock",
+        description="Signature block for parties",
+        block_schema_path="signatures.schema.json",
     ),
     "metadata_table": ComponentSpec(
         name="metadata_table",
         sty_package=None,
         description="Key-value metadata table (date, location, etc.)",
+        block_schema_path="metadata_table.schema.json",
     ),
     "attendees": ComponentSpec(
         name="attendees",
         sty_package=None,
         description="Attendee and adjuster list",
+        block_schema_path="attendees.schema.json",
     ),
+    "latex": ComponentSpec(
+        name="latex",
+        sty_package=None,
+        description="Raw LaTeX passthrough (not escaped)",
+        block_schema_path="latex.schema.json",
+    ),
+    # Legacy recipe component names (used by _recipe_base.tex.jinja)
     "klausuler": ComponentSpec(
         name="klausuler",
         sty_package="klartex-klausuler",
-        description="Legal clause numbering with \\clause command",
+        description="Legal clause numbering with \\clause command (recipe component)",
     ),
     "signaturblock": ComponentSpec(
         name="signaturblock",
         sty_package="klartex-signaturblock",
-        description="Two-party signature block",
+        description="Two-party signature block (recipe component)",
     ),
     "titelsida": ComponentSpec(
         name="titelsida",
         sty_package="klartex-titelsida",
-        description="Title page with two party names and document title",
+        description="Title page with two party names and document title (recipe component)",
     ),
     "adjuster_signatures": ComponentSpec(
         name="adjuster_signatures",
         sty_package="klartex-signaturblock",
         description="Adjuster signature lines (for protokoll)",
+    ),
+    "invoice_header": ComponentSpec(
+        name="invoice_header",
+        sty_package=None,
+        description="Right-aligned invoice header with number, date, due date",
+    ),
+    "invoice_recipient": ComponentSpec(
+        name="invoice_recipient",
+        sty_package=None,
+        description="Recipient info and references in two columns",
+    ),
+    "invoice_table": ComponentSpec(
+        name="invoice_table",
+        sty_package=None,
+        description="Invoice line items table with VAT and totals",
+    ),
+    "payment_info": ComponentSpec(
+        name="payment_info",
+        sty_package=None,
+        description="Payment method table (bankgiro, IBAN, etc.)",
+    ),
+    "invoice_note": ComponentSpec(
+        name="invoice_note",
+        sty_package=None,
+        description="Optional invoice footer note",
     ),
 }
 

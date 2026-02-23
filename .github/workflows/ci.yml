@@ -16,31 +16,29 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    container: texlive/texlive:latest-minimal
     timeout-minutes: 10
 
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
+      - name: Install TeX packages
+        run: tlmgr install xetex fontspec fancyhdr geometry xcolor titlesec enumitem
+          lastpage hyperref parskip setspace etoolbox booktabs tabularx collection-fontsrecommended
 
-      - name: Install TeX Live
+      - name: Install Python
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            texlive-xetex texlive-fonts-recommended texlive-latex-extra \
-            texlive-latex-recommended
-
-      - name: Verify xelatex
-        run: which xelatex && xelatex --version
+          apt-get update
+          apt-get install -y --no-install-recommends python3 python3-pip python3-venv
 
       - name: Install project
-        run: pip install .[dev]
+        run: |
+          python3 -m venv /opt/venv
+          /opt/venv/bin/pip install .[dev]
 
       - name: Run tests
         run: |
-          pytest -v --tb=short 2>&1 | tee test-output.txt
+          /opt/venv/bin/pytest -v --tb=short 2>&1 | tee test-output.txt
 
       - name: Verify no xelatex skips
         run: |

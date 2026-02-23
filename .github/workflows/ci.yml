@@ -16,18 +16,11 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    container: texlive/texlive:latest-minimal
+    container: texlive/texlive:latest
     timeout-minutes: 10
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install TeX packages
-        run: tlmgr install xetex fontspec fancyhdr geometry xcolor titlesec enumitem
-          lastpage hyperref parskip setspace etoolbox booktabs tabularx collection-fontsrecommended || true
-
-      - name: Verify xelatex
-        run: xelatex --version
 
       - name: Install project
         run: |

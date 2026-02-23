@@ -24,7 +24,10 @@ jobs:
 
       - name: Install TeX packages
         run: tlmgr install xetex fontspec fancyhdr geometry xcolor titlesec enumitem
-          lastpage hyperref parskip setspace etoolbox booktabs tabularx collection-fontsrecommended
+          lastpage hyperref parskip setspace etoolbox booktabs tabularx collection-fontsrecommended || true
+
+      - name: Verify xelatex
+        run: xelatex --version
 
       - name: Install Python
         run: |

@@ -29,19 +29,15 @@ jobs:
       - name: Verify xelatex
         run: xelatex --version
 
-      - name: Install Python
-        run: |
-          apt-get update
-          apt-get install -y --no-install-recommends python3 python3-pip python3-venv
-
       - name: Install project
         run: |
-          python3 -m venv /opt/venv
-          /opt/venv/bin/pip install .[dev]
+          apt-get update
+          apt-get install -y --no-install-recommends python3 python3-pip
+          pip install --break-system-packages .[dev]
 
       - name: Run tests
         run: |
-          /opt/venv/bin/pytest -v --tb=short 2>&1 | tee test-output.txt
+          pytest -v --tb=short 2>&1 | tee test-output.txt
 
       - name: Verify no xelatex skips
         run: |

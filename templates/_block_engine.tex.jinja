@@ -49,13 +49,13 @@ Personnr: \VAR{party.id_number}\\
 %# --- Recursive macro for clause items ---
 \BLOCK{macro render_items(item_list, list_type="numbered")}
 \BLOCK{if list_type == "bullet"}
-\begin{itemize}[leftmargin=1.2em, itemsep=0.2em, topsep=0.3em]
+\begin{itemize}[leftmargin=1.2em, itemsep=0.5em, topsep=0.3em]
 \BLOCK{else}
 \begin{subclauses}
 \BLOCK{endif}
 \BLOCK{for item in item_list}
 \BLOCK{if item is string}
-\item \VAR{item}
+\item {\interlinepenalty=10000 \VAR{item}\par}
 \BLOCK{else}
 \BLOCK{if item.get("title")}
 \item \textbf{\VAR{item.title}}
@@ -134,15 +134,18 @@ Personnr: \VAR{party.id_number}\\
 \VAR{render_items(block["items"])}
 \BLOCK{endif}
 
+\BLOCK{elif block.type == 'page_break'}
+\clearpage
+
 \BLOCK{elif block.type == 'signatures'}
 \BLOCK{if clause_started[0]}
 \end{clauses}
 \BLOCK{set _ = clause_started.__setitem__(0, false) }
 \BLOCK{endif}
 \BLOCK{if block.get("new_page", true)}
-\signatureblock{\VAR{block.parties[0].name}}{\VAR{block.parties[1].name}}{\VAR{block.parties[0].get('signatory', '')}}{\VAR{block.parties[1].get('signatory', '')}}
+\signatureblock{\VAR{block.parties[0].name}}{\VAR{block.parties[1].name}}{\VAR{block.parties[0].get('signatory', block.parties[0].name)}}{\VAR{block.parties[1].get('signatory', block.parties[1].name)}}{\VAR{block.parties[0].get('title', '')}}{\VAR{block.parties[1].get('title', '')}}
 \BLOCK{else}
-\signatureblock*{\VAR{block.parties[0].name}}{\VAR{block.parties[1].name}}{\VAR{block.parties[0].get('signatory', '')}}{\VAR{block.parties[1].get('signatory', '')}}
+\signatureblock*{\VAR{block.parties[0].name}}{\VAR{block.parties[1].name}}{\VAR{block.parties[0].get('signatory', block.parties[0].name)}}{\VAR{block.parties[1].get('signatory', block.parties[1].name)}}{\VAR{block.parties[0].get('title', '')}}{\VAR{block.parties[1].get('title', '')}}
 \BLOCK{endif}
 
 \BLOCK{elif block.type == 'metadata_table'}
@@ -169,7 +172,7 @@ Personnr: \VAR{party.id_number}\\
 \BLOCK{endif}
 \vspace{1em}
 
-\BLOCK{elif block.type == 'dagordning'}
+\BLOCK{elif block.type == 'agenda'}
 \BLOCK{if clause_started[0]}
 \end{clauses}
 \BLOCK{set _ = clause_started.__setitem__(0, false) }
@@ -188,7 +191,7 @@ Personnr: \VAR{party.id_number}\\
 \BLOCK{endfor}
 \end{dagordning}
 
-\BLOCK{elif block.type == 'namnrollista'}
+\BLOCK{elif block.type == 'name_roster'}
 \BLOCK{if clause_started[0]}
 \end{clauses}
 \BLOCK{set _ = clause_started.__setitem__(0, false) }

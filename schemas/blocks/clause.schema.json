@@ -1,5 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://klartex.se/schemas/blocks/clause/v0.1",
   "title": "Clause Block",
   "description": "Numbered legal clause with title and items",
   "type": "object",

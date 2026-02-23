@@ -69,7 +69,7 @@
 \end{clauses}
 
 \BLOCK{elif comp.type == 'signaturblock'}
-\signatureblock{\VAR{comp.data.get('party1_name', '')}}{\VAR{comp.data.get('party2_name', '')}}{\VAR{comp.data.get('party1_signatory', '')}}{\VAR{comp.data.get('party2_signatory', '')}}
+\signatureblock{\VAR{comp.data.get('party1_name', '')}}{\VAR{comp.data.get('party2_name', '')}}{\VAR{comp.data.get('party1_signatory', comp.data.get('party1_name', ''))}}{\VAR{comp.data.get('party2_signatory', comp.data.get('party2_name', ''))}}{\VAR{comp.data.get('party1_title', '')}}{\VAR{comp.data.get('party2_title', '')}}
 
 \BLOCK{elif comp.type == 'titelsida'}
 \makedoctitle{\VAR{comp.data.get('party1', '')}}{\VAR{comp.data.get('party2', '')}}{\VAR{comp.data.get('title', '')}}

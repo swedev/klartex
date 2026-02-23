@@ -1,5 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://klartex.se/schemas/blocks/attendees/v0.1",
   "title": "Attendees Block",
   "description": "Attendee and adjuster list",
   "type": "object",

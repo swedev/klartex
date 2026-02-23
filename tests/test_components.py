@@ -44,7 +44,7 @@ class TestComponentRegistry:
         for block_type in [
             "heading", "text", "preamble", "title_page", "parties",
             "clause", "signatures", "metadata_table", "attendees", "latex",
-            "dagordning", "namnrollista",
+            "agenda", "name_roster",
         ]:
             assert block_type in components, f"Missing block type: {block_type}"
 
@@ -67,26 +67,26 @@ class TestComponentRegistry:
         assert schema is not None
         assert "parties" in schema["properties"]
 
-    def test_dagordning_block_schema(self):
-        spec = get_component("dagordning")
+    def test_agenda_block_schema(self):
+        spec = get_component("agenda")
         schema = spec.get_block_schema()
         assert schema is not None
-        assert schema["title"] == "Dagordning Block"
+        assert schema["title"] == "Agenda Block"
         assert "items" in schema["properties"]
 
-    def test_namnrollista_block_schema(self):
-        spec = get_component("namnrollista")
+    def test_name_roster_block_schema(self):
+        spec = get_component("name_roster")
         schema = spec.get_block_schema()
         assert schema is not None
-        assert schema["title"] == "Namnrollista Block"
+        assert schema["title"] == "Name Roster Block"
         assert "people" in schema["properties"]
 
-    def test_dagordning_component_sty(self):
-        spec = get_component("dagordning")
+    def test_agenda_component_sty(self):
+        spec = get_component("agenda")
         assert spec.sty_package == "klartex-dagordning"
 
-    def test_namnrollista_component_sty(self):
-        spec = get_component("namnrollista")
+    def test_name_roster_component_sty(self):
+        spec = get_component("name_roster")
         assert spec.sty_package == "klartex-namnrollista"
 
     def test_recipe_component_no_block_schema(self):

@@ -1,12 +1,13 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Dagordning Block",
+  "$id": "https://klartex.se/schemas/blocks/agenda/v0.1",
+  "title": "Agenda Block",
   "description": "§-numbered agenda with optional discussion and decisions",
   "type": "object",
   "required": ["type", "items"],
   "additionalProperties": false,
   "properties": {
-    "type": { "type": "string", "const": "dagordning" },
+    "type": { "type": "string", "const": "agenda" },
     "items": {
       "type": "array",
       "description": "Agenda items",

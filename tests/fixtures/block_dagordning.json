@@ -15,7 +15,7 @@
       "adjusters": ["Anna Andersson", "Erik Eriksson"]
     },
     {
-      "type": "dagordning",
+      "type": "agenda",
       "items": [
         {"title": "Mötets öppnande"},
         {"title": "Val av justerare", "decision": "Anna Andersson och Erik Eriksson valdes till justerare."},
@@ -30,7 +30,7 @@
       ]
     },
     {
-      "type": "namnrollista",
+      "type": "name_roster",
       "title": "Styrelsen 2025/2026",
       "people": [
         {"name": "Anna Andersson", "role": "Ordförande", "note": "omval 2 år"},

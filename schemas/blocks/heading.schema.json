@@ -1,5 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://klartex.se/schemas/blocks/heading/v0.1",
   "title": "Heading Block",
   "description": "Large bold heading text",
   "type": "object",

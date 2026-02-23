@@ -246,15 +246,15 @@ class TestBlockEngineRendering:
 
 
     @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
-    def test_dagordning_block(self):
-        """Dagordning block with discussion and decisions renders."""
+    def test_agenda_block(self):
+        """Agenda block with discussion and decisions renders."""
         from klartex.renderer import render
 
         data = {
             "body": [
                 {"type": "heading", "text": "Styrelsemöte"},
                 {
-                    "type": "dagordning",
+                    "type": "agenda",
                     "items": [
                         {"title": "Mötets öppnande"},
                         {
@@ -275,15 +275,15 @@ class TestBlockEngineRendering:
         assert pdf[:5] == b"%PDF-"
 
     @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
-    def test_namnrollista_block(self):
-        """Namnrollista block renders a name/role table."""
+    def test_name_roster_block(self):
+        """Name roster block renders a name/role table."""
         from klartex.renderer import render
 
         data = {
             "body": [
                 {"type": "heading", "text": "Förening"},
                 {
-                    "type": "namnrollista",
+                    "type": "name_roster",
                     "title": "Styrelsen 2025/2026",
                     "people": [
                         {"name": "Anna Andersson", "role": "Ordförande", "note": "omval 2 år"},
@@ -296,36 +296,36 @@ class TestBlockEngineRendering:
         assert pdf[:5] == b"%PDF-"
 
     @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
-    def test_dagordning_fixture(self):
-        """Full dagordning fixture with both block types renders."""
+    def test_agenda_fixture(self):
+        """Full agenda fixture with both block types renders."""
         from klartex.renderer import render
 
         data = json.loads((FIXTURES / "block_dagordning.json").read_text())
         pdf = render(BLOCK_ENGINE_TEMPLATE, data)
         assert pdf[:5] == b"%PDF-"
 
-    def test_invalid_dagordning_no_items_raises(self):
-        """Dagordning block without items should fail validation."""
+    def test_invalid_agenda_no_items_raises(self):
+        """Agenda block without items should fail validation."""
         from klartex.renderer import render
 
         data = {
             "body": [
-                {"type": "dagordning"},
+                {"type": "agenda"},
             ],
         }
-        with pytest.raises(ValueError, match="Invalid 'dagordning' block"):
+        with pytest.raises(ValueError, match="Invalid 'agenda' block"):
             render(BLOCK_ENGINE_TEMPLATE, data)
 
-    def test_invalid_namnrollista_no_people_raises(self):
-        """Namnrollista block without people should fail validation."""
+    def test_invalid_name_roster_no_people_raises(self):
+        """Name roster block without people should fail validation."""
         from klartex.renderer import render
 
         data = {
             "body": [
-                {"type": "namnrollista", "title": "Board"},
+                {"type": "name_roster", "title": "Board"},
             ],
         }
-        with pytest.raises(ValueError, match="Invalid 'namnrollista' block"):
+        with pytest.raises(ValueError, match="Invalid 'name_roster' block"):
             render(BLOCK_ENGINE_TEMPLATE, data)
 
 

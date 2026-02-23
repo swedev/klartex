@@ -1,5 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://klartex.se/schemas/blocks/signatures/v0.1",
   "title": "Signatures Block",
   "description": "Signature block for exactly two parties",
   "type": "object",
@@ -16,7 +17,8 @@
         "required": ["name"],
         "properties": {
           "name": { "type": "string", "description": "Party/company name" },
-          "signatory": { "type": "string", "description": "Name of person signing" }
+          "signatory": { "type": "string", "description": "Name of person signing (defaults to name if omitted)" },
+          "title": { "type": "string", "description": "Signatory title, e.g. 'Verkställande Direktör, Acme AB'" }
         }
       },
       "minItems": 2,

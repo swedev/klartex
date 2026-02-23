@@ -90,17 +90,23 @@ _COMPONENTS: dict[str, ComponentSpec] = {
         description="Attendee and adjuster list",
         block_schema_path="attendees.schema.json",
     ),
-    "dagordning": ComponentSpec(
-        name="dagordning",
+    "agenda": ComponentSpec(
+        name="agenda",
         sty_package="klartex-dagordning",
         description="§-numbered agenda with optional discussion and decisions",
-        block_schema_path="dagordning.schema.json",
+        block_schema_path="agenda.schema.json",
     ),
-    "namnrollista": ComponentSpec(
-        name="namnrollista",
+    "name_roster": ComponentSpec(
+        name="name_roster",
         sty_package="klartex-namnrollista",
         description="Name/role/note table for board listings",
-        block_schema_path="namnrollista.schema.json",
+        block_schema_path="name_roster.schema.json",
+    ),
+    "page_break": ComponentSpec(
+        name="page_break",
+        sty_package=None,
+        description="Force a page break",
+        block_schema_path="page_break.schema.json",
     ),
     "latex": ComponentSpec(
         name="latex",

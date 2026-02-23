@@ -1,5 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://klartex.se/schemas/recipe/v0.1",
   "title": "Klartex Recipe",
   "description": "Schema for YAML recipe files that define composable document templates",
   "type": "object",

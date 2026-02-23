@@ -57,7 +57,7 @@ def prepare_block_context(
         raise ValueError("Block engine data must include a 'body' array")
 
     # Resolve page template
-    page_template_spec = data.get("page_template", "formal")
+    page_template_spec = data.get("page_template", "none")
     page_tmpl = load_page_template(page_template_spec)
 
     # Read template source: caller-provided or built-in file

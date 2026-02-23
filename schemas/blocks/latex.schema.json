@@ -1,5 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://klartex.se/schemas/blocks/latex/v0.1",
   "title": "LaTeX Block",
   "description": "Raw LaTeX passthrough (not escaped)",
   "type": "object",

@@ -21,19 +21,30 @@
 % Dotted line for signatures
 \providecommand{\dottedline}[1][6cm]{\makebox[#1]{\dotfill}}
 
+% Helper: print signatory name + title under the line, but skip name if same as party name
+% Args: #1=party name, #2=signatory name, #3=title
+\newcommand{\kx@signatory@line}[3]{%
+    \def\kx@tmp@party{#1}\def\kx@tmp@sig{#2}%
+    \ifx\kx@tmp@party\kx@tmp@sig
+        \ifx\relax#3\relax\else{\small #3}\fi
+    \else
+        #2\ifx\relax#3\relax\else\\{\small #3}\fi
+    \fi
+}
+
 % Signature block (language-aware)
-% Args: *=no page break, #1=Party1 name, #2=Party2 name, #3=Party1 signatory, #4=Party2 signatory
+% Args: *=no page break, #1=Party1 name, #2=Party2 name, #3=Party1 signatory, #4=Party2 signatory, #5=Party1 title, #6=Party2 title
 \makeatletter
 \providecommand{\signatureblock}{\@ifstar{\signatureblock@nobreak}{\signatureblock@break}}
-\newcommand{\signatureblock@break}[4]{\clearpage\signatureblock@body{#1}{#2}{#3}{#4}}
-\newcommand{\signatureblock@nobreak}[4]{\vspace{1.5cm}\signatureblock@body{#1}{#2}{#3}{#4}}
-\newcommand{\signatureblock@body}[4]{%
+\newcommand{\signatureblock@break}[6]{\clearpage\signatureblock@body{#1}{#2}{#3}{#4}{#5}{#6}}
+\newcommand{\signatureblock@nobreak}[6]{\vspace{1.5cm}\signatureblock@body{#1}{#2}{#3}{#4}{#5}{#6}}
+\newcommand{\signatureblock@body}[6]{%
     \section*{\kx@signatures}
     \addcontentsline{toc}{section}{\kx@signatures}
 
     \kx@sigintro
 
-    \vspace{1.5cm}
+    \vspace{0.75cm}
 
     \noindent
     \begin{minipage}[t]{0.45\textwidth}
@@ -42,7 +53,7 @@
         \dottedline\\[0.5cm]
         \kx@signature\\[1cm]
         \dottedline\\[0.3cm]
-        #3
+        \kx@signatory@line{#1}{#3}{#5}
     \end{minipage}%
     \hfill
     \begin{minipage}[t]{0.45\textwidth}
@@ -51,7 +62,7 @@
         \dottedline\\[0.5cm]
         \kx@signature\\[1cm]
         \dottedline\\[0.3cm]
-        #4
+        \kx@signatory@line{#2}{#4}{#6}
     \end{minipage}
 }
 \makeatother

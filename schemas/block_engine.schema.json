@@ -1,5 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://klartex.se/schemas/block-engine/v0.1",
   "title": "Block Engine Document",
   "description": "Universal block-based document format. The agent composes body[] freely from typed blocks.",
   "type": "object",

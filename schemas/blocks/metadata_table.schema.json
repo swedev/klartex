@@ -1,5 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://klartex.se/schemas/blocks/metadata-table/v0.1",
   "title": "Metadata Table Block",
   "description": "Key-value metadata table (date, location, etc.)",
   "type": "object",

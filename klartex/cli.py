@@ -17,7 +17,7 @@ def main(
     ctx: typer.Context,
     data: Optional[Path] = typer.Option(None, "--data", "-d", help="Path to JSON data file (or omit for stdin)"),
     template: str = typer.Option("_block", "--template", "-t", help="Template name"),
-    output: Path = typer.Option("output.pdf", "--output", "-o", help="Output PDF path"),
+    output: Optional[Path] = typer.Option(None, "--output", "-o", help="Output PDF path (defaults to input filename with .pdf)"),
     page_template: Optional[str] = typer.Option(
         None,
         "--page-template",
@@ -48,6 +48,10 @@ def main(
             typer.echo(f"Error: page template file not found: {page_template}", err=True)
             raise typer.Exit(1)
         page_template_source = pt_path.read_text()
+
+    # Default output filename: same as input but with .pdf extension
+    if output is None:
+        output = Path(data.stem + ".pdf") if data is not None else Path("output.pdf")
 
     raw = json.loads(raw_text)
     try:

@@ -1,12 +1,13 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Namnrollista Block",
+  "$id": "https://klartex.se/schemas/blocks/name_roster/v0.1",
+  "title": "Name Roster Block",
   "description": "Name/role/note table for board listings etc.",
   "type": "object",
   "required": ["type", "title", "people"],
   "additionalProperties": false,
   "properties": {
-    "type": { "type": "string", "const": "namnrollista" },
+    "type": { "type": "string", "const": "name_roster" },
     "title": { "type": "string", "description": "Table heading" },
     "people": {
       "type": "array",

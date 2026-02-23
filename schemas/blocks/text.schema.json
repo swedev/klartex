@@ -1,5 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://klartex.se/schemas/blocks/text/v0.1",
   "title": "Text Block",
   "description": "Free-form text paragraph (also known as preamble)",
   "type": "object",

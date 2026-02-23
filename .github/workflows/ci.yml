@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install TeX Live
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            texlive-xetex texlive-fonts-recommended texlive-latex-extra \
+            texlive-latex-recommended
+
+      - name: Install project
+        run: pip install --break-system-packages .[dev]
+
+      - name: Run tests
+        run: |
+          pytest -v --tb=short 2>&1 | tee test-output.txt
+
+      - name: Verify no xelatex skips
+        run: |
+          ! grep -q "SKIPPED.*xelatex" test-output.txt

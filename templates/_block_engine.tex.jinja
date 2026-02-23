@@ -202,6 +202,24 @@ Personnr: \VAR{party.id_number}\\
 \BLOCK{endfor}
 }
 
+\BLOCK{elif block.type == 'adjuster_signatures'}
+\BLOCK{if clause_started[0]}
+\end{clauses}
+\BLOCK{set _ = clause_started.__setitem__(0, false) }
+\BLOCK{endif}
+\BLOCK{if block.get('adjusters')}
+\vspace{2cm}
+\noindent
+\BLOCK{set adj_label = block.get('label', 'Justerare') }
+\BLOCK{for adjuster in block.adjusters}
+\begin{minipage}[t]{0.45\textwidth}
+\VAR{adj_label}\\[1cm]
+\dottedline\\[0.3cm]
+\VAR{adjuster}
+\end{minipage}\BLOCK{if not loop.last}\hfill\BLOCK{endif}
+\BLOCK{endfor}
+\BLOCK{endif}
+
 \BLOCK{elif block.type == 'latex'}
 \BLOCK{if clause_started[0]}
 \end{clauses}

@@ -329,6 +329,79 @@ class TestBlockEngineRendering:
             render(BLOCK_ENGINE_TEMPLATE, data)
 
 
+class TestSignaturesFeatures:
+    """Tests for signatures signatory/title fallback and adjuster_signatures."""
+
+    @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+    def test_signatures_signatory_defaults_to_name(self):
+        """Signatures without explicit signatory should fall back to party name."""
+        from klartex.renderer import render
+
+        data = {
+            "body": [
+                {"type": "heading", "text": "Test"},
+                {
+                    "type": "signatures",
+                    "parties": [
+                        {"name": "Acme AB"},
+                        {"name": "Beta Corp"},
+                    ],
+                },
+            ],
+        }
+        pdf = render(BLOCK_ENGINE_TEMPLATE, data)
+        assert pdf[:5] == b"%PDF-"
+
+    @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+    def test_signatures_with_title_renders(self):
+        """Signatures with title field should render valid PDF."""
+        from klartex.renderer import render
+
+        data = {
+            "body": [
+                {"type": "heading", "text": "Test"},
+                {
+                    "type": "signatures",
+                    "parties": [
+                        {"name": "Acme AB", "signatory": "Anna Svensson", "title": "VD, Acme AB"},
+                        {"name": "Beta Corp", "signatory": "Erik Johansson", "title": "Styrelseordförande"},
+                    ],
+                },
+            ],
+        }
+        pdf = render(BLOCK_ENGINE_TEMPLATE, data)
+        assert pdf[:5] == b"%PDF-"
+
+    @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+    def test_adjuster_signatures_renders(self):
+        """Adjuster signatures block should render valid PDF."""
+        from klartex.renderer import render
+
+        data = {
+            "body": [
+                {"type": "heading", "text": "Protokoll"},
+                {
+                    "type": "adjuster_signatures",
+                    "adjusters": ["Anna Andersson", "Erik Eriksson"],
+                },
+            ],
+        }
+        pdf = render(BLOCK_ENGINE_TEMPLATE, data)
+        assert pdf[:5] == b"%PDF-"
+
+    def test_adjuster_signatures_missing_adjusters_raises(self):
+        """Adjuster signatures without adjusters should fail schema validation."""
+        from klartex.renderer import render
+
+        data = {
+            "body": [
+                {"type": "adjuster_signatures"},
+            ],
+        }
+        with pytest.raises(ValueError, match="Invalid 'adjuster_signatures' block"):
+            render(BLOCK_ENGINE_TEMPLATE, data)
+
+
 class TestRecipeTemplatesStillWork:
     """Ensure recipe templates are unaffected by block engine changes."""
 

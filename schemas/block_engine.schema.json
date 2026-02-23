@@ -24,7 +24,7 @@
           "additionalProperties": false
         }
       ],
-      "default": "formal"
+      "default": "none"
     },
     "lang": {
       "type": "string",

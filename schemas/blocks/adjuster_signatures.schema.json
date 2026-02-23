@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://klartex.se/schemas/blocks/adjuster-signatures/v0.1",
+  "title": "Adjuster Signatures Block",
+  "description": "Signature lines for adjusters (justerare)",
+  "type": "object",
+  "required": ["type", "adjusters"],
+  "additionalProperties": false,
+  "properties": {
+    "type": { "type": "string", "const": "adjuster_signatures" },
+    "adjusters": {
+      "type": "array",
+      "description": "Names of adjusters",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "label": {
+      "type": "string",
+      "default": "Justerare",
+      "description": "Label above each signature line"
+    }
+  }
+}

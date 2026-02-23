@@ -134,6 +134,7 @@ _COMPONENTS: dict[str, ComponentSpec] = {
         name="adjuster_signatures",
         sty_package="klartex-signaturblock",
         description="Adjuster signature lines (for protokoll)",
+        block_schema_path="adjuster_signatures.schema.json",
     ),
     "invoice_header": ComponentSpec(
         name="invoice_header",

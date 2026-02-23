@@ -11,3 +11,7 @@
     \kx@page\ \thepage\ \kx@of\ \pageref{LastPage}%
 }
 \makeatother
+\ifdefempty{\brandlogo}{%
+  \geometry{top=2cm, headheight=0pt, headsep=0pt, includehead=false}%
+  \fancyhead{}%
+}{}

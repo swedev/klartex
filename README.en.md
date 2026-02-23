@@ -4,6 +4,8 @@
 
 PDF generation via LaTeX — structured data in, professional documents out.
 
+[klartex.se](https://klartex.se) · [PyPI](https://pypi.org/project/klartex/) · [GitHub](https://github.com/swedev/klartex)
+
 Klartex takes JSON data + template name and produces PDF via XeLaTeX. Can be used as a Python library, CLI tool, or HTTP service.
 
 ## Templates
@@ -17,6 +19,10 @@ Klartex takes JSON data + template name and produces PDF via XeLaTeX. Can be use
 ## Installation
 
 ```bash
+# As a global CLI tool
+pipx install klartex
+
+# Or inside a project
 pip install klartex
 ```
 

@@ -1,6 +1,7 @@
 """Core rendering pipeline: JSON data -> .tex -> PDF."""
 
 import json
+import shutil
 import subprocess
 import tempfile
 from pathlib import Path
@@ -143,6 +144,12 @@ def _render_recipe(
 
 def _compile_tex(tex_source: str) -> bytes:
     """Compile LaTeX source to PDF bytes."""
+    if not shutil.which("xelatex"):
+        raise RuntimeError(
+            "xelatex not found. Install TeX Live:\n"
+            "  macOS:  brew install --cask mactex\n"
+            "  Ubuntu: apt install texlive-xetex"
+        )
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp = Path(tmpdir)
 

@@ -17,7 +17,7 @@ class TemplateInfo:
 
 
 # Path to block engine schema
-_SCHEMAS_DIR = Path(__file__).resolve().parent.parent / "schemas"
+_SCHEMAS_DIR = Path(__file__).resolve().parent / "schemas"
 
 
 def discover_templates(templates_dir: Path) -> dict[str, TemplateInfo]:

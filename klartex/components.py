@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 # Path to block schema files
-_SCHEMAS_DIR = Path(__file__).resolve().parent.parent / "schemas" / "blocks"
+_SCHEMAS_DIR = Path(__file__).resolve().parent / "schemas" / "blocks"
 
 
 @dataclass

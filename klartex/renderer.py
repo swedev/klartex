@@ -13,7 +13,7 @@ from klartex.tex_escape import escape_data
 from klartex.block_engine import BLOCK_ENGINE_TEMPLATE
 
 # Paths relative to this package
-_ROOT = Path(__file__).resolve().parent.parent
+_ROOT = Path(__file__).resolve().parent
 TEMPLATES_DIR = _ROOT / "templates"
 CLS_DIR = _ROOT / "cls"
 

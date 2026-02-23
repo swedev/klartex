@@ -22,7 +22,7 @@ from klartex.components import (
 from klartex.page_templates import load_page_template, read_page_template_source
 
 # Path to the recipe format schema
-_SCHEMA_PATH = Path(__file__).resolve().parent.parent / "schemas" / "recipe.schema.json"
+_SCHEMA_PATH = Path(__file__).resolve().parent / "schemas" / "recipe.schema.json"
 _recipe_schema: dict | None = None
 
 

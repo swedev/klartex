@@ -23,7 +23,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 # Default directory for page template definitions
-_ROOT = Path(__file__).resolve().parent.parent
+_ROOT = Path(__file__).resolve().parent
 PAGE_TEMPLATES_DIR = _ROOT / "page_templates"
 
 # Built-in template defaults

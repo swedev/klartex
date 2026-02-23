@@ -10,8 +10,8 @@ import jsonschema
 from klartex.recipe import load_recipe, prepare_recipe_context, Recipe
 
 FIXTURES = Path(__file__).parent / "fixtures"
-TEMPLATES_DIR = Path(__file__).parent.parent / "templates"
-SCHEMAS_DIR = Path(__file__).parent.parent / "schemas"
+TEMPLATES_DIR = Path(__file__).parent.parent / "klartex" / "templates"
+SCHEMAS_DIR = Path(__file__).parent.parent / "klartex" / "schemas"
 
 HAS_XELATEX = shutil.which("xelatex") is not None
 

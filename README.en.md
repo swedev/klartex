@@ -10,9 +10,9 @@ Klartex takes JSON data + template name and produces PDF via XeLaTeX. Can be use
 
 | Template | Description |
 |----------|-------------|
+| `_block` | Universal block engine — the agent composes the document freely |
 | `protokoll` | Meeting minutes with agenda, decisions, and adjusters |
 | `faktura` | Invoice with line items, VAT, and payment information |
-| `_block` | Universal block engine — the agent composes the document freely |
 
 ## Installation
 
@@ -20,7 +20,7 @@ Klartex takes JSON data + template name and produces PDF via XeLaTeX. Can be use
 pip install klartex
 ```
 
-Requires XeLaTeX (`brew install --cask mactex` or `apt install texlive-xetex`).
+Requires Python ≥ 3.12 and XeLaTeX (`brew install --cask mactex` or `apt install texlive-xetex`).
 
 ## Usage
 
@@ -120,17 +120,17 @@ Then use `--page-template myorg.tex.jinja` in CLI or `"page_template_source": ".
 Klartex uses a three-layer architecture:
 
 1. **Document level** — `klartex-base.cls` handles page setup and basic headers/footers. Page templates (`.tex.jinja`) are injected into the preamble and control colors, logos, and layout.
-2. **Component level** — Reusable `.sty` packages providing structured LaTeX macros (e.g. `klartex-signaturblock.sty`, `klartex-klausuler.sty`, `klartex-titelsida.sty`)
+2. **Component level** — Reusable `.sty` packages providing structured LaTeX macros (e.g. `klartex-signaturblock.sty`, `klartex-klausuler.sty`, `klartex-agenda.sty`)
 3. **Recipe level** — YAML files that declare which components and content fields to combine
 
 ### Rendering paths
 
-- **Recipe templates** (`protokoll`, `faktura`, `avtal`) — YAML recipes declaring components and data mappings
+- **Recipe templates** (`protokoll`, `faktura`) — YAML recipes declaring components and data mappings
 - **Block engine** (`_block`) — The agent composes `body[]` freely from typed blocks
 
 ### Creating a YAML Recipe Template
 
-Create a `recipe.yaml` in the template directory (e.g. `templates/my-template/recipe.yaml`):
+Create a `recipe.yaml` in the template directory (e.g. `klartex/templates/my-template/recipe.yaml`):
 
 ```yaml
 template:
@@ -156,7 +156,9 @@ components:
 schema: schema.json
 ```
 
-Available components: `heading`, `metadata_table`, `attendees`, `klausuler`, `signaturblock`, `titelsida`, `adjuster_signatures`, `invoice_header`, `invoice_recipient`, `invoice_table`, `payment_info`, `invoice_note`.
+Available recipe components: `heading`, `metadata_table`, `attendees`, `klausuler`, `signaturblock`, `titelsida`, `adjuster_signatures`, `invoice_header`, `invoice_recipient`, `invoice_table`, `payment_info`, `invoice_note`.
+
+Block engine blocks: `heading`, `text`, `title_page`, `parties`, `clause`, `signatures`, `metadata_table`, `attendees`, `agenda`, `name_roster`, `adjuster_signatures`, `page_break`, `latex`.
 
 ## License
 

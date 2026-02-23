@@ -83,11 +83,11 @@ class TestComponentRegistry:
 
     def test_agenda_component_sty(self):
         spec = get_component("agenda")
-        assert spec.sty_package == "klartex-dagordning"
+        assert spec.sty_package == "klartex-agenda"
 
     def test_name_roster_component_sty(self):
         spec = get_component("name_roster")
-        assert spec.sty_package == "klartex-namnrollista"
+        assert spec.sty_package == "klartex-name-roster"
 
     def test_recipe_component_no_block_schema(self):
         """Recipe-only components (klausuler, signaturblock) don't need block schemas."""

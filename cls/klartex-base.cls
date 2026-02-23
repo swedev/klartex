@@ -140,7 +140,7 @@
 \RequirePackage{klartex-klausuler}
 \RequirePackage{klartex-titelsida}
 \RequirePackage{klartex-signaturblock}
-\RequirePackage{klartex-dagordning}
-\RequirePackage{klartex-namnrollista}
+\RequirePackage{klartex-agenda}
+\RequirePackage{klartex-name-roster}
 
 \endinput

@@ -92,13 +92,13 @@ _COMPONENTS: dict[str, ComponentSpec] = {
     ),
     "agenda": ComponentSpec(
         name="agenda",
-        sty_package="klartex-dagordning",
+        sty_package="klartex-agenda",
         description="§-numbered agenda with optional discussion and decisions",
         block_schema_path="agenda.schema.json",
     ),
     "name_roster": ComponentSpec(
         name="name_roster",
-        sty_package="klartex-namnrollista",
+        sty_package="klartex-name-roster",
         description="Name/role/note table for board listings",
         block_schema_path="name_roster.schema.json",
     ),

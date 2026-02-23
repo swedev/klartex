@@ -16,17 +16,20 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    container: texlive/texlive:latest
     timeout-minutes: 10
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install project
+      - name: Install TeX Live
         run: |
-          apt-get update
-          apt-get install -y --no-install-recommends python3 python3-pip
-          pip install --break-system-packages .[dev]
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            texlive-xetex texlive-fonts-recommended texlive-latex-extra \
+            texlive-latex-recommended
+
+      - name: Install project
+        run: pip install --break-system-packages .[dev]
 
       - name: Run tests
         run: |

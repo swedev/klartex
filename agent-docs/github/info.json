@@ -1,5 +1,7 @@
 {
   "owner": "swedev",
   "name": "klartex",
-  "primary_branch": "main"
+  "default_branch": "main",
+  "pr_base_branch": "main",
+  "release_branch": "main"
 }

@@ -71,8 +71,9 @@ def render(
 
     template_info = registry[template_name]
 
-    # Validate data against schema
-    jsonschema.validate(data, template_info.schema)
+    # Validate data against schema (use validation_schema to avoid oneOf noise;
+    # per-block validation below gives better error messages)
+    jsonschema.validate(data, template_info.get_validation_schema())
 
     # Validate block types and payloads before escaping (escaping mangles underscores)
     if template_info.is_block_engine:

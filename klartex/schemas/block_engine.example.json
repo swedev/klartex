@@ -1,0 +1,103 @@
+{
+  "lang": "sv",
+  "page_template": "formal",
+  "body": [
+    {
+      "type": "title_page",
+      "party1": "Företaget AB",
+      "party2": "Kunden AB",
+      "title": "Exempeldokument"
+    },
+    {
+      "type": "heading",
+      "text": "Exempeldokument",
+      "level": 1
+    },
+    {
+      "type": "metadata_table",
+      "entries": [
+        { "label": "Datum:", "value": "2026-01-15" },
+        { "label": "Plats:", "value": "Stockholm" }
+      ]
+    },
+    {
+      "type": "text",
+      "text": "Detta är ett exempeldokument som visar alla tillgängliga blocktyper i klartex blockmotor."
+    },
+    {
+      "type": "parties",
+      "party1": {
+        "name": "Företaget AB",
+        "org_number": "556123-4567",
+        "address_line1": "Storgatan 1",
+        "address_line2": "111 22 Stockholm",
+        "signatory": "Anna Andersson, VD"
+      },
+      "party2": {
+        "name": "Kunden AB",
+        "org_number": "556987-6543",
+        "address_line1": "Lillgatan 5",
+        "address_line2": "333 44 Göteborg",
+        "signatory": "Erik Eriksson, VD"
+      }
+    },
+    {
+      "type": "clause",
+      "title": "Uppdrag",
+      "items": [
+        "Företaget åtar sig att leverera de tjänster som specificeras i detta avtal.",
+        {
+          "title": "Leveransvillkor",
+          "items": [
+            "Leverans sker inom 30 dagar.",
+            "Kvalitetskontroll ingår."
+          ]
+        }
+      ]
+    },
+    {
+      "type": "attendees",
+      "attendees": ["Anna Andersson", "Erik Eriksson", "Maria Johansson"],
+      "adjusters": ["Anna Andersson", "Erik Eriksson"]
+    },
+    {
+      "type": "agenda",
+      "items": [
+        { "title": "Mötets öppnande" },
+        { "title": "Genomgång av budget", "discussion": "Budgeten granskades.", "decision": "Budgeten godkändes." }
+      ]
+    },
+    {
+      "type": "name_roster",
+      "title": "Styrelseledamöter",
+      "people": [
+        { "name": "Anna Andersson", "role": "Ordförande" },
+        { "name": "Erik Eriksson", "role": "Ledamot", "note": "Invald 2025" }
+      ]
+    },
+    {
+      "type": "adjuster_signatures",
+      "adjusters": ["Anna Andersson", "Erik Eriksson"]
+    },
+    {
+      "type": "page_break"
+    },
+    {
+      "type": "heading",
+      "text": "Bilaga",
+      "level": 2
+    },
+    {
+      "type": "latex",
+      "source": "\\begin{center}\\textit{Denna bilaga är avsiktligt tom.}\\end{center}"
+    },
+    {
+      "type": "signatures",
+      "new_page": false,
+      "parties": [
+        { "name": "Företaget AB", "signatory": "Anna Andersson", "title": "VD" },
+        { "name": "Kunden AB", "signatory": "Erik Eriksson", "title": "VD" }
+      ]
+    }
+  ]
+}

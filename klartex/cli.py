@@ -85,6 +85,39 @@ def show_schema(
     typer.echo(json.dumps(registry[template].schema, indent=2, ensure_ascii=False))
 
 
+@app.command("blocks")
+def list_blocks():
+    """List available block types for the block engine."""
+    from klartex.components import _COMPONENTS
+
+    for name, spec in sorted(_COMPONENTS.items()):
+        if spec.block_schema_path:
+            typer.echo(f"  {name:25s} {spec.description}")
+
+
+@app.command("example")
+def show_example(
+    template: str = typer.Argument(help="Template name"),
+):
+    """Print an example JSON input for a template."""
+    registry = get_registry()
+    if template not in registry:
+        typer.echo(f"Error: unknown template '{template}'", err=True)
+        raise typer.Exit(1)
+    info = registry[template]
+
+    # Look for example file
+    if info.is_block_engine:
+        example_path = Path(__file__).resolve().parent / "schemas" / "block_engine.example.json"
+    else:
+        example_path = Path(__file__).resolve().parent / "templates" / template / "example.json"
+
+    if not example_path.exists():
+        typer.echo(f"Error: no example available for '{template}'", err=True)
+        raise typer.Exit(1)
+    typer.echo(example_path.read_text().rstrip())
+
+
 @app.command("serve")
 def serve(
     host: str = typer.Option("0.0.0.0", "--host", "-h"),

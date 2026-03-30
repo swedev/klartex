@@ -402,6 +402,67 @@ class TestSignaturesFeatures:
             render(BLOCK_ENGINE_TEMPLATE, data)
 
 
+class TestFinancialComponents:
+    """Tests for resultatrakning, budgettabell, and notapparat block types."""
+
+    @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+    def test_resultatrakning_renders(self):
+        from klartex.renderer import render
+
+        data = json.loads((FIXTURES / "block_resultatrakning.json").read_text())
+        pdf = render(BLOCK_ENGINE_TEMPLATE, data)
+        assert pdf[:5] == b"%PDF-"
+
+    @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+    def test_budgettabell_renders(self):
+        from klartex.renderer import render
+
+        data = json.loads((FIXTURES / "block_budgettabell.json").read_text())
+        pdf = render(BLOCK_ENGINE_TEMPLATE, data)
+        assert pdf[:5] == b"%PDF-"
+
+    @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+    def test_notapparat_renders(self):
+        from klartex.renderer import render
+
+        data = json.loads((FIXTURES / "block_notapparat.json").read_text())
+        pdf = render(BLOCK_ENGINE_TEMPLATE, data)
+        assert pdf[:5] == b"%PDF-"
+
+    def test_resultatrakning_missing_grupper_raises(self):
+        from klartex.renderer import render
+
+        data = {
+            "body": [
+                {"type": "resultatrakning", "rubrik_ar1": "2025", "rubrik_ar2": "2024"},
+            ],
+        }
+        with pytest.raises(ValueError, match="Invalid 'resultatrakning' block"):
+            render(BLOCK_ENGINE_TEMPLATE, data)
+
+    def test_budgettabell_missing_poster_raises(self):
+        from klartex.renderer import render
+
+        data = {
+            "body": [
+                {"type": "budgettabell", "rubrik_budget": "B", "rubrik_ar1": "Y1", "rubrik_ar2": "Y2"},
+            ],
+        }
+        with pytest.raises(ValueError, match="Invalid 'budgettabell' block"):
+            render(BLOCK_ENGINE_TEMPLATE, data)
+
+    def test_notapparat_missing_noter_raises(self):
+        from klartex.renderer import render
+
+        data = {
+            "body": [
+                {"type": "notapparat"},
+            ],
+        }
+        with pytest.raises(ValueError, match="Invalid 'notapparat' block"):
+            render(BLOCK_ENGINE_TEMPLATE, data)
+
+
 class TestRecipeTemplatesStillWork:
     """Ensure recipe templates are unaffected by block engine changes."""
 

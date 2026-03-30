@@ -89,6 +89,39 @@ class TestComponentRegistry:
         spec = get_component("name_roster")
         assert spec.sty_package == "klartex-name-roster"
 
+    def test_resultatrakning_block_schema(self):
+        spec = get_component("resultatrakning")
+        schema = spec.get_block_schema()
+        assert schema is not None
+        assert schema["title"] == "Resultaträkning Block"
+        assert "grupper" in schema["properties"]
+
+    def test_budgettabell_block_schema(self):
+        spec = get_component("budgettabell")
+        schema = spec.get_block_schema()
+        assert schema is not None
+        assert schema["title"] == "Budgettabell Block"
+        assert "poster" in schema["properties"]
+
+    def test_notapparat_block_schema(self):
+        spec = get_component("notapparat")
+        schema = spec.get_block_schema()
+        assert schema is not None
+        assert schema["title"] == "Notapparat Block"
+        assert "noter" in schema["properties"]
+
+    def test_resultatrakning_component_sty(self):
+        spec = get_component("resultatrakning")
+        assert spec.sty_package == "klartex-resultatrakning"
+
+    def test_budgettabell_component_sty(self):
+        spec = get_component("budgettabell")
+        assert spec.sty_package == "klartex-budgettabell"
+
+    def test_notapparat_component_sty(self):
+        spec = get_component("notapparat")
+        assert spec.sty_package == "klartex-notapparat"
+
     def test_recipe_component_no_block_schema(self):
         """Recipe-only components (klausuler, signaturblock) don't need block schemas."""
         spec = get_component("klausuler")

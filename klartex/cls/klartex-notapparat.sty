@@ -1,0 +1,22 @@
+% klartex-notapparat.sty - Numbered notes for financial documents
+% Provides numbered footnotes linked to financial tables by convention
+%
+% Usage: \usepackage{klartex-notapparat}
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{klartex-notapparat}[2026/03/29 Klartex Notapparat]
+
+% Begin notapparat environment (auto-inserts "Noter" heading)
+\newenvironment{notapparat}{%
+  \section*{Noter}
+  \begin{description}
+}{%
+  \end{description}%
+}
+
+% Note entry: \notentry{number}{text}
+\newcommand{\notentry}[2]{%
+  \item[\textsuperscript{#1}] #2%
+}
+
+\endinput

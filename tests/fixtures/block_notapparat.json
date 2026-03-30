@@ -1,0 +1,18 @@
+{
+  "lang": "sv",
+  "page_template": "none",
+  "body": [
+    {
+      "type": "heading",
+      "text": "Noter"
+    },
+    {
+      "type": "notapparat",
+      "noter": [
+        { "notnr": 1, "text": "Medlemsavgifterna höjdes med 50 kr/år från och med 2025." },
+        { "notnr": 2, "text": "Bidrag från kommunen för underhåll av gemensamma ytor." },
+        { "notnr": 3, "text": "Lokalhyran inkluderar el och vatten." }
+      ]
+    }
+  ]
+}

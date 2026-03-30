@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://klartex.se/schemas/blocks/resultatrakning/v0.1",
+  "title": "Resultaträkning Block",
+  "description": "Financial table with comparison years, grouped rows, subtotals, and note references",
+  "type": "object",
+  "required": ["type", "rubrik_ar1", "rubrik_ar2", "grupper"],
+  "additionalProperties": false,
+  "properties": {
+    "type": { "type": "string", "const": "resultatrakning" },
+    "rubrik_ar1": { "type": "string", "description": "Column header for year 1 (e.g. '2025')" },
+    "rubrik_ar2": { "type": "string", "description": "Column header for year 2 (e.g. '2024')" },
+    "grupper": {
+      "type": "array",
+      "description": "Financial groups with rows and subtotals",
+      "items": {
+        "type": "object",
+        "required": ["rubrik", "poster", "summa"],
+        "additionalProperties": false,
+        "properties": {
+          "rubrik": { "type": "string", "description": "Group heading (e.g. 'Intäkter')" },
+          "poster": {
+            "type": "array",
+            "description": "Line items in the group",
+            "items": {
+              "type": "object",
+              "required": ["post", "belopp_ar1", "belopp_ar2"],
+              "additionalProperties": false,
+              "properties": {
+                "post": { "type": "string", "description": "Line item name" },
+                "belopp_ar1": { "type": "number", "description": "Amount year 1" },
+                "belopp_ar2": { "type": "number", "description": "Amount year 2" },
+                "notref": { "type": "integer", "description": "Note reference number (optional)" }
+              }
+            },
+            "minItems": 1
+          },
+          "summa": {
+            "type": "object",
+            "required": ["label", "belopp_ar1", "belopp_ar2"],
+            "additionalProperties": false,
+            "properties": {
+              "label": { "type": "string", "description": "Subtotal label" },
+              "belopp_ar1": { "type": "number" },
+              "belopp_ar2": { "type": "number" }
+            }
+          }
+        }
+      },
+      "minItems": 1
+    },
+    "resultat": {
+      "type": "object",
+      "description": "Final result row (e.g. 'Årets resultat')",
+      "required": ["label", "belopp_ar1", "belopp_ar2"],
+      "additionalProperties": false,
+      "properties": {
+        "label": { "type": "string" },
+        "belopp_ar1": { "type": "number" },
+        "belopp_ar2": { "type": "number" }
+      }
+    }
+  }
+}

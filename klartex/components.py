@@ -114,6 +114,24 @@ _COMPONENTS: dict[str, ComponentSpec] = {
         description="Raw LaTeX passthrough (not escaped)",
         block_schema_path="latex.schema.json",
     ),
+    "resultatrakning": ComponentSpec(
+        name="resultatrakning",
+        sty_package="klartex-resultatrakning",
+        description="Financial table with comparison years, grouped rows, subtotals, and note references",
+        block_schema_path="resultatrakning.schema.json",
+    ),
+    "budgettabell": ComponentSpec(
+        name="budgettabell",
+        sty_package="klartex-budgettabell",
+        description="Budget table with account codes, budgeted amounts, actuals, and percentages",
+        block_schema_path="budgettabell.schema.json",
+    ),
+    "notapparat": ComponentSpec(
+        name="notapparat",
+        sty_package="klartex-notapparat",
+        description="Numbered notes linked to financial tables",
+        block_schema_path="notapparat.schema.json",
+    ),
     # Legacy recipe component names (used by _recipe_base.tex.jinja)
     "klausuler": ComponentSpec(
         name="klausuler",

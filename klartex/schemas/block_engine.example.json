@@ -80,6 +80,37 @@
       "adjusters": ["Anna Andersson", "Erik Eriksson"]
     },
     {
+      "type": "resultatrakning",
+      "rubrik_ar1": "2025",
+      "rubrik_ar2": "2024",
+      "grupper": [
+        {
+          "rubrik": "Intäkter",
+          "poster": [
+            { "post": "Medlemsavgifter", "belopp_ar1": 45000, "belopp_ar2": 42000, "notref": 1 },
+            { "post": "Bidrag", "belopp_ar1": 10000, "belopp_ar2": 8000 }
+          ],
+          "summa": { "label": "Summa intäkter", "belopp_ar1": 55000, "belopp_ar2": 50000 }
+        }
+      ],
+      "resultat": { "label": "Årets resultat", "belopp_ar1": 55000, "belopp_ar2": 50000 }
+    },
+    {
+      "type": "budgettabell",
+      "rubrik_budget": "Budget 2026",
+      "rubrik_ar1": "Utfall 2025",
+      "rubrik_ar2": "Utfall 2024",
+      "poster": [
+        { "post": "Medlemsavgifter", "budget": 50000, "utfall_ar1": 45000, "utfall_ar2": 42000, "konto": "3010", "procent": 107 }
+      ]
+    },
+    {
+      "type": "notapparat",
+      "noter": [
+        { "notnr": 1, "text": "Medlemsavgifterna höjdes med 50 kr/år från 2025." }
+      ]
+    },
+    {
       "type": "page_break"
     },
     {

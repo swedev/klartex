@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://klartex.se/schemas/blocks/notapparat/v0.1",
+  "title": "Notapparat Block",
+  "description": "Numbered notes linked to financial tables",
+  "type": "object",
+  "required": ["type", "noter"],
+  "additionalProperties": false,
+  "properties": {
+    "type": { "type": "string", "const": "notapparat" },
+    "noter": {
+      "type": "array",
+      "description": "Numbered notes",
+      "items": {
+        "type": "object",
+        "required": ["notnr", "text"],
+        "additionalProperties": false,
+        "properties": {
+          "notnr": { "type": "integer", "description": "Note number" },
+          "text": { "type": "string", "description": "Note text" }
+        }
+      },
+      "minItems": 1
+    }
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "lang": "sv",
+  "page_template": "formal",
+  "body": [
+    {
+      "type": "heading",
+      "text": "Resultaträkning"
+    },
+    {
+      "type": "resultatrakning",
+      "rubrik_ar1": "2025",
+      "rubrik_ar2": "2024",
+      "grupper": [
+        {
+          "rubrik": "Intäkter",
+          "poster": [
+            { "post": "Medlemsavgifter", "belopp_ar1": 45000, "belopp_ar2": 42000, "notref": 1 },
+            { "post": "Bidrag och anslag", "belopp_ar1": 15000, "belopp_ar2": 12000, "notref": 2 },
+            { "post": "Övriga intäkter", "belopp_ar1": 3500, "belopp_ar2": 2800 }
+          ],
+          "summa": { "label": "Summa intäkter", "belopp_ar1": 63500, "belopp_ar2": 56800 }
+        },
+        {
+          "rubrik": "Kostnader",
+          "poster": [
+            { "post": "Lokalhyra", "belopp_ar1": -24000, "belopp_ar2": -22000 },
+            { "post": "Försäkringar", "belopp_ar1": -8500, "belopp_ar2": -7800 },
+            { "post": "Övriga kostnader", "belopp_ar1": -5200, "belopp_ar2": -4600 }
+          ],
+          "summa": { "label": "Summa kostnader", "belopp_ar1": -37700, "belopp_ar2": -34400 }
+        }
+      ],
+      "resultat": { "label": "Årets resultat", "belopp_ar1": 25800, "belopp_ar2": 22400 }
+    },
+    {
+      "type": "notapparat",
+      "noter": [
+        { "notnr": 1, "text": "Medlemsavgifterna höjdes med 50 kr/år från och med 2025." },
+        { "notnr": 2, "text": "Bidrag från kommunen för underhåll av gemensamma ytor." }
+      ]
+    }
+  ]
+}

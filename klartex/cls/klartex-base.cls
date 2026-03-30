@@ -142,5 +142,9 @@
 \RequirePackage{klartex-signaturblock}
 \RequirePackage{klartex-agenda}
 \RequirePackage{klartex-name-roster}
+\RequirePackage{klartex-numformat}
+\RequirePackage{klartex-resultatrakning}
+\RequirePackage{klartex-budgettabell}
+\RequirePackage{klartex-notapparat}
 
 \endinput

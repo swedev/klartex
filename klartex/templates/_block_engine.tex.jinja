@@ -220,6 +220,46 @@ Personnr: \VAR{party.id_number}\\
 \BLOCK{endfor}
 \BLOCK{endif}
 
+\BLOCK{elif block.type == 'resultatrakning'}
+\BLOCK{if clause_started[0]}
+\end{clauses}
+\BLOCK{set _ = clause_started.__setitem__(0, false) }
+\BLOCK{endif}
+\begin{resultatrakning}{\VAR{block.rubrik_ar1}}{\VAR{block.rubrik_ar2}}
+\BLOCK{for grupp in block.grupper}
+\rrgrupp{\VAR{grupp.rubrik}}
+\BLOCK{for post in grupp.poster}
+\rrpost\BLOCK{if post.get('notref') is not none}[\VAR{post.notref}]\BLOCK{endif}{\VAR{post.post}}{\VAR{post.belopp_ar1}}{\VAR{post.belopp_ar2}}
+\BLOCK{endfor}
+\rrsumma{\VAR{grupp.summa.label}}{\VAR{grupp.summa.belopp_ar1}}{\VAR{grupp.summa.belopp_ar2}}
+\BLOCK{endfor}
+\BLOCK{if block.get('resultat')}
+\rrresultat{\VAR{block.resultat.label}}{\VAR{block.resultat.belopp_ar1}}{\VAR{block.resultat.belopp_ar2}}
+\BLOCK{endif}
+\end{resultatrakning}
+
+\BLOCK{elif block.type == 'budgettabell'}
+\BLOCK{if clause_started[0]}
+\end{clauses}
+\BLOCK{set _ = clause_started.__setitem__(0, false) }
+\BLOCK{endif}
+\begin{budgettabell}{\VAR{block.rubrik_budget}}{\VAR{block.rubrik_ar1}}{\VAR{block.rubrik_ar2}}
+\BLOCK{for post in block.poster}
+\budgetpost{\VAR{post.get('konto', '')}}{\VAR{post.post}}{\VAR{post.budget}}{\VAR{post.utfall_ar1}}{\VAR{post.utfall_ar2}}{\BLOCK{if post.get('procent') is not none}\VAR{post.procent}\BLOCK{endif}}
+\BLOCK{endfor}
+\end{budgettabell}
+
+\BLOCK{elif block.type == 'notapparat'}
+\BLOCK{if clause_started[0]}
+\end{clauses}
+\BLOCK{set _ = clause_started.__setitem__(0, false) }
+\BLOCK{endif}
+\begin{notapparat}
+\BLOCK{for item in block.noter}
+\notentry{\VAR{item.notnr}}{\VAR{item.text}}
+\BLOCK{endfor}
+\end{notapparat}
+
 \BLOCK{elif block.type == 'latex'}
 \BLOCK{if clause_started[0]}
 \end{clauses}

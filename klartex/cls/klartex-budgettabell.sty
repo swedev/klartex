@@ -1,0 +1,32 @@
+% klartex-budgettabell.sty - Budget table component
+% Provides budget vs actuals table with account codes and percentages
+%
+% Usage: \usepackage{klartex-budgettabell}
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{klartex-budgettabell}[2026/03/29 Klartex Budgettabell]
+
+\RequirePackage{klartex-numformat}
+\RequirePackage{booktabs}
+\RequirePackage{array}
+
+% Begin budgettabell environment: \begin{budgettabell}{Budget header}{Year1}{Year2}
+\newenvironment{budgettabell}[3]{%
+  \noindent
+  \begin{tabular}{@{}lp{0.28\textwidth}rrrr@{}}
+  \toprule
+  \textbf{Konto} & \textbf{Post} & \textbf{#1} & \textbf{#2} & \textbf{#3} & \textbf{\%} \\
+  \midrule
+}{%
+  \bottomrule
+  \end{tabular}%
+}
+
+% Budget row: \budgetpost{konto}{post}{budget}{utfall1}{utfall2}{procent}
+% All 6 arguments positional. Empty string for unused fields.
+\newcommand{\budgetpost}[6]{%
+  #1 & #2 & \klartexnum{#3} & \klartexnum{#4} & \klartexnum{#5} &
+  \if\relax\detokenize{#6}\relax\else#6\,\%\fi \\
+}
+
+\endinput

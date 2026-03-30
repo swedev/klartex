@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://klartex.se/schemas/blocks/budgettabell/v0.1",
+  "title": "Budgettabell Block",
+  "description": "Budget table with account codes, budgeted amounts, actuals, and percentages",
+  "type": "object",
+  "required": ["type", "rubrik_budget", "rubrik_ar1", "rubrik_ar2", "poster"],
+  "additionalProperties": false,
+  "properties": {
+    "type": { "type": "string", "const": "budgettabell" },
+    "rubrik_budget": { "type": "string", "description": "Budget column header (e.g. 'Budget 2026')" },
+    "rubrik_ar1": { "type": "string", "description": "Outcome year 1 header (e.g. 'Utfall 2025')" },
+    "rubrik_ar2": { "type": "string", "description": "Outcome year 2 header (e.g. 'Utfall 2024')" },
+    "poster": {
+      "type": "array",
+      "description": "Budget line items",
+      "items": {
+        "type": "object",
+        "required": ["post", "budget", "utfall_ar1", "utfall_ar2"],
+        "additionalProperties": false,
+        "properties": {
+          "post": { "type": "string", "description": "Line item description" },
+          "budget": { "type": "number", "description": "Budgeted amount" },
+          "utfall_ar1": { "type": "number", "description": "Actual year 1" },
+          "utfall_ar2": { "type": "number", "description": "Actual year 2" },
+          "konto": { "type": "string", "description": "Account code (optional)" },
+          "procent": { "type": "number", "description": "Percentage (optional)" }
+        }
+      },
+      "minItems": 1
+    }
+  }
+}

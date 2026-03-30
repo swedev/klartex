@@ -1,0 +1,52 @@
+% klartex-resultatrakning.sty - Income statement / financial table component
+% Provides grouped financial table with comparison years, subtotals, note refs
+%
+% Usage: \usepackage{klartex-resultatrakning}
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{klartex-resultatrakning}[2026/03/29 Klartex Resultaträkning]
+
+\RequirePackage{klartex-numformat}
+\RequirePackage{booktabs}
+\RequirePackage{array}
+
+% Begin resultatrakning environment: \begin{resultatrakning}{Year1}{Year2}
+\newenvironment{resultatrakning}[2]{%
+  \noindent
+  \begin{tabular}{@{}p{0.6\textwidth}r@{\hspace{2em}}r@{}}
+  \toprule
+  & \textbf{#1} & \textbf{#2} \\
+  \midrule
+}{%
+  \bottomrule
+  \end{tabular}%
+}
+
+% Group header row
+\newcommand{\rrgrupp}[1]{%
+  \addlinespace[0.6em]%
+  \textbf{#1} & & \\
+}
+
+% Data row with optional note reference: \rrpost[notref]{name}{amount1}{amount2}
+\newcommand{\rrpost}[4][]{%
+  \hspace{1em}#2%
+  \if\relax\detokenize{#1}\relax\else\textsuperscript{#1}\fi%
+  & \klartexnum{#3} & \klartexnum{#4} \\
+}
+
+% Subtotal row
+\newcommand{\rrsumma}[3]{%
+  \cmidrule(l){2-3}%
+  \textbf{#1} & \textbf{\klartexnum{#2}} & \textbf{\klartexnum{#3}} \\
+  \addlinespace[0.3em]%
+}
+
+% Final result row (bold, double rule above)
+\newcommand{\rrresultat}[3]{%
+  \midrule
+  \midrule
+  \textbf{#1} & \textbf{\klartexnum{#2}} & \textbf{\klartexnum{#3}} \\
+}
+
+\endinput

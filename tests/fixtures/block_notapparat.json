@@ -3,10 +3,6 @@
   "page_template": "none",
   "body": [
     {
-      "type": "heading",
-      "text": "Noter"
-    },
-    {
       "type": "notapparat",
       "noter": [
         { "notnr": 1, "text": "Medlemsavgifterna höjdes med 50 kr/år från och med 2025." },

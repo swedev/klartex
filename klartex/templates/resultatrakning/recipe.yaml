@@ -2,7 +2,7 @@
 
 template:
   name: resultatrakning
-  description: "Resultatrakning / Income Statement"
+  description: "Resultaträkning / Income Statement"
   lang: sv
 
 document:

@@ -3,7 +3,7 @@
 
 template:
   name: balansrakning
-  description: "Balansrakning / Balance Sheet"
+  description: "Balansräkning / Balance Sheet"
   lang: sv
 
 document:

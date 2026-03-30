@@ -34,7 +34,7 @@
 
 \BLOCK{elif comp.type == 'attendees'}
 \vspace{1em}
-\noindent\textbf{Narvarande:} \VAR{comp.data.get('attendees', []) | join(', ')}
+\noindent\textbf{Närvarande:} \VAR{comp.data.get('attendees', []) | join(', ')}
 
 \BLOCK{if comp.data.get('adjusters')}
 \noindent\textbf{Justerare:} \VAR{comp.data.adjusters | join(', ')}

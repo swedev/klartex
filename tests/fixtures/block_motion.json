@@ -1,0 +1,34 @@
+{
+  "lang": "sv",
+  "page_template": "formal",
+  "body": [
+    { "type": "heading", "text": "Motion: Anläggning av gemensam odlingslott" },
+    {
+      "type": "metadata_table",
+      "entries": [
+        { "label": "Till:", "value": "Årsmötet i Ekbackens Koloniförening 2026" },
+        { "label": "Från:", "value": "Lars Pettersson, stuga 42" }
+      ]
+    },
+    { "type": "heading", "text": "Bakgrund", "level": 2 },
+    { "type": "text", "text": "Föreningen har en oanvänd yta på ca 50 kvm bakom föreningsstugan. Ytan har under flera år stått obrukad och vuxit igen. Flera medlemmar har uttryckt intresse för en gemensam odlingslott där man kan odla grönsaker och örter tillsammans." },
+    { "type": "heading", "text": "Förslag", "level": 2 },
+    {
+      "type": "clause",
+      "title": "Motionären yrkar",
+      "items": [
+        "att årsmötet beslutar att anlägga en gemensam odlingslott på den oanvända ytan bakom föreningsstugan",
+        "att styrelsen avsätter 5 000 kr ur föreningens medel för inköp av jord, odlingslådor och redskap",
+        "att en odlingsgrupp om minst tre intresserade medlemmar tillsätts för att ansvara för skötseln"
+      ]
+    },
+    {
+      "type": "signatures",
+      "new_page": false,
+      "parties": [
+        { "name": "Ekbackens Koloniförening", "signatory": "Lars Pettersson", "title": "Stuga 42" },
+        { "name": "Ekbackens Koloniförening", "signatory": "Karin Nilsson", "title": "Stuga 17" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "lang": "sv",
+  "page_template": "formal",
+  "body": [
+    { "type": "heading", "text": "Valberedningens förslag" },
+    {
+      "type": "metadata_table",
+      "entries": [
+        { "label": "Förening:", "value": "Ekbackens Koloniförening" },
+        { "label": "Årsmöte:", "value": "2026-03-15" }
+      ]
+    },
+    { "type": "text", "text": "Valberedningen föreslår följande val vid ordinarie årsmöte 2026:" },
+    {
+      "type": "name_roster",
+      "title": "Styrelse",
+      "people": [
+        { "name": "Anna Lindberg", "role": "Ordförande", "note": "omval, 1 år" },
+        { "name": "Erik Johansson", "role": "Kassör", "note": "kvarstår" },
+        { "name": "Maria Svensson", "role": "Sekreterare", "note": "kvarstår" },
+        { "name": "Lars Pettersson", "role": "Ledamot", "note": "omval, 2 år" },
+        { "name": "Sofia Ekström", "role": "Ledamot", "note": "nyval, 2 år" }
+      ]
+    },
+    {
+      "type": "name_roster",
+      "title": "Revisorer",
+      "people": [
+        { "name": "Birgitta Holm", "role": "Revisor", "note": "omval, 1 år" },
+        { "name": "Stig Bergman", "role": "Revisor", "note": "omval, 1 år" }
+      ]
+    },
+    {
+      "type": "signatures",
+      "new_page": false,
+      "parties": [
+        { "name": "Ekbackens Koloniförening", "signatory": "Gunnar Falk", "title": "Valberedningen" },
+        { "name": "Ekbackens Koloniförening", "signatory": "Eva Strand", "title": "Valberedningen" }
+      ]
+    }
+  ]
+}

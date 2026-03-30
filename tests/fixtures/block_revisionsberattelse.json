@@ -1,0 +1,25 @@
+{
+  "lang": "sv",
+  "page_template": "formal",
+  "body": [
+    { "type": "heading", "text": "Revisionsberättelse" },
+    {
+      "type": "metadata_table",
+      "entries": [
+        { "label": "Förening:", "value": "Ekbackens Koloniförening" },
+        { "label": "Räkenskapsår:", "value": "2025-01-01 -- 2025-12-31" }
+      ]
+    },
+    { "type": "text", "text": "Vi har granskat räkenskaperna och styrelsens förvaltning av Ekbackens Koloniförening för räkenskapsåret 2025." },
+    { "type": "text", "text": "Granskningen har utförts i enlighet med god revisionssed i Sverige. Räkenskaperna har förts på ett korrekt och överskådligt sätt. Verifikationerna är ordnade och arkiverade." },
+    { "type": "text", "text": "Vi tillstyrker att årsmötet fastställer resultaträkningen, beviljar styrelsen ansvarsfrihet för räkenskapsåret 2025, samt att årets resultat balanseras i ny räkning." },
+    {
+      "type": "signatures",
+      "new_page": false,
+      "parties": [
+        { "name": "Ekbackens Koloniförening", "signatory": "Birgitta Holm", "title": "Revisor" },
+        { "name": "Ekbackens Koloniförening", "signatory": "Stig Bergman", "title": "Revisor" }
+      ]
+    }
+  ]
+}

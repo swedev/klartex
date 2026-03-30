@@ -1,0 +1,25 @@
+{
+  "lang": "sv",
+  "page_template": "formal",
+  "body": [
+    { "type": "heading", "text": "Styrelsens yttrande över motion om gemensam odlingslott" },
+    {
+      "type": "metadata_table",
+      "entries": [
+        { "label": "Förening:", "value": "Ekbackens Koloniförening" },
+        { "label": "Avser:", "value": "Motion från Lars Pettersson" }
+      ]
+    },
+    { "type": "text", "text": "Styrelsen har tagit del av motionen om anläggning av en gemensam odlingslott. Styrelsen ser positivt på förslaget och anser att det kan bidra till ökad gemenskap bland medlemmarna." },
+    { "type": "text", "text": "Styrelsen vill dock framhålla att den föreslagna budgeten om 5 000 kr kan behöva justeras uppåt med hänsyn till kostnader för markberedning. Styrelsen föreslår att beloppet höjs till 8 000 kr." },
+    { "type": "text", "text": "Styrelsen tillstyrker motionen med ovan nämnda justering och föreslår att årsmötet bifaller motionen." },
+    {
+      "type": "signatures",
+      "new_page": false,
+      "parties": [
+        { "name": "Ekbackens Koloniförening", "signatory": "Anna Lindberg", "title": "Ordförande" },
+        { "name": "Ekbackens Koloniförening", "signatory": "Maria Svensson", "title": "Sekreterare" }
+      ]
+    }
+  ]
+}

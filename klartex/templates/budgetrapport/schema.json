@@ -5,7 +5,6 @@
   "description": "Budget report with account codes, budgeted amounts, and actuals",
   "type": "object",
   "required": ["title", "period", "rubrik_budget", "rubrik_ar1", "rubrik_ar2", "poster"],
-  "additionalProperties": false,
   "properties": {
     "page_template": {
       "type": "string",

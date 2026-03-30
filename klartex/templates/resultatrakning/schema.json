@@ -5,7 +5,6 @@
   "description": "Income statement with comparison years and optional notes",
   "type": "object",
   "required": ["title", "period", "rubrik_ar1", "rubrik_ar2", "grupper"],
-  "additionalProperties": false,
   "properties": {
     "page_template": {
       "type": "string",

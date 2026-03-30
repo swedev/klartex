@@ -1,3 +1,4 @@
+\BLOCK{from '_financial_macros.tex.jinja' import render_resultatrakning, render_budgettabell, render_notapparat}
 \documentclass{klartex-base}
 \providecommand{\orgname}{}
 
@@ -183,38 +184,14 @@ Org.nr: \VAR{comp.data.recipient.org_number}\\
 \BLOCK{endif}
 
 \BLOCK{elif comp.type == 'resultatrakning'}
-\BLOCK{if comp.options.get('section_heading')}
-\vspace{1em}
-{\large\bfseries \VAR{comp.options.section_heading}\par}
-\vspace{0.5em}
-\BLOCK{endif}
-\begin{resultatrakning}{\VAR{comp.data.rubrik_ar1}}{\VAR{comp.data.rubrik_ar2}}
-\BLOCK{for grupp in comp.data.grupper}
-\rrgrupp{\VAR{grupp.rubrik}}
-\BLOCK{for post in grupp.poster}
-\rrpost\BLOCK{if post.get('notref') is not none}[\VAR{post.notref}]\BLOCK{endif}{\VAR{post.post}}{\VAR{post.belopp_ar1}}{\VAR{post.belopp_ar2}}
-\BLOCK{endfor}
-\rrsumma{\VAR{grupp.summa.label}}{\VAR{grupp.summa.belopp_ar1}}{\VAR{grupp.summa.belopp_ar2}}
-\BLOCK{endfor}
-\BLOCK{if comp.data.get('resultat')}
-\rrresultat{\VAR{comp.data.resultat.label}}{\VAR{comp.data.resultat.belopp_ar1}}{\VAR{comp.data.resultat.belopp_ar2}}
-\BLOCK{endif}
-\end{resultatrakning}
+\VAR{render_resultatrakning(comp.data.rubrik_ar1, comp.data.rubrik_ar2, comp.data.grupper, comp.data.get('resultat'), comp.options.get('section_heading'))}
 
 \BLOCK{elif comp.type == 'budgettabell'}
-\begin{budgettabell}{\VAR{comp.data.rubrik_budget}}{\VAR{comp.data.rubrik_ar1}}{\VAR{comp.data.rubrik_ar2}}
-\BLOCK{for post in comp.data.poster}
-\budgetpost{\VAR{post.get('konto', '')}}{\VAR{post.post}}{\VAR{post.budget}}{\VAR{post.utfall_ar1}}{\VAR{post.utfall_ar2}}{\BLOCK{if post.get('procent') is not none}\VAR{post.procent}\BLOCK{endif}}
-\BLOCK{endfor}
-\end{budgettabell}
+\VAR{render_budgettabell(comp.data.rubrik_budget, comp.data.rubrik_ar1, comp.data.rubrik_ar2, comp.data.poster)}
 
 \BLOCK{elif comp.type == 'notapparat'}
 \BLOCK{if comp.data.get('noter')}
-\begin{notapparat}
-\BLOCK{for item in comp.data.noter}
-\notentry{\VAR{item.notnr}}{\VAR{item.text}}
-\BLOCK{endfor}
-\end{notapparat}
+\VAR{render_notapparat(comp.data.noter)}
 \BLOCK{endif}
 
 \BLOCK{elif comp.type == 'text'}

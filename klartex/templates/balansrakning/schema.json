@@ -5,7 +5,6 @@
   "description": "Balance sheet with assets and liabilities+equity sections",
   "type": "object",
   "required": ["title", "period", "rubrik_ar1", "rubrik_ar2", "tillgangar", "skulder_eget_kapital"],
-  "additionalProperties": false,
   "properties": {
     "page_template": {
       "type": "string",

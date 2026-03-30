@@ -5,7 +5,6 @@
   "description": "Human-readable PDF of SIE4 accounting data",
   "type": "object",
   "required": ["title", "period", "rubrik_ar1", "rubrik_ar2", "grupper", "org_name", "org_number"],
-  "additionalProperties": false,
   "properties": {
     "page_template": {
       "type": "string",

@@ -1,0 +1,28 @@
+{
+  "lang": "sv",
+  "page_template": "formal",
+  "body": [
+    { "type": "heading", "text": "Budget 2026" },
+    {
+      "type": "metadata_table",
+      "entries": [
+        { "label": "Förening:", "value": "Ekbackens Koloniförening" }
+      ]
+    },
+    {
+      "type": "budgettabell",
+      "rubrik_budget": "Budget 2026",
+      "rubrik_ar1": "Utfall 2025",
+      "rubrik_ar2": "Utfall 2024",
+      "poster": [
+        { "konto": "3010", "post": "Medlemsavgifter", "budget": 48000, "utfall_ar1": 45000, "utfall_ar2": 42000, "procent": 107 },
+        { "konto": "3020", "post": "Bidrag och anslag", "budget": 15000, "utfall_ar1": 15000, "utfall_ar2": 12000, "procent": 100 },
+        { "konto": "3090", "post": "Övriga intäkter", "budget": 4000, "utfall_ar1": 3500, "utfall_ar2": 2800 },
+        { "konto": "5010", "post": "Lokalhyra och arrende", "budget": -25000, "utfall_ar1": -24000, "utfall_ar2": -22000, "procent": 96 },
+        { "konto": "5020", "post": "Försäkringar", "budget": -9000, "utfall_ar1": -8500, "utfall_ar2": -7800 },
+        { "konto": "5030", "post": "Underhåll och reparationer", "budget": -10000, "utfall_ar1": -12000, "utfall_ar2": -8500, "procent": 120 },
+        { "konto": "5090", "post": "Övriga kostnader", "budget": -6000, "utfall_ar1": -5200, "utfall_ar2": -4600 }
+      ]
+    }
+  ]
+}

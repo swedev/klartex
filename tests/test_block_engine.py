@@ -463,6 +463,30 @@ class TestFinancialComponents:
             render(BLOCK_ENGINE_TEMPLATE, data)
 
 
+class TestArsmotespaket:
+    """Annual meeting package — 8 document types composed from block engine."""
+
+    ARSMOTE_FIXTURES = [
+        "block_kallelse",
+        "block_verksamhetsberattelse",
+        "block_arsredovisning",
+        "block_revisionsberattelse",
+        "block_budget",
+        "block_valberedning",
+        "block_motion",
+        "block_styrelseyttrande",
+    ]
+
+    @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+    @pytest.mark.parametrize("fixture", ARSMOTE_FIXTURES)
+    def test_arsmotespaket_renders(self, fixture):
+        from klartex.renderer import render
+
+        data = json.loads((FIXTURES / f"{fixture}.json").read_text())
+        pdf = render(BLOCK_ENGINE_TEMPLATE, data)
+        assert pdf[:5] == b"%PDF-"
+
+
 class TestRecipeTemplatesStillWork:
     """Ensure recipe templates are unaffected by block engine changes."""
 

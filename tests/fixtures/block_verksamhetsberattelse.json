@@ -1,0 +1,39 @@
+{
+  "lang": "sv",
+  "page_template": "formal",
+  "body": [
+    { "type": "heading", "text": "Verksamhetsberättelse 2025" },
+    {
+      "type": "metadata_table",
+      "entries": [
+        { "label": "Förening:", "value": "Ekbackens Koloniförening" },
+        { "label": "Verksamhetsår:", "value": "2025-01-01 -- 2025-12-31" }
+      ]
+    },
+    { "type": "heading", "text": "Styrelsen", "level": 2 },
+    {
+      "type": "name_roster",
+      "title": "Styrelseledamöter 2025",
+      "people": [
+        { "name": "Anna Lindberg", "role": "Ordförande" },
+        { "name": "Erik Johansson", "role": "Kassör" },
+        { "name": "Maria Svensson", "role": "Sekreterare" },
+        { "name": "Lars Pettersson", "role": "Ledamot" },
+        { "name": "Karin Nilsson", "role": "Ledamot" }
+      ]
+    },
+    { "type": "heading", "text": "Verksamheten", "level": 2 },
+    { "type": "text", "text": "Under 2025 har föreningen genomfört ett omfattande arbete med att förbättra de gemensamma ytorna. Nya planteringar har anlagts längs huvudgången och lekplatsen har renoverats. Styrelsen har hållit 8 protokollförda sammanträden under året." },
+    { "type": "text", "text": "Kolonistugedagen genomfördes den 14 juni med god uppslutning. Midsommarfirande arrangerades den 20 juni med uppskattningsvis 120 deltagare. Höstfesten hölls den 12 september." },
+    { "type": "heading", "text": "Medlemmar", "level": 2 },
+    { "type": "text", "text": "Föreningen hade vid årets slut 85 medlemmar, en ökning med 3 jämfört med föregående år. Under året har 5 nya medlemmar tillkommit och 2 har lämnat föreningen." },
+    {
+      "type": "signatures",
+      "new_page": false,
+      "parties": [
+        { "name": "Ekbackens Koloniförening", "signatory": "Anna Lindberg", "title": "Ordförande" },
+        { "name": "Ekbackens Koloniförening", "signatory": "Maria Svensson", "title": "Sekreterare" }
+      ]
+    }
+  ]
+}

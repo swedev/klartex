@@ -1,0 +1,40 @@
+{
+  "lang": "sv",
+  "page_template": "formal",
+  "body": [
+    { "type": "heading", "text": "Kallelse till årsmöte" },
+    {
+      "type": "metadata_table",
+      "entries": [
+        { "label": "Förening:", "value": "Ekbackens Koloniförening" },
+        { "label": "Datum:", "value": "2026-03-15" },
+        { "label": "Tid:", "value": "18:00" },
+        { "label": "Plats:", "value": "Föreningsstugan, Ekbacken" }
+      ]
+    },
+    { "type": "text", "text": "Medlemmarna i Ekbackens Koloniförening kallas härmed till ordinarie årsmöte." },
+    {
+      "type": "agenda",
+      "items": [
+        { "title": "Mötets öppnande" },
+        { "title": "Val av mötesordförande" },
+        { "title": "Val av mötessekreterare" },
+        { "title": "Val av justerare tillika rösträknare" },
+        { "title": "Fråga om mötet blivit behörigen utlyst" },
+        { "title": "Fastställande av dagordning" },
+        { "title": "Styrelsens verksamhetsberättelse" },
+        { "title": "Ekonomisk redovisning" },
+        { "title": "Revisionsberättelse" },
+        { "title": "Fråga om ansvarsfrihet för styrelsen" },
+        { "title": "Budget och avgifter för kommande verksamhetsår" },
+        { "title": "Val av styrelseledamöter" },
+        { "title": "Val av revisorer" },
+        { "title": "Val av valberedning" },
+        { "title": "Motioner" },
+        { "title": "Övriga frågor" },
+        { "title": "Mötets avslutande" }
+      ]
+    },
+    { "type": "text", "text": "Välkomna! Fika serveras från kl 17:30." }
+  ]
+}

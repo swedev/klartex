@@ -164,7 +164,24 @@ schema: schema.json
 
 Tillgängliga recept-komponenter: `heading`, `metadata_table`, `attendees`, `klausuler`, `signaturblock`, `titelsida`, `adjuster_signatures`, `invoice_header`, `invoice_recipient`, `invoice_table`, `payment_info`, `invoice_note`.
 
-Block engine-block: `heading`, `text`, `title_page`, `parties`, `clause`, `signatures`, `metadata_table`, `attendees`, `agenda`, `name_roster`, `adjuster_signatures`, `page_break`, `latex`.
+Block engine-block: `heading`, `text`, `title_page`, `parties`, `clause`, `signatures`, `metadata_table`, `attendees`, `agenda`, `name_roster`, `adjuster_signatures`, `resultatrakning`, `budgettabell`, `notapparat`, `page_break`, `latex`.
+
+## Årsmötespaket
+
+Blockmotorn kan komponera alla dokument som behövs för ett föreningsårsmöte:
+
+| Dokument | Blocktyper |
+|----------|-----------|
+| Kallelse + dagordning | heading, metadata_table, agenda |
+| Verksamhetsberättelse | heading, name_roster, text, signatures |
+| Ekonomisk årsredovisning | heading, text, resultatrakning, notapparat, signatures |
+| Revisionsberättelse | heading, text, signatures |
+| Budget | heading, budgettabell |
+| Valberedningens förslag | heading, name_roster, signatures |
+| Motion | heading, text, clause, signatures |
+| Styrelsens yttrande | heading, text, signatures |
+
+Agenten väljer och ordnar block för varje dokument — inga separata mallar behövs. Se `tests/fixtures/block_kallelse.json` m.fl. för fullständiga exempel.
 
 ## Licens
 

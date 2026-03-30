@@ -1,0 +1,37 @@
+{
+  "title": "Resultaträkning",
+  "period": "2025-01-01 -- 2025-12-31",
+  "rubrik_ar1": "2025",
+  "rubrik_ar2": "2024",
+  "grupper": [
+    {
+      "rubrik": "Intäkter",
+      "poster": [
+        { "post": "Medlemsavgifter", "belopp_ar1": 84000, "belopp_ar2": 78000, "notref": 1 },
+        { "post": "Hyresintäkter stugor", "belopp_ar1": 36000, "belopp_ar2": 34000 },
+        { "post": "Bidrag kommun", "belopp_ar1": 15000, "belopp_ar2": 15000 }
+      ],
+      "summa": { "label": "Summa intäkter", "belopp_ar1": 135000, "belopp_ar2": 127000 }
+    },
+    {
+      "rubrik": "Kostnader",
+      "poster": [
+        { "post": "Vatten och avlopp", "belopp_ar1": -22000, "belopp_ar2": -20000 },
+        { "post": "El och uppvärmning", "belopp_ar1": -18000, "belopp_ar2": -16500 },
+        { "post": "Underhåll och reparationer", "belopp_ar1": -31000, "belopp_ar2": -25000, "notref": 2 },
+        { "post": "Försäkringar", "belopp_ar1": -12000, "belopp_ar2": -11000 },
+        { "post": "Administration", "belopp_ar1": -8500, "belopp_ar2": -7800 }
+      ],
+      "summa": { "label": "Summa kostnader", "belopp_ar1": -91500, "belopp_ar2": -80300 }
+    }
+  ],
+  "resultat": {
+    "label": "Årets resultat",
+    "belopp_ar1": 43500,
+    "belopp_ar2": 46700
+  },
+  "noter": [
+    { "notnr": 1, "text": "Medlemsavgiften höjdes från 650 kr till 700 kr per lott fr.o.m. 2025." },
+    { "notnr": 2, "text": "Inkluderar takbyte på föreningsstugan, 18 000 kr." }
+  ]
+}

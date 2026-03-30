@@ -1,0 +1,18 @@
+{
+  "title": "Budgetrapport 2026",
+  "period": "2026-01-01 -- 2026-12-31",
+  "rubrik_budget": "Budget 2026",
+  "rubrik_ar1": "Utfall 2025",
+  "rubrik_ar2": "Utfall 2024",
+  "poster": [
+    { "konto": "3010", "post": "Medlemsavgifter", "budget": 90000, "utfall_ar1": 84000, "utfall_ar2": 78000, "procent": 107 },
+    { "konto": "3020", "post": "Hyresintäkter stugor", "budget": 38000, "utfall_ar1": 36000, "utfall_ar2": 34000, "procent": 106 },
+    { "konto": "3030", "post": "Bidrag kommun", "budget": 15000, "utfall_ar1": 15000, "utfall_ar2": 15000, "procent": 100 },
+    { "konto": "5010", "post": "Vatten och avlopp", "budget": -24000, "utfall_ar1": -22000, "utfall_ar2": -20000, "procent": 109 },
+    { "konto": "5020", "post": "El och uppvärmning", "budget": -20000, "utfall_ar1": -18000, "utfall_ar2": -16500, "procent": 111 },
+    { "konto": "5030", "post": "Underhåll och reparationer", "budget": -25000, "utfall_ar1": -31000, "utfall_ar2": -25000, "procent": 81 },
+    { "konto": "5040", "post": "Försäkringar", "budget": -13000, "utfall_ar1": -12000, "utfall_ar2": -11000, "procent": 108 },
+    { "konto": "5050", "post": "Administration", "budget": -9000, "utfall_ar1": -8500, "utfall_ar2": -7800, "procent": 106 }
+  ],
+  "kommentar": "Budgeten bygger på oförändrade medlemsavgifter (700 kr/lott) och en planerad höjning av stughyran. Underhållsbudgeten sänks efter föregående års takbyte."
+}

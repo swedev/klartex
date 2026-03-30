@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://klartex.se/schemas/budgetrapport/v0.1",
+  "title": "Budgetrapport",
+  "description": "Budget report with account codes, budgeted amounts, and actuals",
+  "type": "object",
+  "required": ["title", "period", "rubrik_budget", "rubrik_ar1", "rubrik_ar2", "poster"],
+  "additionalProperties": false,
+  "properties": {
+    "page_template": {
+      "type": "string",
+      "enum": ["formal", "clean", "none"],
+      "default": "formal"
+    },
+    "title": {
+      "type": "string",
+      "description": "Document title (e.g. 'Budgetrapport 2026')"
+    },
+    "period": {
+      "type": "string",
+      "description": "Budget period (e.g. '2026-01-01 -- 2026-12-31')"
+    },
+    "rubrik_budget": {
+      "type": "string",
+      "description": "Budget column header (e.g. 'Budget 2026')"
+    },
+    "rubrik_ar1": {
+      "type": "string",
+      "description": "Outcome year 1 header (e.g. 'Utfall 2025')"
+    },
+    "rubrik_ar2": {
+      "type": "string",
+      "description": "Outcome year 2 header (e.g. 'Utfall 2024')"
+    },
+    "poster": {
+      "type": "array",
+      "description": "Budget line items",
+      "items": {
+        "type": "object",
+        "required": ["post", "budget", "utfall_ar1", "utfall_ar2"],
+        "additionalProperties": false,
+        "properties": {
+          "post": { "type": "string" },
+          "budget": { "type": "number" },
+          "utfall_ar1": { "type": "number" },
+          "utfall_ar2": { "type": "number" },
+          "konto": { "type": "string" },
+          "procent": { "type": "number" }
+        }
+      },
+      "minItems": 1
+    },
+    "kommentar": {
+      "type": "string",
+      "description": "Optional commentary text"
+    }
+  }
+}

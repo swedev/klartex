@@ -182,6 +182,47 @@ Org.nr: \VAR{comp.data.recipient.org_number}\\
 \noindent\textit{\VAR{comp.data.note}}
 \BLOCK{endif}
 
+\BLOCK{elif comp.type == 'resultatrakning'}
+\BLOCK{if comp.options.get('section_heading')}
+\vspace{1em}
+{\large\bfseries \VAR{comp.options.section_heading}\par}
+\vspace{0.5em}
+\BLOCK{endif}
+\begin{resultatrakning}{\VAR{comp.data.rubrik_ar1}}{\VAR{comp.data.rubrik_ar2}}
+\BLOCK{for grupp in comp.data.grupper}
+\rrgrupp{\VAR{grupp.rubrik}}
+\BLOCK{for post in grupp.poster}
+\rrpost\BLOCK{if post.get('notref') is not none}[\VAR{post.notref}]\BLOCK{endif}{\VAR{post.post}}{\VAR{post.belopp_ar1}}{\VAR{post.belopp_ar2}}
+\BLOCK{endfor}
+\rrsumma{\VAR{grupp.summa.label}}{\VAR{grupp.summa.belopp_ar1}}{\VAR{grupp.summa.belopp_ar2}}
+\BLOCK{endfor}
+\BLOCK{if comp.data.get('resultat')}
+\rrresultat{\VAR{comp.data.resultat.label}}{\VAR{comp.data.resultat.belopp_ar1}}{\VAR{comp.data.resultat.belopp_ar2}}
+\BLOCK{endif}
+\end{resultatrakning}
+
+\BLOCK{elif comp.type == 'budgettabell'}
+\begin{budgettabell}{\VAR{comp.data.rubrik_budget}}{\VAR{comp.data.rubrik_ar1}}{\VAR{comp.data.rubrik_ar2}}
+\BLOCK{for post in comp.data.poster}
+\budgetpost{\VAR{post.get('konto', '')}}{\VAR{post.post}}{\VAR{post.budget}}{\VAR{post.utfall_ar1}}{\VAR{post.utfall_ar2}}{\BLOCK{if post.get('procent') is not none}\VAR{post.procent}\BLOCK{endif}}
+\BLOCK{endfor}
+\end{budgettabell}
+
+\BLOCK{elif comp.type == 'notapparat'}
+\BLOCK{if comp.data.get('noter')}
+\begin{notapparat}
+\BLOCK{for item in comp.data.noter}
+\notentry{\VAR{item.notnr}}{\VAR{item.text}}
+\BLOCK{endfor}
+\end{notapparat}
+\BLOCK{endif}
+
+\BLOCK{elif comp.type == 'text'}
+\BLOCK{if comp.data.get('text')}
+\vspace{1em}
+\noindent \VAR{comp.data.text}
+\BLOCK{endif}
+
 \BLOCK{endif}
 \BLOCK{endfor}
 

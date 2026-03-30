@@ -15,6 +15,10 @@ Klartex takes JSON data + template name and produces PDF via XeLaTeX. Can be use
 | `_block` | Universal block engine — the agent composes the document freely |
 | `protokoll` | Meeting minutes with agenda, decisions, and adjusters |
 | `faktura` | Invoice with line items, VAT, and payment information |
+| `resultatrakning` | Income statement with comparison years and notes |
+| `balansrakning` | Balance sheet with assets and liabilities/equity sections |
+| `budgetrapport` | Budget report with account codes, budget, and actuals |
+| `sie-exportrapport` | Human-readable PDF of SIE4 accounting data |
 
 ## Installation
 

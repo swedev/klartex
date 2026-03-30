@@ -19,7 +19,10 @@ def test_unknown_template():
 
 
 @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
-@pytest.mark.parametrize("template_name", ["protokoll", "faktura"])
+@pytest.mark.parametrize("template_name", [
+    "protokoll", "faktura",
+    "resultatrakning", "balansrakning", "budgetrapport", "sie-exportrapport",
+])
 def test_render_pdf(template_name):
     data = json.loads((FIXTURES / f"{template_name}.json").read_text())
     pdf_bytes = render(template_name, data)
@@ -50,6 +53,12 @@ class TestDiscovery:
         assert "faktura" in registry
         info = registry["faktura"]
         assert info.recipe_path is not None
+
+    def test_financial_templates_discovered(self):
+        registry = get_registry()
+        for name in ["resultatrakning", "balansrakning", "budgetrapport", "sie-exportrapport"]:
+            assert name in registry, f"{name} not discovered"
+            assert registry[name].recipe_path is not None
 
     def test_block_engine_discovered(self):
         registry = get_registry()

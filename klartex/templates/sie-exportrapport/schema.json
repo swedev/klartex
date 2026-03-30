@@ -1,0 +1,101 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://klartex.se/schemas/sie-exportrapport/v0.1",
+  "title": "SIE-exportrapport",
+  "description": "Human-readable PDF of SIE4 accounting data",
+  "type": "object",
+  "required": ["title", "period", "rubrik_ar1", "rubrik_ar2", "grupper", "org_name", "org_number"],
+  "additionalProperties": false,
+  "properties": {
+    "page_template": {
+      "type": "string",
+      "enum": ["formal", "clean", "none"],
+      "default": "formal"
+    },
+    "title": {
+      "type": "string",
+      "description": "Document title (e.g. 'SIE-exportrapport')"
+    },
+    "period": {
+      "type": "string",
+      "description": "Accounting period"
+    },
+    "org_name": {
+      "type": "string",
+      "description": "Organization name"
+    },
+    "org_number": {
+      "type": "string",
+      "description": "Organization number (e.g. '802000-1234')"
+    },
+    "sie_version": {
+      "type": "string",
+      "description": "SIE file version (e.g. '4')"
+    },
+    "program": {
+      "type": "string",
+      "description": "Accounting program that generated the SIE file"
+    },
+    "gen_date": {
+      "type": "string",
+      "description": "Date the SIE file was generated"
+    },
+    "rubrik_ar1": {
+      "type": "string",
+      "description": "Column header for year 1"
+    },
+    "rubrik_ar2": {
+      "type": "string",
+      "description": "Column header for year 2"
+    },
+    "grupper": {
+      "type": "array",
+      "description": "Account groups with rows and subtotals",
+      "items": {
+        "type": "object",
+        "required": ["rubrik", "poster", "summa"],
+        "additionalProperties": false,
+        "properties": {
+          "rubrik": { "type": "string" },
+          "poster": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["post", "belopp_ar1", "belopp_ar2"],
+              "additionalProperties": false,
+              "properties": {
+                "post": { "type": "string" },
+                "belopp_ar1": { "type": "number" },
+                "belopp_ar2": { "type": "number" },
+                "notref": { "type": "integer" }
+              }
+            },
+            "minItems": 1
+          },
+          "summa": {
+            "type": "object",
+            "required": ["label", "belopp_ar1", "belopp_ar2"],
+            "additionalProperties": false,
+            "properties": {
+              "label": { "type": "string" },
+              "belopp_ar1": { "type": "number" },
+              "belopp_ar2": { "type": "number" }
+            }
+          }
+        }
+      },
+      "minItems": 1
+    },
+    "resultat": {
+      "type": "object",
+      "description": "Final result row",
+      "required": ["label", "belopp_ar1", "belopp_ar2"],
+      "additionalProperties": false,
+      "properties": {
+        "label": { "type": "string" },
+        "belopp_ar1": { "type": "number" },
+        "belopp_ar2": { "type": "number" }
+      }
+    }
+  }
+}

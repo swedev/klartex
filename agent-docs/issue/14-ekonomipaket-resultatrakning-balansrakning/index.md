@@ -10,7 +10,7 @@ Four standalone financial document templates as YAML recipes: income statement, 
 
 | Field | Value |
 |-------|-------|
-| **Ready to work** | No (blocked by #12) |
+| **Ready to work** | Yes (#12 merged) |
 | **Risk** | Medium |
 
 ## Plan Review

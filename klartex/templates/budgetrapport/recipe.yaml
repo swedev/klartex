@@ -1,0 +1,37 @@
+# Budgetrapport (Budget Report) — recipe definition
+
+template:
+  name: budgetrapport
+  description: "Budgetrapport / Budget Report"
+  lang: sv
+
+document:
+  title: "{{ data.title }}"
+  page_template: "{{ data.page_template | default('formal') }}"
+  metadata:
+    - label: "Period:"
+      field: period
+
+components:
+  - type: heading
+    data_map:
+      title: title
+    options:
+      subtitle_prefix: ""
+
+  - type: metadata_table
+    options:
+      source: document.metadata
+
+  - type: budgettabell
+    data_map:
+      rubrik_budget: rubrik_budget
+      rubrik_ar1: rubrik_ar1
+      rubrik_ar2: rubrik_ar2
+      poster: poster
+
+  - type: text
+    data_map:
+      text: kommentar
+
+schema: schema.json

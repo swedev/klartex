@@ -3,7 +3,7 @@
 
 template:
   name: protokoll
-  description: "Motesprotokoll / Meeting minutes"
+  description: "Mötesprotokoll / Meeting minutes"
   lang: sv
 
 document:
@@ -17,7 +17,7 @@ document:
     - label: "Plats:"
       field: location
       optional: true
-    - label: "Ordforande:"
+    - label: "Ordförande:"
       field: chair
       optional: true
     - label: "Sekreterare:"

@@ -1,0 +1,49 @@
+# Balansräkning (Balance Sheet) — recipe definition
+# Uses two resultatrakning instances: one for assets, one for liabilities+equity
+
+template:
+  name: balansrakning
+  description: "Balansräkning / Balance Sheet"
+  lang: sv
+
+document:
+  title: "{{ data.title }}"
+  page_template: "{{ data.page_template | default('formal') }}"
+  metadata:
+    - label: "Period:"
+      field: period
+
+components:
+  - type: heading
+    data_map:
+      title: title
+    options:
+      subtitle_prefix: ""
+
+  - type: metadata_table
+    options:
+      source: document.metadata
+
+  - type: resultatrakning
+    data_map:
+      grupper: tillgangar.grupper
+      rubrik_ar1: rubrik_ar1
+      rubrik_ar2: rubrik_ar2
+      resultat: tillgangar.resultat
+    options:
+      section_heading: "Tillgångar"
+
+  - type: resultatrakning
+    data_map:
+      grupper: skulder_eget_kapital.grupper
+      rubrik_ar1: rubrik_ar1
+      rubrik_ar2: rubrik_ar2
+      resultat: skulder_eget_kapital.resultat
+    options:
+      section_heading: "Skulder och eget kapital"
+
+  - type: notapparat
+    data_map:
+      noter: noter
+
+schema: schema.json

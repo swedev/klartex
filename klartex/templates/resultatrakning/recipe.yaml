@@ -1,0 +1,37 @@
+# Resultaträkning (Income Statement) — recipe definition
+
+template:
+  name: resultatrakning
+  description: "Resultaträkning / Income Statement"
+  lang: sv
+
+document:
+  title: "{{ data.title }}"
+  page_template: "{{ data.page_template | default('formal') }}"
+  metadata:
+    - label: "Period:"
+      field: period
+
+components:
+  - type: heading
+    data_map:
+      title: title
+    options:
+      subtitle_prefix: ""
+
+  - type: metadata_table
+    options:
+      source: document.metadata
+
+  - type: resultatrakning
+    data_map:
+      grupper: grupper
+      rubrik_ar1: rubrik_ar1
+      rubrik_ar2: rubrik_ar2
+      resultat: resultat
+
+  - type: notapparat
+    data_map:
+      noter: noter
+
+schema: schema.json

@@ -15,10 +15,17 @@ def test_discover_all_templates():
     registry = get_registry()
     assert "protokoll" in registry
     assert "faktura" in registry
+    assert "resultatrakning" in registry
+    assert "balansrakning" in registry
+    assert "budgetrapport" in registry
+    assert "sie-exportrapport" in registry
     assert "_block" in registry
 
 
-@pytest.mark.parametrize("template_name", ["protokoll", "faktura"])
+@pytest.mark.parametrize("template_name", [
+    "protokoll", "faktura",
+    "resultatrakning", "balansrakning", "budgetrapport", "sie-exportrapport",
+])
 def test_fixture_validates(template_name):
     registry = get_registry()
     fixture_path = FIXTURES / f"{template_name}.json"

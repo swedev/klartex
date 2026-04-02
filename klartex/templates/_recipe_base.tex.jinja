@@ -1,3 +1,4 @@
+\BLOCK{from '_financial_macros.tex.jinja' import render_resultatrakning, render_budgettabell, render_notapparat}
 \documentclass{klartex-base}
 \providecommand{\orgname}{}
 
@@ -34,7 +35,7 @@
 
 \BLOCK{elif comp.type == 'attendees'}
 \vspace{1em}
-\noindent\textbf{Narvarande:} \VAR{comp.data.get('attendees', []) | join(', ')}
+\noindent\textbf{Närvarande:} \VAR{comp.data.get('attendees', []) | join(', ')}
 
 \BLOCK{if comp.data.get('adjusters')}
 \noindent\textbf{Justerare:} \VAR{comp.data.adjusters | join(', ')}
@@ -180,6 +181,23 @@ Org.nr: \VAR{comp.data.recipient.org_number}\\
 \BLOCK{if comp.data.get('note')}
 \vspace{1em}
 \noindent\textit{\VAR{comp.data.note}}
+\BLOCK{endif}
+
+\BLOCK{elif comp.type == 'resultatrakning'}
+\VAR{render_resultatrakning(comp.data.rubrik_ar1, comp.data.rubrik_ar2, comp.data.grupper, comp.data.get('resultat'), comp.options.get('section_heading'))}
+
+\BLOCK{elif comp.type == 'budgettabell'}
+\VAR{render_budgettabell(comp.data.rubrik_budget, comp.data.rubrik_ar1, comp.data.rubrik_ar2, comp.data.poster)}
+
+\BLOCK{elif comp.type == 'notapparat'}
+\BLOCK{if comp.data.get('noter')}
+\VAR{render_notapparat(comp.data.noter)}
+\BLOCK{endif}
+
+\BLOCK{elif comp.type == 'text'}
+\BLOCK{if comp.data.get('text')}
+\vspace{1em}
+\noindent \VAR{comp.data.text}
 \BLOCK{endif}
 
 \BLOCK{endif}

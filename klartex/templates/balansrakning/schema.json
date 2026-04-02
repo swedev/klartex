@@ -1,0 +1,109 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://klartex.se/schemas/balansrakning/v0.1",
+  "title": "Balansräkning",
+  "description": "Balance sheet with assets and liabilities+equity sections",
+  "type": "object",
+  "required": ["title", "period", "rubrik_ar1", "rubrik_ar2", "tillgangar", "skulder_eget_kapital"],
+  "properties": {
+    "page_template": {
+      "type": "string",
+      "enum": ["formal", "clean", "none"],
+      "default": "formal"
+    },
+    "title": {
+      "type": "string",
+      "description": "Document title (e.g. 'Balansräkning')"
+    },
+    "period": {
+      "type": "string",
+      "description": "Accounting period (e.g. 'per 2025-12-31')"
+    },
+    "rubrik_ar1": {
+      "type": "string",
+      "description": "Column header for year 1 (e.g. '2025')"
+    },
+    "rubrik_ar2": {
+      "type": "string",
+      "description": "Column header for year 2 (e.g. '2024')"
+    },
+    "tillgangar": {
+      "type": "object",
+      "description": "Assets section",
+      "required": ["grupper"],
+      "additionalProperties": false,
+      "properties": {
+        "grupper": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/grupp" },
+          "minItems": 1
+        },
+        "resultat": { "$ref": "#/definitions/resultatrad" }
+      }
+    },
+    "skulder_eget_kapital": {
+      "type": "object",
+      "description": "Liabilities and equity section",
+      "required": ["grupper"],
+      "additionalProperties": false,
+      "properties": {
+        "grupper": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/grupp" },
+          "minItems": 1
+        },
+        "resultat": { "$ref": "#/definitions/resultatrad" }
+      }
+    },
+    "noter": {
+      "type": "array",
+      "description": "Optional numbered notes",
+      "items": {
+        "type": "object",
+        "required": ["notnr", "text"],
+        "additionalProperties": false,
+        "properties": {
+          "notnr": { "type": "integer" },
+          "text": { "type": "string" }
+        }
+      },
+      "minItems": 1
+    }
+  },
+  "definitions": {
+    "grupp": {
+      "type": "object",
+      "required": ["rubrik", "poster", "summa"],
+      "additionalProperties": false,
+      "properties": {
+        "rubrik": { "type": "string" },
+        "poster": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["post", "belopp_ar1", "belopp_ar2"],
+            "additionalProperties": false,
+            "properties": {
+              "post": { "type": "string" },
+              "belopp_ar1": { "type": "number" },
+              "belopp_ar2": { "type": "number" },
+              "notref": { "type": "integer" }
+            }
+          },
+          "minItems": 1
+        },
+        "summa": { "$ref": "#/definitions/resultatrad" }
+      }
+    },
+    "resultatrad": {
+      "type": "object",
+      "required": ["label", "belopp_ar1", "belopp_ar2"],
+      "additionalProperties": false,
+      "properties": {
+        "label": { "type": "string" },
+        "belopp_ar1": { "type": "number" },
+        "belopp_ar2": { "type": "number" }
+      }
+    }
+  }
+}

@@ -1,0 +1,47 @@
+# SIE-exportrapport (SIE Export Report) — recipe definition
+# Human-readable PDF of SIE4 accounting data
+
+template:
+  name: sie-exportrapport
+  description: "SIE-exportrapport / SIE Export Report"
+  lang: sv
+
+document:
+  title: "{{ data.title }}"
+  page_template: "{{ data.page_template | default('formal') }}"
+  metadata:
+    - label: "Organisation:"
+      field: org_name
+    - label: "Org.nr:"
+      field: org_number
+    - label: "Period:"
+      field: period
+    - label: "SIE-version:"
+      field: sie_version
+      optional: true
+    - label: "Program:"
+      field: program
+      optional: true
+    - label: "Genererad:"
+      field: gen_date
+      optional: true
+
+components:
+  - type: heading
+    data_map:
+      title: title
+    options:
+      subtitle_prefix: ""
+
+  - type: metadata_table
+    options:
+      source: document.metadata
+
+  - type: resultatrakning
+    data_map:
+      grupper: grupper
+      rubrik_ar1: rubrik_ar1
+      rubrik_ar2: rubrik_ar2
+      resultat: resultat
+
+schema: schema.json

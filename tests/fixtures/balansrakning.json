@@ -1,0 +1,52 @@
+{
+  "title": "Balansräkning",
+  "period": "per 2025-12-31",
+  "rubrik_ar1": "2025",
+  "rubrik_ar2": "2024",
+  "tillgangar": {
+    "grupper": [
+      {
+        "rubrik": "Anläggningstillgångar",
+        "poster": [
+          { "post": "Byggnader", "belopp_ar1": 450000, "belopp_ar2": 460000, "notref": 1 },
+          { "post": "Inventarier", "belopp_ar1": 35000, "belopp_ar2": 28000 }
+        ],
+        "summa": { "label": "Summa anläggningstillgångar", "belopp_ar1": 485000, "belopp_ar2": 488000 }
+      },
+      {
+        "rubrik": "Omsättningstillgångar",
+        "poster": [
+          { "post": "Kassa och bank", "belopp_ar1": 98500, "belopp_ar2": 67000 },
+          { "post": "Förutbetalda kostnader", "belopp_ar1": 4000, "belopp_ar2": 3500 }
+        ],
+        "summa": { "label": "Summa omsättningstillgångar", "belopp_ar1": 102500, "belopp_ar2": 70500 }
+      }
+    ],
+    "resultat": { "label": "SUMMA TILLGÅNGAR", "belopp_ar1": 587500, "belopp_ar2": 558500 }
+  },
+  "skulder_eget_kapital": {
+    "grupper": [
+      {
+        "rubrik": "Eget kapital",
+        "poster": [
+          { "post": "Balanserat resultat", "belopp_ar1": 501000, "belopp_ar2": 454300 },
+          { "post": "Årets resultat", "belopp_ar1": 43500, "belopp_ar2": 46700 }
+        ],
+        "summa": { "label": "Summa eget kapital", "belopp_ar1": 544500, "belopp_ar2": 501000 }
+      },
+      {
+        "rubrik": "Skulder",
+        "poster": [
+          { "post": "Leverantörsskulder", "belopp_ar1": 18000, "belopp_ar2": 32500 },
+          { "post": "Upplupna kostnader", "belopp_ar1": 15000, "belopp_ar2": 15000 },
+          { "post": "Förutbetalda intäkter", "belopp_ar1": 10000, "belopp_ar2": 10000 }
+        ],
+        "summa": { "label": "Summa skulder", "belopp_ar1": 43000, "belopp_ar2": 57500 }
+      }
+    ],
+    "resultat": { "label": "SUMMA SKULDER OCH EGET KAPITAL", "belopp_ar1": 587500, "belopp_ar2": 558500 }
+  },
+  "noter": [
+    { "notnr": 1, "text": "Byggnader redovisas till anskaffningsvärde minus ackumulerade avskrivningar. Avskrivning sker linjärt över 30 år." }
+  ]
+}

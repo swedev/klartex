@@ -15,6 +15,10 @@ Klartex tar JSON-data + mallnamn och producerar PDF via XeLaTeX. Kan användas s
 | `_block` | Universell blockmotor — agenten komponerar dokumentet fritt |
 | `protokoll` | Mötesprotokoll med dagordning, beslut och justerare |
 | `faktura` | Faktura med rader, moms och betalningsinformation |
+| `resultatrakning` | Resultaträkning med jämförelseår och noter |
+| `balansrakning` | Balansräkning med tillgångar och skulder/eget kapital |
+| `budgetrapport` | Budgetrapport med kontokoder, budget och utfall |
+| `sie-exportrapport` | Läsbar PDF av SIE4-bokföringsdata |
 
 ## Installation
 

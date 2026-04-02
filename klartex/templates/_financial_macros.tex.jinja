@@ -1,0 +1,38 @@
+%# Shared financial rendering macros.
+%# Used by both _block_engine.tex.jinja and _recipe_base.tex.jinja.
+
+\BLOCK{macro render_resultatrakning(rubrik_ar1, rubrik_ar2, grupper, resultat=none, section_heading=none)}
+\BLOCK{if section_heading}
+\vspace{1em}
+{\large\bfseries \VAR{section_heading}\par}
+\vspace{0.5em}
+\BLOCK{endif}
+\begin{resultatrakning}{\VAR{rubrik_ar1}}{\VAR{rubrik_ar2}}
+\BLOCK{for grupp in grupper}
+\rrgrupp{\VAR{grupp.rubrik}}
+\BLOCK{for post in grupp.poster}
+\rrpost\BLOCK{if post.get('notref') is not none}[\VAR{post.notref}]\BLOCK{endif}{\VAR{post.post}}{\VAR{post.belopp_ar1}}{\VAR{post.belopp_ar2}}
+\BLOCK{endfor}
+\rrsumma{\VAR{grupp.summa.label}}{\VAR{grupp.summa.belopp_ar1}}{\VAR{grupp.summa.belopp_ar2}}
+\BLOCK{endfor}
+\BLOCK{if resultat}
+\rrresultat{\VAR{resultat.label}}{\VAR{resultat.belopp_ar1}}{\VAR{resultat.belopp_ar2}}
+\BLOCK{endif}
+\end{resultatrakning}
+\BLOCK{endmacro}
+
+\BLOCK{macro render_budgettabell(rubrik_budget, rubrik_ar1, rubrik_ar2, poster)}
+\begin{budgettabell}{\VAR{rubrik_budget}}{\VAR{rubrik_ar1}}{\VAR{rubrik_ar2}}
+\BLOCK{for post in poster}
+\budgetpost{\VAR{post.get('konto', '')}}{\VAR{post.post}}{\VAR{post.budget}}{\VAR{post.utfall_ar1}}{\VAR{post.utfall_ar2}}{\BLOCK{if post.get('procent') is not none}\VAR{post.procent}\BLOCK{endif}}
+\BLOCK{endfor}
+\end{budgettabell}
+\BLOCK{endmacro}
+
+\BLOCK{macro render_notapparat(noter)}
+\begin{notapparat}
+\BLOCK{for item in noter}
+\notentry{\VAR{item.notnr}}{\VAR{item.text}}
+\BLOCK{endfor}
+\end{notapparat}
+\BLOCK{endmacro}

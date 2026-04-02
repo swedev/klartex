@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.1 — 2026-04-02
+
+### Fixes
+- **API:** Schema validation errors now return 400 instead of 500
+- **Page template override:** `--page-template` / `page_template_source` no longer fails when `data.page_template` is missing or unknown
+- **CLI:** `klartex example <template>` now works for all recipe templates (example.json files were missing)
+
 ## 0.2.0 — 2026-04-02
 
 ### New templates

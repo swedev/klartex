@@ -216,10 +216,10 @@ def prepare_recipe_context(
             seen.add(comp.spec.sty_package)
 
     # Resolve page template
-    page_tmpl = load_page_template(rendered_page_template)
-
-    # Read template source: caller-provided or built-in file
-    if page_template_source is None:
+    if page_template_source is not None:
+        page_tmpl = load_page_template("none")
+    else:
+        page_tmpl = load_page_template(rendered_page_template)
         page_template_source = read_page_template_source(page_tmpl.name)
 
     return {

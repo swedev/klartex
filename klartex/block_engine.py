@@ -58,10 +58,11 @@ def prepare_block_context(
 
     # Resolve page template
     page_template_spec = data.get("page_template", "none")
-    page_tmpl = load_page_template(page_template_spec)
-
-    # Read template source: caller-provided or built-in file
-    if page_template_source is None:
+    if page_template_source is not None:
+        # Caller provided raw source — skip built-in lookup, just load metadata
+        page_tmpl = load_page_template("none")
+    else:
+        page_tmpl = load_page_template(page_template_spec)
         page_template_source = read_page_template_source(page_tmpl.name)
 
     # Extract document title from body blocks (first heading or title_page)

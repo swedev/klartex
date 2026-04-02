@@ -2,6 +2,7 @@
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import Response
+from jsonschema import ValidationError
 from pydantic import BaseModel
 
 from klartex.renderer import render, get_registry
@@ -22,7 +23,7 @@ def render_pdf(req: RenderRequest):
     """Render a template to PDF."""
     try:
         pdf_bytes = render(req.template, req.data, page_template_source=req.page_template_source)
-    except ValueError as e:
+    except (ValueError, ValidationError) as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

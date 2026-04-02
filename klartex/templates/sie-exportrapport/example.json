@@ -1,0 +1,46 @@
+{
+  "title": "SIE-exportrapport",
+  "period": "2025-01-01 -- 2025-12-31",
+  "org_name": "Ekbackens Koloniförening",
+  "org_number": "802000-1234",
+  "sie_version": "4",
+  "program": "Fortnox",
+  "gen_date": "2026-01-15",
+  "rubrik_ar1": "2025",
+  "rubrik_ar2": "2024",
+  "grupper": [
+    {
+      "rubrik": "3 — Intäkter",
+      "poster": [
+        { "post": "3010 Medlemsavgifter", "belopp_ar1": 84000, "belopp_ar2": 78000 },
+        { "post": "3020 Hyresintäkter", "belopp_ar1": 36000, "belopp_ar2": 34000 },
+        { "post": "3030 Bidrag", "belopp_ar1": 15000, "belopp_ar2": 15000 }
+      ],
+      "summa": { "label": "Summa klass 3", "belopp_ar1": 135000, "belopp_ar2": 127000 }
+    },
+    {
+      "rubrik": "5 — Lokalkostnader",
+      "poster": [
+        { "post": "5010 Vatten och avlopp", "belopp_ar1": -22000, "belopp_ar2": -20000 },
+        { "post": "5020 El och uppvärmning", "belopp_ar1": -18000, "belopp_ar2": -16500 },
+        { "post": "5030 Underhåll", "belopp_ar1": -31000, "belopp_ar2": -25000 },
+        { "post": "5040 Försäkringar", "belopp_ar1": -12000, "belopp_ar2": -11000 }
+      ],
+      "summa": { "label": "Summa klass 5", "belopp_ar1": -83000, "belopp_ar2": -72500 }
+    },
+    {
+      "rubrik": "6 — Övriga kostnader",
+      "poster": [
+        { "post": "6110 Kontorsmaterial", "belopp_ar1": -3500, "belopp_ar2": -2800 },
+        { "post": "6210 Porto och telefon", "belopp_ar1": -2500, "belopp_ar2": -2500 },
+        { "post": "6310 Bankavgifter", "belopp_ar1": -2500, "belopp_ar2": -2500 }
+      ],
+      "summa": { "label": "Summa klass 6", "belopp_ar1": -8500, "belopp_ar2": -7800 }
+    }
+  ],
+  "resultat": {
+    "label": "Årets resultat",
+    "belopp_ar1": 43500,
+    "belopp_ar2": 46700
+  }
+}

@@ -9,6 +9,7 @@ from pathlib import Path
 import jinja2
 import jsonschema
 
+from klartex.inline_markup import render_inline
 from klartex.registry import discover_templates
 from klartex.tex_escape import escape_data
 from klartex.block_engine import BLOCK_ENGINE_TEMPLATE
@@ -44,6 +45,17 @@ _jinja_env = jinja2.Environment(
     autoescape=False,
     loader=jinja2.FileSystemLoader([str(TEMPLATES_DIR)]),
 )
+
+
+@jinja2.pass_context
+def _inline_filter(ctx, value):
+    """Jinja filter: parse inline markup against the document language."""
+    if value is None:
+        return ""
+    return render_inline(str(value), lang=ctx.get("lang", "sv"))
+
+
+_jinja_env.filters["inline"] = _inline_filter
 
 
 def render(

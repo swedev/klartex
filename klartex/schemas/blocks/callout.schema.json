@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://klartex.se/schemas/blocks/callout/v0.1",
+  "title": "Callout Block",
+  "description": "Visually distinct notice box (info/tip/warning/danger/note).",
+  "type": "object",
+  "required": ["type", "text"],
+  "additionalProperties": false,
+  "properties": {
+    "type": { "type": "string", "const": "callout" },
+    "variant": {
+      "type": "string",
+      "enum": ["info", "tip", "warning", "danger", "note"],
+      "default": "note"
+    },
+    "title": {
+      "type": "string",
+      "description": "Optional title prefix; defaults to variant label, set to \"\" to suppress"
+    },
+    "text": {
+      "type": "string",
+      "description": "Body text (single paragraph). Inline markup applies."
+    }
+  }
+}

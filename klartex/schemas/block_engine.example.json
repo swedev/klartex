@@ -22,7 +22,39 @@
     },
     {
       "type": "text",
-      "text": "Detta är ett exempeldokument som visar alla tillgängliga blocktyper i klartex blockmotor."
+      "text": "Detta är ett exempeldokument som visar alla tillgängliga blocktyper i klartex blockmotor. Du kan använda **fet stil**, *kursiv*, `kod` och \"smarta citattecken\" direkt i text."
+    },
+    {
+      "type": "callout",
+      "variant": "note",
+      "title": "Utkast 2026-04-29",
+      "text": "Callout-block används för aviseringar och statusrutor."
+    },
+    {
+      "type": "list",
+      "style": "bullet",
+      "items": [
+        "Punkter med **inline-markup** fungerar.",
+        {
+          "text": "Nestade listor stöds också.",
+          "items": ["Underpunkt A", "Underpunkt B"],
+          "style": "numbered"
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "size": "small",
+      "header": ["Tjänst", "Strategi"],
+      "rows": [
+        ["Bitwarden", "Lösen + TOTP"],
+        ["BankID", "Personligt, kan inte delas"]
+      ]
+    },
+    {
+      "type": "quote",
+      "text": "Endast servicebyggnader med koppling till koloniområdet är tillåtna.",
+      "attribution": "Detaljplan Dp 5804, bestämmelse s1"
     },
     {
       "type": "parties",

@@ -108,6 +108,30 @@ _COMPONENTS: dict[str, ComponentSpec] = {
         description="Force a page break",
         block_schema_path="page_break.schema.json",
     ),
+    "list": ComponentSpec(
+        name="list",
+        sty_package=None,
+        description="Bullet or numbered list, optionally nested",
+        block_schema_path="list.schema.json",
+    ),
+    "table": ComponentSpec(
+        name="table",
+        sty_package=None,
+        description="Simple data table with header and rows",
+        block_schema_path="table.schema.json",
+    ),
+    "callout": ComponentSpec(
+        name="callout",
+        sty_package="klartex-callout",
+        description="Visually distinct notice (info/tip/warning/danger/note)",
+        block_schema_path="callout.schema.json",
+    ),
+    "quote": ComponentSpec(
+        name="quote",
+        sty_package=None,
+        description="Typographic blockquote with optional attribution",
+        block_schema_path="quote.schema.json",
+    ),
     "latex": ComponentSpec(
         name="latex",
         sty_package=None,

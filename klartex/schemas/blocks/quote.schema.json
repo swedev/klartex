@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://klartex.se/schemas/blocks/quote/v0.1",
+  "title": "Quote Block",
+  "description": "Typographic blockquote with optional attribution. Indented italic prose, attribution prefixed with em-dash.",
+  "type": "object",
+  "required": ["type", "text"],
+  "additionalProperties": false,
+  "properties": {
+    "type": { "type": "string", "const": "quote" },
+    "text": {
+      "type": "string",
+      "description": "The quoted passage. Inline markup applies."
+    },
+    "attribution": {
+      "type": "string",
+      "description": "Optional attribution line. Prefixed with em-dash on render."
+    }
+  }
+}

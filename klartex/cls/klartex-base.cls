@@ -146,5 +146,6 @@
 \RequirePackage{klartex-resultatrakning}
 \RequirePackage{klartex-budgettabell}
 \RequirePackage{klartex-notapparat}
+\RequirePackage{klartex-callout}
 
 \endinput

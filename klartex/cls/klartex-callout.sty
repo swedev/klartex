@@ -1,0 +1,78 @@
+% klartex-callout.sty - Callout / notice box component (#27)
+%
+% Usage:
+%   \begin{callout}{variant}{title}
+%     Body text.
+%   \end{callout}
+%
+% Variants: info, tip, warning, danger, note.
+% Pass an empty title to suppress the title prefix.
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{klartex-callout}[2026/04/29 Klartex Callout Component]
+
+\RequirePackage[most]{tcolorbox}
+\RequirePackage{xcolor}
+
+% Variant palette (background fill + accent rule colour).
+\definecolor{kx@call@info@bg}{HTML}{EAF3FB}
+\definecolor{kx@call@info@fg}{HTML}{2A6FB0}
+\definecolor{kx@call@tip@bg}{HTML}{ECF7EE}
+\definecolor{kx@call@tip@fg}{HTML}{2E7D32}
+\definecolor{kx@call@warning@bg}{HTML}{FDF5E6}
+\definecolor{kx@call@warning@fg}{HTML}{B7791F}
+\definecolor{kx@call@danger@bg}{HTML}{FBEAEA}
+\definecolor{kx@call@danger@fg}{HTML}{B91C1C}
+\definecolor{kx@call@note@bg}{HTML}{F2F2F2}
+\definecolor{kx@call@note@fg}{HTML}{555555}
+
+% \kx@callout@colours{variant} sets \kx@call@bg and \kx@call@fg.
+\newcommand{\kx@callout@colours}[1]{%
+    \def\kx@call@variant{#1}%
+    \def\kx@call@info{info}%
+    \def\kx@call@tip{tip}%
+    \def\kx@call@warning{warning}%
+    \def\kx@call@danger{danger}%
+    \ifx\kx@call@variant\kx@call@info
+        \colorlet{kx@call@bg}{kx@call@info@bg}\colorlet{kx@call@fg}{kx@call@info@fg}%
+    \else\ifx\kx@call@variant\kx@call@tip
+        \colorlet{kx@call@bg}{kx@call@tip@bg}\colorlet{kx@call@fg}{kx@call@tip@fg}%
+    \else\ifx\kx@call@variant\kx@call@warning
+        \colorlet{kx@call@bg}{kx@call@warning@bg}\colorlet{kx@call@fg}{kx@call@warning@fg}%
+    \else\ifx\kx@call@variant\kx@call@danger
+        \colorlet{kx@call@bg}{kx@call@danger@bg}\colorlet{kx@call@fg}{kx@call@danger@fg}%
+    \else
+        \colorlet{kx@call@bg}{kx@call@note@bg}\colorlet{kx@call@fg}{kx@call@note@fg}%
+    \fi\fi\fi\fi
+}
+
+% Environment: \begin{callout}{variant}{title} ... \end{callout}
+% An empty title (#2 = empty) suppresses the title prefix entirely.
+\providecommand{\kxCalloutTitle}[1]{%
+    \ifx\relax#1\relax\else
+        \textbf{\textcolor{kx@call@fg}{#1}}\quad
+    \fi
+}
+\newenvironment{callout}[2]{%
+    \kx@callout@colours{#1}%
+    \begin{tcolorbox}[
+        enhanced,
+        colback=kx@call@bg,
+        colframe=kx@call@fg,
+        boxrule=0pt,
+        frame hidden,
+        borderline west={2pt}{0pt}{kx@call@fg},
+        arc=2pt,
+        left=1em,
+        right=1em,
+        top=0.6em,
+        bottom=0.6em,
+        before skip=0.6em,
+        after skip=0.6em,
+    ]%
+    \kxCalloutTitle{#2}\ignorespaces
+}{%
+    \end{tcolorbox}%
+}
+
+\endinput

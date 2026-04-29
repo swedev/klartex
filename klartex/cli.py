@@ -2,6 +2,7 @@
 
 import json
 import sys
+from importlib.metadata import version as pkg_version
 from pathlib import Path
 from typing import Optional
 
@@ -10,6 +11,12 @@ import typer
 from klartex.renderer import render, get_registry
 
 app = typer.Typer(help="Klartex — PDF generation via LaTeX", invoke_without_command=True)
+
+
+def _version_callback(value: bool):
+    if value:
+        typer.echo(f"klartex {pkg_version('klartex')}")
+        raise typer.Exit()
 
 
 @app.callback()
@@ -23,6 +30,7 @@ def main(
         "--page-template",
         help="Page template file path. Overrides data.page_template.",
     ),
+    version: Optional[bool] = typer.Option(None, "--version", "-V", help="Show version and exit.", callback=_version_callback, is_eager=True),
 ):
     """Render JSON data to PDF. Reads from stdin if no --data is given."""
     if ctx.invoked_subcommand is not None:

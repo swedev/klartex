@@ -3,13 +3,15 @@
 
 \VAR{page_template_source}
 
-%# --- Apply page template overrides ---
+%# --- Apply page template overrides (skipped when external template is self-contained) ---
+\BLOCK{if not external_page_template}
 \BLOCK{if not page_template.page_numbers}
 \fancyfoot[C]{}
 \BLOCK{endif}
 \BLOCK{if not page_template.first_page_header}
 \fancypagestyle{plain}{\fancyhead{}\renewcommand{\headrulewidth}{0pt}}
 \thispagestyle{plain}
+\BLOCK{endif}
 \BLOCK{endif}
 
 \BLOCK{if lang == 'en'}
@@ -136,11 +138,20 @@ Personnr: \VAR{party.id_number}\\
 \BLOCK{set _ = clause_started.__setitem__(0, false) }
 \BLOCK{endif}
 \BLOCK{if block.get('level', 1) == 1}
-{\fontsize{24pt}{29pt}\selectfont\bfseries \VAR{block.text | inline}\par}\vspace{3em}
+\vspace{2.5em}
+{\fontsize{24pt}{29pt}\selectfont\bfseries \VAR{block.text | inline}\par}
+\vspace{0.6em}
+\nopagebreak[4]
 \BLOCK{elif block.get('level', 1) == 2}
-{\Large\bfseries \VAR{block.text | inline}\par}\vspace{1.5em}
+\vspace{1.4em}
+{\Large\bfseries \VAR{block.text | inline}\par}
+\vspace{0.2em}
+\nopagebreak[4]
 \BLOCK{else}
-{\large\bfseries \VAR{block.text | inline}\par}\vspace{1em}
+\vspace{0.9em}
+{\large\bfseries \VAR{block.text | inline}\par}
+\vspace{0.1em}
+\nopagebreak[4]
 \BLOCK{endif}
 
 \BLOCK{elif block.type == 'parties'}
@@ -163,7 +174,6 @@ Personnr: \VAR{party.id_number}\\
 \BLOCK{set _ = clause_started.__setitem__(0, false) }
 \BLOCK{endif}
 
-\vspace{1em}
 \noindent \VAR{block.text | inline}
 
 \BLOCK{elif block.type == 'clause'}
@@ -244,6 +254,7 @@ Personnr: \VAR{party.id_number}\\
 \textbf{\VAR{entry.label}} & \VAR{entry.value} \\
 \BLOCK{endfor}
 \end{tabular}
+\vspace{1em}
 
 \BLOCK{elif block.type == 'attendees'}
 \BLOCK{if clause_started[0]}

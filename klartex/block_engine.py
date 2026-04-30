@@ -58,8 +58,10 @@ def prepare_block_context(
 
     # Resolve page template
     page_template_spec = data.get("page_template", "none")
-    if page_template_source is not None:
-        # Caller provided raw source — skip built-in lookup, just load metadata
+    external_page_template = page_template_source is not None
+    if external_page_template:
+        # Caller provided raw source — it owns header/footer entirely. No
+        # built-in metadata, no post-template overrides.
         page_tmpl = load_page_template("none")
     else:
         page_tmpl = load_page_template(page_template_spec)
@@ -73,6 +75,7 @@ def prepare_block_context(
         "lang": data.get("lang", "sv"),
         "page_template_source": page_template_source,
         "page_template": page_tmpl,
+        "external_page_template": external_page_template,
         "doc_title": doc_title,
     }
 

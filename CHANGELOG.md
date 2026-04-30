@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.3.0 — 2026-04-30
+
+### New blocks
+- **`list`** — bullet/numbered, nestable (#24)
+- **`table`** — simple data table with `tabularx` + `booktabs`, configurable column widths (#26)
+- **`callout`** — visually distinct notice box with five variants (info/tip/warning/danger/note), backed by new `klartex-callout.sty` (#27)
+- **`quote`** — typographic blockquote with optional em-dash attribution (#28)
+
+### New features
+- **Inline markup** in text-bearing fields: `**bold**`, `*italic*`, `` `code` ``, locale-aware smart quotes (sv: ”…”, en: “…”). Implemented as a Jinja `inline` filter; runs post-escape so existing escaping stays intact. (#25)
+- **CLI:** `--version` / `-V` flag
+
+### Fixes
+- **External page templates** are now treated as self-contained — `--page-template` no longer loses the page-1 header from spurious `\thispagestyle{plain}` overrides applied on top of the user's template
+- **Heading typography:** moved `\vspace` from after to before headings with asymmetric magnitudes; headings now visually belong to their following content. Removed redundant `\vspace{1em}` before text blocks (parskip handles it)
+- **`metadata_table`** gets a default `\vspace{1em}` after, so it breathes before body content
+
 ## 0.2.1 — 2026-04-02
 
 ### Fixes

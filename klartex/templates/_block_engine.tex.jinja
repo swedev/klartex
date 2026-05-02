@@ -62,11 +62,12 @@ Personnr: \VAR{party.id_number}\\
 \BLOCK{for cell in header}\textbf{\VAR{cell | inline}}\BLOCK{if not loop.last} & \BLOCK{endif}\BLOCK{endfor} \\
 \midrule
 \BLOCK{for row in rows}
-\BLOCK{for cell in row}\VAR{cell | inline}\BLOCK{if not loop.last} & \BLOCK{endif}\BLOCK{endfor} \\
+\BLOCK{for cell in row}\VAR{cell | inline}\BLOCK{if not loop.last} & \BLOCK{endif}\BLOCK{endfor} \\\BLOCK{if not loop.last}\cmidrule[0.2pt]{1-\VAR{ncols}}\BLOCK{endif}
 \BLOCK{endfor}
 \bottomrule
 \end{tabularx}
 \endgroup
+\vspace{1em}
 
 \BLOCK{endmacro}
 
@@ -237,11 +238,32 @@ Personnr: \VAR{party.id_number}\\
 \end{clauses}
 \BLOCK{set _ = clause_started.__setitem__(0, false) }
 \BLOCK{endif}
-\BLOCK{if block.get("new_page", true)}
-\signatureblock{\VAR{block.parties[0].name}}{\VAR{block.parties[1].name}}{\VAR{block.parties[0].get('signatory', block.parties[0].name)}}{\VAR{block.parties[1].get('signatory', block.parties[1].name)}}{\VAR{block.parties[0].get('title', '')}}{\VAR{block.parties[1].get('title', '')}}
-\BLOCK{else}
-\signatureblock*{\VAR{block.parties[0].name}}{\VAR{block.parties[1].name}}{\VAR{block.parties[0].get('signatory', block.parties[0].name)}}{\VAR{block.parties[1].get('signatory', block.parties[1].name)}}{\VAR{block.parties[0].get('title', '')}}{\VAR{block.parties[1].get('title', '')}}
+\BLOCK{if block.get("new_page", true)}\clearpage\BLOCK{else}\vspace{1cm}\BLOCK{endif}
+\BLOCK{if block.get('header')}
+\section*{\VAR{block.header}}
+\addcontentsline{toc}{section}{\VAR{block.header}}
 \BLOCK{endif}
+\BLOCK{if block.parties | length == 2}
+\kxsignaturesintro
+
+\vspace{0.5cm}
+\BLOCK{endif}
+\BLOCK{set sig_cols = block.get('columns', 2) }
+\BLOCK{set sig_width = (0.9 / sig_cols) | round(4) }
+\BLOCK{set hide_loc = '' if block.get('show_location_date', true) else '1' }
+\BLOCK{for party in block.parties}
+\BLOCK{if loop.index0 % sig_cols == 0}
+\noindent
+\BLOCK{endif}
+\begin{minipage}[t]{\VAR{sig_width}\textwidth}
+\kxsignaturepane{\VAR{party.get('name', '')}}{\VAR{party.get('signatory', party.get('name', ''))}}{\VAR{party.get('title', '')}}{\VAR{hide_loc}}
+\end{minipage}\BLOCK{if (loop.index % sig_cols != 0) and (not loop.last)}\hfill\BLOCK{endif}
+\BLOCK{if (loop.index % sig_cols == 0) and (not loop.last)}
+
+\vspace{1cm}
+
+\BLOCK{endif}
+\BLOCK{endfor}
 
 \BLOCK{elif block.type == 'metadata_table'}
 \BLOCK{if clause_started[0]}
@@ -297,24 +319,6 @@ Personnr: \VAR{party.id_number}\\
 \person{\VAR{person.name}}{\VAR{person.role}}{\VAR{person.get('note', '')}}
 \BLOCK{endfor}
 }
-
-\BLOCK{elif block.type == 'adjuster_signatures'}
-\BLOCK{if clause_started[0]}
-\end{clauses}
-\BLOCK{set _ = clause_started.__setitem__(0, false) }
-\BLOCK{endif}
-\BLOCK{if block.get('adjusters')}
-\vspace{2cm}
-\noindent
-\BLOCK{set adj_label = block.get('label', 'Justerare') }
-\BLOCK{for adjuster in block.adjusters}
-\begin{minipage}[t]{0.45\textwidth}
-\VAR{adj_label}\\[1cm]
-\dottedline\\[0.3cm]
-\VAR{adjuster}
-\end{minipage}\BLOCK{if not loop.last}\hfill\BLOCK{endif}
-\BLOCK{endfor}
-\BLOCK{endif}
 
 \BLOCK{elif block.type == 'resultatrakning'}
 \BLOCK{if clause_started[0]}

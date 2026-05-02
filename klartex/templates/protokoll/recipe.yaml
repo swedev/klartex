@@ -50,8 +50,4 @@ components:
       item_decision_field: decision
       decision_label: "Beslut:"
 
-  - type: adjuster_signatures
-    data_map:
-      adjusters: adjusters
-
 schema: schema.json

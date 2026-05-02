@@ -130,7 +130,7 @@ Använd sedan `--page-template minforening.tex.jinja` i CLI eller `"page_templat
 Klartex har en trelagers-arkitektur:
 
 1. **Dokumentnivå** — `klartex-base.cls` hanterar siduppställning och grundläggande sidhuvud/sidfot. Sidmallar (`.tex.jinja`) injiceras i preambeln och styr färger, logotyp och layout.
-2. **Komponentnivå** — Återanvändbara `.sty`-paket som ger strukturerade LaTeX-makron (t.ex. `klartex-signaturblock.sty`, `klartex-klausuler.sty`, `klartex-agenda.sty`)
+2. **Komponentnivå** — Återanvändbara `.sty`-paket som ger strukturerade LaTeX-makron (t.ex. `klartex-signatureblock.sty`, `klartex-klausuler.sty`, `klartex-agenda.sty`)
 3. **Receptnivå** — YAML-filer som deklarerar vilka komponenter och innehållsfält som ska kombineras
 
 ### Renderingsvägar
@@ -166,9 +166,9 @@ components:
 schema: schema.json
 ```
 
-Tillgängliga recept-komponenter: `heading`, `metadata_table`, `attendees`, `klausuler`, `signaturblock`, `titelsida`, `adjuster_signatures`, `invoice_header`, `invoice_recipient`, `invoice_table`, `payment_info`, `invoice_note`.
+Tillgängliga recept-komponenter: `heading`, `metadata_table`, `attendees`, `klausuler`, `signatureblock`, `titelsida`, `invoice_header`, `invoice_recipient`, `invoice_table`, `payment_info`, `invoice_note`.
 
-Block engine-block: `heading`, `text`, `title_page`, `parties`, `clause`, `signatures`, `metadata_table`, `attendees`, `agenda`, `name_roster`, `adjuster_signatures`, `resultatrakning`, `budgettabell`, `notapparat`, `page_break`, `latex`.
+Block engine-block: `heading`, `text`, `list`, `table`, `callout`, `quote`, `title_page`, `parties`, `clause`, `signatures`, `metadata_table`, `attendees`, `agenda`, `name_roster`, `resultatrakning`, `budgettabell`, `notapparat`, `page_break`, `latex`.
 
 ## Årsmötespaket
 

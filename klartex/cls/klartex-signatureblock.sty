@@ -1,10 +1,10 @@
-% klartex-signaturblock.sty - Signature block component
+% klartex-signatureblock.sty - Signature block component
 % Provides \signatureblock and \dottedline commands
 %
-% Usage: \usepackage{klartex-signaturblock}
+% Usage: \usepackage{klartex-signatureblock}
 
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{klartex-signaturblock}[2026/02/18 Klartex Signature Block Component]
+\ProvidesPackage{klartex-signatureblock}[2026/02/18 Klartex Signature Block Component]
 
 % Dependencies
 \RequirePackage{graphicx}
@@ -32,36 +32,60 @@
     \fi
 }
 
+% Public helpers for the block engine's flexible signatures layout.
+% These wrap the private \kx@ commands so callers don't need \makeatletter.
+\makeatletter
+% Default two-party intro paragraph
+\providecommand{\kxsignaturesintro}{\kx@sigintro}
+% Inner content of one signature pane (used inside a minipage).
+% Args: #1=party name (empty -> header omitted)
+%       #2=signatory name
+%       #3=title
+%       #4=hide-location-date flag (non-empty -> "Ort och datum" line omitted)
+\providecommand{\kxsignaturepane}[4]{%
+    \def\kx@tmp@p{#1}%
+    \ifx\kx@tmp@p\@empty\else\textbf{#1}\\[0.4cm]\fi
+    \def\kx@tmp@hld{#4}%
+    \ifx\kx@tmp@hld\@empty
+        \kx@locationdate\\[0.6cm]
+        \dottedline[\linewidth]\\[0.4cm]
+    \fi
+    \kx@signature\\[0.6cm]
+    \dottedline[\linewidth]\\[0.25cm]
+    \kx@signatory@line{#1}{#2}{#3}%
+}
+\makeatother
+
 % Signature block (language-aware)
 % Args: *=no page break, #1=Party1 name, #2=Party2 name, #3=Party1 signatory, #4=Party2 signatory, #5=Party1 title, #6=Party2 title
 \makeatletter
 \providecommand{\signatureblock}{\@ifstar{\signatureblock@nobreak}{\signatureblock@break}}
 \newcommand{\signatureblock@break}[6]{\clearpage\signatureblock@body{#1}{#2}{#3}{#4}{#5}{#6}}
-\newcommand{\signatureblock@nobreak}[6]{\vspace{1.5cm}\signatureblock@body{#1}{#2}{#3}{#4}{#5}{#6}}
+\newcommand{\signatureblock@nobreak}[6]{\vspace{1cm}\signatureblock@body{#1}{#2}{#3}{#4}{#5}{#6}}
 \newcommand{\signatureblock@body}[6]{%
     \section*{\kx@signatures}
     \addcontentsline{toc}{section}{\kx@signatures}
 
     \kx@sigintro
 
-    \vspace{0.75cm}
+    \vspace{0.5cm}
 
     \noindent
     \begin{minipage}[t]{0.45\textwidth}
-        \textbf{#1}\\[0.5cm]
-        \kx@locationdate\\[1cm]
-        \dottedline\\[0.5cm]
-        \kx@signature\\[1cm]
-        \dottedline\\[0.3cm]
+        \textbf{#1}\\[0.4cm]
+        \kx@locationdate\\[0.6cm]
+        \dottedline\\[0.4cm]
+        \kx@signature\\[0.6cm]
+        \dottedline\\[0.25cm]
         \kx@signatory@line{#1}{#3}{#5}
     \end{minipage}%
     \hfill
     \begin{minipage}[t]{0.45\textwidth}
-        \textbf{#2}\\[0.5cm]
-        \kx@locationdate\\[1cm]
-        \dottedline\\[0.5cm]
-        \kx@signature\\[1cm]
-        \dottedline\\[0.3cm]
+        \textbf{#2}\\[0.4cm]
+        \kx@locationdate\\[0.6cm]
+        \dottedline\\[0.4cm]
+        \kx@signature\\[0.6cm]
+        \dottedline\\[0.25cm]
         \kx@signatory@line{#2}{#4}{#6}
     \end{minipage}
 }

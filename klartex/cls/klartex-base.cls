@@ -139,7 +139,7 @@
 % defined above take precedence (no redefinition conflicts).
 \RequirePackage{klartex-klausuler}
 \RequirePackage{klartex-titelsida}
-\RequirePackage{klartex-signaturblock}
+\RequirePackage{klartex-signatureblock}
 \RequirePackage{klartex-agenda}
 \RequirePackage{klartex-name-roster}
 \RequirePackage{klartex-numformat}

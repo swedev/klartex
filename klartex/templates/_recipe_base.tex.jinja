@@ -69,25 +69,12 @@
 \BLOCK{endfor}
 \end{clauses}
 
-\BLOCK{elif comp.type == 'signaturblock'}
+\BLOCK{elif comp.type == 'signatureblock'}
 \BLOCK{set _p = comp.data.parties}
 \signatureblock{\VAR{_p[0].name}}{\VAR{_p[1].name}}{\VAR{_p[0].get('signatory', _p[0].name)}}{\VAR{_p[1].get('signatory', _p[1].name)}}{\VAR{_p[0].get('title', '')}}{\VAR{_p[1].get('title', '')}}
 
 \BLOCK{elif comp.type == 'titelsida'}
 \makedoctitle{\VAR{comp.data.get('party1', '')}}{\VAR{comp.data.get('party2', '')}}{\VAR{comp.data.get('title', '')}}
-
-\BLOCK{elif comp.type == 'adjuster_signatures'}
-\BLOCK{if comp.data.get('adjusters')}
-\vspace{2cm}
-\noindent
-\BLOCK{for adjuster in comp.data.adjusters}
-\begin{minipage}[t]{0.45\textwidth}
-Justerare\\[1cm]
-\dottedline\\[0.3cm]
-\VAR{adjuster}
-\end{minipage}\BLOCK{if not loop.last}\hfill\BLOCK{endif}
-\BLOCK{endfor}
-\BLOCK{endif}
 
 \BLOCK{elif comp.type == 'invoice_header'}
 \begin{flushright}

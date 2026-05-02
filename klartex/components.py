@@ -74,7 +74,7 @@ _COMPONENTS: dict[str, ComponentSpec] = {
     ),
     "signatures": ComponentSpec(
         name="signatures",
-        sty_package="klartex-signaturblock",
+        sty_package="klartex-signatureblock",
         description="Signature block for parties",
         block_schema_path="signatures.schema.json",
     ),
@@ -162,21 +162,15 @@ _COMPONENTS: dict[str, ComponentSpec] = {
         sty_package="klartex-klausuler",
         description="Legal clause numbering with \\clause command (recipe component)",
     ),
-    "signaturblock": ComponentSpec(
-        name="signaturblock",
-        sty_package="klartex-signaturblock",
+    "signatureblock": ComponentSpec(
+        name="signatureblock",
+        sty_package="klartex-signatureblock",
         description="Two-party signature block (recipe component)",
     ),
     "titelsida": ComponentSpec(
         name="titelsida",
         sty_package="klartex-titelsida",
         description="Title page with two party names and document title (recipe component)",
-    ),
-    "adjuster_signatures": ComponentSpec(
-        name="adjuster_signatures",
-        sty_package="klartex-signaturblock",
-        description="Adjuster signature lines (for protokoll)",
-        block_schema_path="adjuster_signatures.schema.json",
     ),
     "invoice_header": ComponentSpec(
         name="invoice_header",

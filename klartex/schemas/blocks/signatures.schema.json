@@ -1,28 +1,41 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://klartex.se/schemas/blocks/signatures/v0.1",
+  "$id": "https://klartex.se/schemas/blocks/signatures/v0.2",
   "title": "Signatures Block",
-  "description": "Signature block for exactly two parties",
+  "description": "Signature block for one or more parties, laid out in a configurable number of columns",
   "type": "object",
   "required": ["type", "parties"],
   "additionalProperties": false,
   "properties": {
     "type": { "type": "string", "const": "signatures" },
     "new_page": { "type": "boolean", "default": true, "description": "Start signatures on a new page" },
+    "header": {
+      "type": "string",
+      "description": "Optional section header text shown above the signatures (e.g. 'Underskrifter'). Omit for no header."
+    },
+    "columns": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 2,
+      "description": "Number of signature panes per row"
+    },
+    "show_location_date": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show the 'Ort och datum' line and dotted entry above each signature line"
+    },
     "parties": {
       "type": "array",
       "description": "Parties to sign",
       "items": {
         "type": "object",
-        "required": ["name"],
         "properties": {
-          "name": { "type": "string", "description": "Party/company name" },
+          "name": { "type": "string", "description": "Party/company name (omit to suppress the bold header above the signature)" },
           "signatory": { "type": "string", "description": "Name of person signing (defaults to name if omitted)" },
           "title": { "type": "string", "description": "Signatory title, e.g. 'Verkställande Direktör, Acme AB'" }
         }
       },
-      "minItems": 2,
-      "maxItems": 2
+      "minItems": 1
     }
   }
 }

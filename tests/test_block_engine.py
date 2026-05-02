@@ -109,12 +109,28 @@ class TestBlockTypeValidation:
             render(BLOCK_ENGINE_TEMPLATE, data)
 
     def test_invalid_signatures_payload_raises(self):
-        """A signatures block with only 1 party should fail validation."""
+        """A signatures block with no parties should fail validation."""
         from klartex.renderer import render
 
         data = {
             "body": [
-                {"type": "signatures", "parties": [{"name": "Solo"}]},
+                {"type": "signatures", "parties": []},
+            ],
+        }
+        with pytest.raises(ValueError, match="Invalid 'signatures' block"):
+            render(BLOCK_ENGINE_TEMPLATE, data)
+
+    def test_invalid_signatures_columns_raises(self):
+        """A signatures block with columns < 1 should fail validation."""
+        from klartex.renderer import render
+
+        data = {
+            "body": [
+                {
+                    "type": "signatures",
+                    "columns": 0,
+                    "parties": [{"name": "A"}, {"name": "B"}],
+                },
             ],
         }
         with pytest.raises(ValueError, match="Invalid 'signatures' block"):
@@ -330,7 +346,7 @@ class TestBlockEngineRendering:
 
 
 class TestSignaturesFeatures:
-    """Tests for signatures signatory/title fallback and adjuster_signatures."""
+    """Tests for signatures signatory/title fallback."""
 
     @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
     def test_signatures_signatory_defaults_to_name(self):
@@ -373,33 +389,43 @@ class TestSignaturesFeatures:
         assert pdf[:5] == b"%PDF-"
 
     @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
-    def test_adjuster_signatures_renders(self):
-        """Adjuster signatures block should render valid PDF."""
+    def test_signatures_single_party_renders(self):
+        """A single-party signatures block should render."""
         from klartex.renderer import render
 
         data = {
             "body": [
-                {"type": "heading", "text": "Protokoll"},
+                {"type": "heading", "text": "Test"},
                 {
-                    "type": "adjuster_signatures",
-                    "adjusters": ["Anna Andersson", "Erik Eriksson"],
+                    "type": "signatures",
+                    "parties": [{"name": "Solo AB", "signatory": "Anna Andersson"}],
                 },
             ],
         }
         pdf = render(BLOCK_ENGINE_TEMPLATE, data)
         assert pdf[:5] == b"%PDF-"
 
-    def test_adjuster_signatures_missing_adjusters_raises(self):
-        """Adjuster signatures without adjusters should fail schema validation."""
+    @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+    def test_signatures_three_parties_two_columns(self):
+        """3 parties laid out in 2 columns should render (2 + 1 layout)."""
         from klartex.renderer import render
 
         data = {
             "body": [
-                {"type": "adjuster_signatures"},
+                {"type": "heading", "text": "Test"},
+                {
+                    "type": "signatures",
+                    "columns": 2,
+                    "parties": [
+                        {"name": "Acme AB"},
+                        {"name": "Beta Corp"},
+                        {"name": "Gamma Ltd"},
+                    ],
+                },
             ],
         }
-        with pytest.raises(ValueError, match="Invalid 'adjuster_signatures' block"):
-            render(BLOCK_ENGINE_TEMPLATE, data)
+        pdf = render(BLOCK_ENGINE_TEMPLATE, data)
+        assert pdf[:5] == b"%PDF-"
 
 
 class TestFinancialComponents:

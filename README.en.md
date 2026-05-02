@@ -130,7 +130,7 @@ Then use `--page-template myorg.tex.jinja` in CLI or `"page_template_source": ".
 Klartex uses a three-layer architecture:
 
 1. **Document level** — `klartex-base.cls` handles page setup and basic headers/footers. Page templates (`.tex.jinja`) are injected into the preamble and control colors, logos, and layout.
-2. **Component level** — Reusable `.sty` packages providing structured LaTeX macros (e.g. `klartex-signaturblock.sty`, `klartex-klausuler.sty`, `klartex-agenda.sty`)
+2. **Component level** — Reusable `.sty` packages providing structured LaTeX macros (e.g. `klartex-signatureblock.sty`, `klartex-klausuler.sty`, `klartex-agenda.sty`)
 3. **Recipe level** — YAML files that declare which components and content fields to combine
 
 ### Rendering paths
@@ -166,9 +166,9 @@ components:
 schema: schema.json
 ```
 
-Available recipe components: `heading`, `metadata_table`, `attendees`, `klausuler`, `signaturblock`, `titelsida`, `adjuster_signatures`, `invoice_header`, `invoice_recipient`, `invoice_table`, `payment_info`, `invoice_note`.
+Available recipe components: `heading`, `metadata_table`, `attendees`, `klausuler`, `signatureblock`, `titelsida`, `invoice_header`, `invoice_recipient`, `invoice_table`, `payment_info`, `invoice_note`.
 
-Block engine blocks: `heading`, `text`, `title_page`, `parties`, `clause`, `signatures`, `metadata_table`, `attendees`, `agenda`, `name_roster`, `adjuster_signatures`, `resultatrakning`, `budgettabell`, `notapparat`, `page_break`, `latex`.
+Block engine blocks: `heading`, `text`, `list`, `table`, `callout`, `quote`, `title_page`, `parties`, `clause`, `signatures`, `metadata_table`, `attendees`, `agenda`, `name_roster`, `resultatrakning`, `budgettabell`, `notapparat`, `page_break`, `latex`.
 
 ## Annual Meeting Package
 

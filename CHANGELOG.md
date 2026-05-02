@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.4.0 — 2026-05-02
+
+### Breaking changes
+- **Removed `adjuster_signatures` block.** The `protokoll` recipe still surfaces adjusters via the `attendees` label; for dedicated adjuster signature lines, use the `signatures` block.
+- **Renamed `klartex-signaturblock` → `klartex-signatureblock`** (both the `.sty` package and the recipe component type). Update `\usepackage{klartex-signaturblock}` and any recipe `type: signaturblock` references.
+
+### New features
+- **`signatures` flexibility:** party `name` is now optional (omit to suppress the bold header above a signature pane); new block-level `show_location_date` flag (default `true`) hides the "Ort och datum" line and its dotted entry.
+
+### Improvements
+- **`table` block:** thin row lines (0.2pt `\cmidrule` between data rows) and a default `1em` bottom margin so following content breathes.
+- **`signatures` block:** tighter pane spacing — reduced gaps above dotted lines (`0.8cm → 0.6cm`), shorter pane internals, and smaller inter-row/intro vspaces.
+- **README:** previously-missing v0.3.0 blocks (`list`, `table`, `callout`, `quote`) now listed.
+
 ## 0.3.0 — 2026-04-30
 
 ### New blocks

@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.5.0 — 2026-05-03
+
+### Breaking changes
+- **Removed `preamble` block.** It was a pure alias for `text`; use `{"type": "text", ...}` instead. The recipe schema for `avtal` no longer accepts `"preamble"` either.
+- **Removed `attendees` block.** The `protokoll` recipe still accepts `attendees` and `adjusters` in its input data and now surfaces them as `Närvarande:` / `Justerare:` rows in the metadata table — no input-data change is required for `protokoll`. Block-engine documents that previously used `{"type": "attendees", ...}` should switch to plain `text` blocks with bold inline labels.
+
+### Spacing
+- **Heading rhythm:** trailing `\vspace` now cancels the surrounding `\parskip` locally so H1/H2/H3 produce visibly distinct gaps below them (~1.2 / 0.5 / 0.15 em). Previously the parskip drowned the level differences.
+- **`metadata_table`:** 2em above and below.
+- **`parties`:** 3em above and below.
+- **`table`:** symmetric 1em above and below (was 0/1).
+- **`name_roster`, `resultatrakning`, `budgettabell`, `notapparat`:** explicit top/bottom margins so they no longer klistra mot brödtext.
+- **`callout`:** `before/after skip` raised to 1em — consecutive callouts no longer touch.
+
+### Quote block
+- 2em vertical breathing room above and below.
+- Wrapped in curly typographic quotes (`“…”`).
+- The opening `“` is set at 36pt and hung into the left margin via a zero-width right-aligned box (classic hanging quote).
+
+### Tests
+- New comprehensive fixture `tests/fixtures/block_spacing_all.json` exercising every block type with realistic prose, useful for visual spacing inspection.
+
 ## 0.4.0 — 2026-05-02
 
 ### Breaking changes

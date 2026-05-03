@@ -243,25 +243,6 @@ class TestBlockEngineRendering:
         assert pdf[:5] == b"%PDF-"
 
     @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
-    def test_attendees_block(self):
-        """Attendees block renders."""
-        from klartex.renderer import render
-
-        data = {
-            "body": [
-                {"type": "heading", "text": "Meeting"},
-                {
-                    "type": "attendees",
-                    "attendees": ["Alice", "Bob", "Charlie"],
-                    "adjusters": ["Alice", "Bob"],
-                },
-            ],
-        }
-        pdf = render(BLOCK_ENGINE_TEMPLATE, data)
-        assert pdf[:5] == b"%PDF-"
-
-
-    @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
     def test_agenda_block(self):
         """Agenda block with discussion and decisions renders."""
         from klartex.renderer import render

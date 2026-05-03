@@ -85,7 +85,7 @@
             "type": "object",
             "required": ["type", "text"],
             "properties": {
-              "type": { "type": "string", "enum": ["preamble", "text"] },
+              "type": { "type": "string", "const": "text" },
               "text": { "type": "string" }
             },
             "additionalProperties": false

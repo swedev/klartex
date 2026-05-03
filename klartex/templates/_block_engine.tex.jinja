@@ -53,6 +53,7 @@ Personnr: \VAR{party.id_number}\\
 \BLOCK{macro render_table(header, rows, columns, size)}
 \BLOCK{set ncols = header | length }
 \BLOCK{set size_macro = {"normal": "normalsize", "small": "small", "footnotesize": "footnotesize"}.get(size, "small") }
+\vspace{1em}
 \begingroup
 \\VAR{size_macro}
 \renewcommand{\arraystretch}{1.3}
@@ -138,21 +139,21 @@ Personnr: \VAR{party.id_number}\\
 \end{clauses}
 \BLOCK{set _ = clause_started.__setitem__(0, false) }
 \BLOCK{endif}
+%# parskip is canceled after each heading so the explicit \vspace below
+%# governs the visible gap on its own (otherwise parskip dwarfs the level
+%# differences and H1/H2/H3 trailing space looks identical).
 \BLOCK{if block.get('level', 1) == 1}
-\vspace{2.5em}
+\vspace{2.0em}
 {\fontsize{24pt}{29pt}\selectfont\bfseries \VAR{block.text | inline}\par}
-\vspace{0.6em}
-\nopagebreak[4]
+\nopagebreak[4]\vspace*{-\parskip}\vspace{1.2em}
 \BLOCK{elif block.get('level', 1) == 2}
 \vspace{1.4em}
 {\Large\bfseries \VAR{block.text | inline}\par}
-\vspace{0.2em}
-\nopagebreak[4]
+\nopagebreak[4]\vspace*{-\parskip}\vspace{0.5em}
 \BLOCK{else}
-\vspace{0.9em}
+\vspace{1.0em}
 {\large\bfseries \VAR{block.text | inline}\par}
-\vspace{0.1em}
-\nopagebreak[4]
+\nopagebreak[4]\vspace*{-\parskip}\vspace{0.15em}
 \BLOCK{endif}
 
 \BLOCK{elif block.type == 'parties'}
@@ -160,6 +161,7 @@ Personnr: \VAR{party.id_number}\\
 \end{clauses}
 \BLOCK{set _ = clause_started.__setitem__(0, false) }
 \BLOCK{endif}
+\vspace{3em}
 \noindent
 \begin{minipage}[t]{0.48\textwidth}
 \VAR{render_party(block.party1, block.get("label1", "Part 1"), "parties")}
@@ -168,8 +170,9 @@ Personnr: \VAR{party.id_number}\\
 \begin{minipage}[t]{0.48\textwidth}
 \VAR{render_party(block.party2, block.get("label2", "Part 2"), "parties")}
 \end{minipage}
+\vspace{3em}
 
-\BLOCK{elif block.type == 'preamble' or block.type == 'text'}
+\BLOCK{elif block.type == 'text'}
 \BLOCK{if clause_started[0]}
 \end{clauses}
 \BLOCK{set _ = clause_started.__setitem__(0, false) }
@@ -222,13 +225,15 @@ Personnr: \VAR{party.id_number}\\
 \end{clauses}
 \BLOCK{set _ = clause_started.__setitem__(0, false) }
 \BLOCK{endif}
+\vspace{2em}
 \begin{quote}\itshape
-\VAR{block.text | inline}
+\makebox[0pt][r]{\fontsize{36pt}{0pt}\selectfont\raisebox{-0.25em}{“}\hspace{0.15em}}\VAR{block.text | inline}”
 \BLOCK{if block.get("attribution")}
 
 \upshape\normalsize\hspace*{0pt}\textemdash\ \VAR{block.attribution | inline}
 \BLOCK{endif}
 \end{quote}
+\vspace{2em}
 
 \BLOCK{elif block.type == 'page_break'}
 \clearpage
@@ -270,25 +275,14 @@ Personnr: \VAR{party.id_number}\\
 \end{clauses}
 \BLOCK{set _ = clause_started.__setitem__(0, false) }
 \BLOCK{endif}
+\vspace{2em}
 \noindent
 \begin{tabular}{@{}ll}
 \BLOCK{for entry in block.entries}
 \textbf{\VAR{entry.label}} & \VAR{entry.value} \\
 \BLOCK{endfor}
 \end{tabular}
-\vspace{1em}
-
-\BLOCK{elif block.type == 'attendees'}
-\BLOCK{if clause_started[0]}
-\end{clauses}
-\BLOCK{set _ = clause_started.__setitem__(0, false) }
-\BLOCK{endif}
-\vspace{1em}
-\noindent\textbf{Närvarande:} \VAR{block.attendees | join(', ')}
-\BLOCK{if block.get('adjusters')}
-\noindent\textbf{Justerare:} \VAR{block.adjusters | join(', ')}
-\BLOCK{endif}
-\vspace{1em}
+\vspace{2em}
 
 \BLOCK{elif block.type == 'agenda'}
 \BLOCK{if clause_started[0]}
@@ -314,32 +308,40 @@ Personnr: \VAR{party.id_number}\\
 \end{clauses}
 \BLOCK{set _ = clause_started.__setitem__(0, false) }
 \BLOCK{endif}
+\vspace{1em}
 \namnrollista{\VAR{block.title}}{%
 \BLOCK{for person in block.people}
 \person{\VAR{person.name}}{\VAR{person.role}}{\VAR{person.get('note', '')}}
 \BLOCK{endfor}
 }
+\vspace{1em}
 
 \BLOCK{elif block.type == 'resultatrakning'}
 \BLOCK{if clause_started[0]}
 \end{clauses}
 \BLOCK{set _ = clause_started.__setitem__(0, false) }
 \BLOCK{endif}
+\vspace{1.5em}
 \VAR{render_resultatrakning(block.rubrik_ar1, block.rubrik_ar2, block.grupper, block.get('resultat'))}
+\vspace{1.5em}
 
 \BLOCK{elif block.type == 'budgettabell'}
 \BLOCK{if clause_started[0]}
 \end{clauses}
 \BLOCK{set _ = clause_started.__setitem__(0, false) }
 \BLOCK{endif}
+\vspace{1.5em}
 \VAR{render_budgettabell(block.rubrik_budget, block.rubrik_ar1, block.rubrik_ar2, block.poster)}
+\vspace{1.5em}
 
 \BLOCK{elif block.type == 'notapparat'}
 \BLOCK{if clause_started[0]}
 \end{clauses}
 \BLOCK{set _ = clause_started.__setitem__(0, false) }
 \BLOCK{endif}
+\vspace{1.5em}
 \VAR{render_notapparat(block.noter)}
+\vspace{1.5em}
 
 \BLOCK{elif block.type == 'latex'}
 \BLOCK{if clause_started[0]}

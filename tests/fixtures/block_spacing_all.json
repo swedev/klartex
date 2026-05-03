@@ -1,0 +1,240 @@
+{
+  "page_template": "formal",
+  "lang": "sv",
+  "body": [
+    {
+      "type": "title_page",
+      "party1": "Klartex AB",
+      "party2": "Spacing-testet",
+      "title": "Spacing-test för blockmotorn"
+    },
+
+    { "type": "heading", "text": "1. Rubriker och text", "level": 1 },
+    { "type": "text", "text": "Detta dokument är ett referensexempel som demonstrerar varje blocktyp i Klartex blockmotor. Syftet är att kunna inspektera default-spacing visuellt — både inom och mellan block — och säkerställa att rytmen håller över hela sidan. Här bör avståndet under en H1-rubrik vara markant större än under en H2 eller H3, så att hierarkin är omedelbart tydlig för läsaren." },
+    { "type": "text", "text": "Ett andra textstycke följer direkt efter det första. Mellan två vanliga paragrafer styrs avståndet av LaTeX:s parskip-paket, vilket ger en lugn andning utan indrag. Är denna andning för stor klibbar texten ihop med rubrikerna ovan; är den för liten blir det svårt att skilja en tankegång från nästa." },
+
+    { "type": "heading", "text": "Rubrik nivå 2", "level": 2 },
+    { "type": "text", "text": "Brödtext direkt efter en H2-rubrik. Avståndet ovanför rubriken ska kännas som en tydlig paus, medan avståndet under ska vara så litet att rubriken visuellt hör samman med stycket den introducerar. Detta är en klassisk princip inom typografi: en rubrik tillhör texten som följer, inte den som föregår." },
+
+    { "type": "heading", "text": "Rubrik nivå 3", "level": 3 },
+    { "type": "text", "text": "Brödtext direkt efter en H3-rubrik. Här ska avståndet vara ännu tätare än under en H2 — H3 fungerar mer som en etikett eller en mindre underrubrik, och bör ligga nästan i kontakt med stycket den hör till. På så vis blir hierarkin mellan H1, H2 och H3 omedelbart tydlig genom själva mellanrummen." },
+
+    { "type": "heading", "text": "2. Strukturerade datablock", "level": 1 },
+
+    {
+      "type": "metadata_table",
+      "entries": [
+        { "label": "Dokument:", "value": "Spacing-test" },
+        { "label": "Datum:",    "value": "2026-05-03" },
+        { "label": "Författare:", "value": "Klartex Engineering" }
+      ]
+    },
+    { "type": "text", "text": "Detta stycke följer direkt efter metadata-tabellen ovan. Tabellen är typiskt en kompakt nyckel-värde-uppställning som inleder ett dokument och behöver tydlig separation från det första riktiga textstycket. För liten luft gör att tabellen klibbar mot brödtexten, för stor luft gör att den känns frikopplad från sammanhanget." },
+
+    {
+      "type": "parties",
+      "label1": "Säljare",
+      "label2": "Köpare",
+      "party1": {
+        "name": "Klartex AB",
+        "org_number": "559123-4567",
+        "address_line1": "Storgatan 1",
+        "address_line2": "111 22 Stockholm"
+      },
+      "party2": {
+        "name": "Exempel HB",
+        "org_number": "969876-5432",
+        "address_line1": "Lilla vägen 7",
+        "address_line2": "411 33 Göteborg"
+      }
+    },
+    { "type": "text", "text": "Stycke direkt efter ett parties-block. I avtalsdokument introducerar parties-blocket ramen för hela det följande innehållet och behöver därför rejält andrum både uppåt och nedåt. Den brödtext som kommer härnäst är ofta en preambel eller bakgrundsbeskrivning som motiverar avtalet i sin helhet." },
+
+    { "type": "heading", "text": "3. Listor och tabell", "level": 2 },
+
+    {
+      "type": "list",
+      "style": "bullet",
+      "items": [
+        "Punktlista — första punkten",
+        "Punktlista — andra punkten",
+        {
+          "text": "Punkt med nästlade underpunkter",
+          "items": ["Underpunkt A", "Underpunkt B"]
+        }
+      ]
+    },
+    { "type": "text", "text": "Mellan en punktlista och en numrerad lista bör det finnas tillräckligt med luft för att läsaren ska uppfatta dem som två separata enheter. En lista är i typografin ett block i sig och förtjänar samma respekt för avstånd som en kort tabell eller ett citat." },
+
+    {
+      "type": "list",
+      "style": "numbered",
+      "items": [
+        "Numrerad lista — första punkten",
+        "Numrerad lista — andra punkten",
+        "Numrerad lista — tredje punkten"
+      ]
+    },
+
+    {
+      "type": "table",
+      "header": ["Post", "Antal", "Pris"],
+      "rows": [
+        ["Bröd", "2", "45 kr"],
+        ["Mjölk", "1", "18 kr"],
+        ["Ost", "1", "89 kr"]
+      ],
+      "columns": [
+        { "align": "left" },
+        { "align": "right", "width": "2cm" },
+        { "align": "right", "width": "2.5cm" }
+      ]
+    },
+    { "type": "text", "text": "Tabellen ovan illustrerar en enkel produktöversikt. Vanliga datatabeller bör ha symmetriskt avstånd både ovanför och nedanför sig — annars uppstår en visuell obalans där tabellen ser ut att tillhöra antingen rubriken eller efterföljande text snarare än att vara ett självständigt block." },
+
+    { "type": "heading", "text": "4. Notiser och citat", "level": 2 },
+
+    {
+      "type": "callout",
+      "variant": "info",
+      "text": "Ett info-callout används för att lyfta fram bakgrundsinformation eller en förklaring som inte är kritisk för att förstå den löpande texten, men som ger nyttig kontext för den som vill veta mer."
+    },
+    {
+      "type": "callout",
+      "variant": "tip",
+      "text": "Ett tips-callout direkt efter ett annat callout. När flera callouts staplas på varandra bör de ha tydligt mellanrum så att de visuellt uppfattas som distinkta noteringar och inte som en enda lång ruta uppdelad i färgade band."
+    },
+    {
+      "type": "callout",
+      "variant": "warning",
+      "text": "En varning markerar något som läsaren bör uppmärksamma särskilt — exempelvis ett undantag från huvudregeln eller ett vanligt missförstånd som lätt kan leda fel."
+    },
+    {
+      "type": "callout",
+      "variant": "danger",
+      "text": "En kritisk varning används sparsamt och endast när handling eller utebliven handling kan få allvarliga konsekvenser. Ger den röda färgen för stort utslag i layouten har callouten antagligen för låg tröskel för att räknas som danger."
+    },
+    {
+      "type": "callout",
+      "variant": "note",
+      "text": "En vanlig notering, neutralt formaterad. Den används som en allmän anmärkning utan särskild ton — varken upplyftande, varnande eller tipsande."
+    },
+
+    {
+      "type": "quote",
+      "text": "Den som inte mäter mellanrummen mellan orden vet inte heller hur dokumentet ser ut. Typografi är till nittio procent en fråga om vad man inte sätter på sidan, och endast tio procent en fråga om bokstävernas form.",
+      "attribution": "Tipografiskt ordspråk"
+    },
+    { "type": "text", "text": "Stycket direkt efter ett quote-block bör ha tillräckligt med luft för att citatet inte ska smälta samman med den löpande texten. Ett citat är en paus i resonemanget och får aldrig kännas inklämt mellan två ordinära paragrafer." },
+
+    { "type": "heading", "text": "5. Klausuler", "level": 2 },
+    {
+      "type": "clause",
+      "title": "Föremål",
+      "items": [
+        "Säljaren överlåter härmed äganderätten till de varor som specificeras i bilaga 1 till köparen, med tillträde den dag som anges där. Bilagan utgör en integrerad del av detta avtal och har samma juridiska verkan som dess övriga bestämmelser."
+      ]
+    },
+    {
+      "type": "clause",
+      "title": "Betalning",
+      "items": [
+        {
+          "title": "Betalningsvillkor",
+          "text": "Betalning ska erläggas enligt nedanstående punkter:",
+          "items": [
+            "30 dagar netto från fakturadatum.",
+            "Dröjsmålsränta utgår enligt räntelagen."
+          ]
+        },
+        "Betalning sker till säljarens bankgiro."
+      ]
+    },
+
+    { "type": "heading", "text": "6. Möteskomponenter", "level": 1 },
+
+    {
+      "type": "agenda",
+      "items": [
+        { "title": "Mötets öppnande", "discussion": "Ordföranden hälsade alla välkomna.", "decision": "Mötet förklarades öppnat." },
+        { "title": "Val av justerare", "decision": "Bertil Bengtsson valdes till justerare." },
+        { "title": "Övriga frågor" }
+      ]
+    },
+
+    {
+      "type": "name_roster",
+      "title": "Styrelse 2026",
+      "people": [
+        { "name": "Anna Andersson", "role": "Ordförande", "note": "Omval 2026" },
+        { "name": "Bertil Bengtsson", "role": "Kassör", "note": "Vald 2025" },
+        { "name": "Cecilia Carlsson", "role": "Sekreterare" }
+      ]
+    },
+
+    { "type": "heading", "text": "7. Rå LaTeX och sidbrytning", "level": 1 },
+    { "type": "text", "text": "I undantagsfall behöver en agent kunna injicera rå LaTeX-kod direkt i dokumentflödet — exempelvis en horisontell linje, en specifik makroanvändning eller annan finstilad typografi som inte täcks av befintliga blocktyper. Här följer ett sådant block i form av en enkel horisontell linje över hela textbredden:" },
+    { "type": "latex", "source": "\\noindent\\rule{\\linewidth}{0.4pt}" },
+    { "type": "text", "text": "Efter raw-latex-blocket återgår dokumentet till vanligt blockflöde. Det är upp till agenten att se till att raw-latex inte stör efterföljande spacing — eftersom det är passthrough-kod som inte deltar i blockmotorns spacing-konventioner." },
+
+    { "type": "page_break" },
+
+    { "type": "heading", "text": "8. Finansiella block", "level": 1 },
+
+    {
+      "type": "resultatrakning",
+      "rubrik_ar1": "2025",
+      "rubrik_ar2": "2024",
+      "grupper": [
+        {
+          "rubrik": "Intäkter",
+          "poster": [
+            { "post": "Medlemsavgifter", "belopp_ar1": 45000, "belopp_ar2": 42000, "notref": 1 },
+            { "post": "Bidrag",          "belopp_ar1": 15000, "belopp_ar2": 12000 }
+          ],
+          "summa": { "label": "Summa intäkter", "belopp_ar1": 60000, "belopp_ar2": 54000 }
+        },
+        {
+          "rubrik": "Kostnader",
+          "poster": [
+            { "post": "Lokalhyra",   "belopp_ar1": -24000, "belopp_ar2": -22000 },
+            { "post": "Försäkringar","belopp_ar1": -8500,  "belopp_ar2": -7800 }
+          ],
+          "summa": { "label": "Summa kostnader", "belopp_ar1": -32500, "belopp_ar2": -29800 }
+        }
+      ],
+      "resultat": { "label": "Årets resultat", "belopp_ar1": 27500, "belopp_ar2": 24200 }
+    },
+    { "type": "text", "text": "Stycket direkt efter resultaträkningen kommenterar typiskt utfallet i löpande text. Eftersom resultaträkningen är ett tungt block med många horisontella linjer behöver det rejält andrum både uppåt och nedåt — annars ser sidan rörig ut och läsaren har svårt att avgöra var tabellen slutar och brödtexten börjar." },
+
+    {
+      "type": "budgettabell",
+      "rubrik_budget": "Budget 2026",
+      "rubrik_ar1": "Utfall 2025",
+      "rubrik_ar2": "Utfall 2024",
+      "poster": [
+        { "post": "Medlemsavgifter", "konto": "3010", "budget": 50000, "utfall_ar1": 45000, "utfall_ar2": 42000 },
+        { "post": "Lokalhyra",       "konto": "5010", "budget": -25000, "utfall_ar1": -24000, "utfall_ar2": -22000 }
+      ]
+    },
+    { "type": "text", "text": "Budgettabellen ovan jämför planerad budget mot historiskt utfall. Den följs ofta av en kort kommentar som lyfter fram avvikelser eller motiverar de större posterna. För spacing-test är det viktigt att två tunga finansiella tabeller kan sitta efter varandra utan att vare sig klibba ihop eller skapa onödigt stora luftgap." },
+
+    {
+      "type": "notapparat",
+      "noter": [
+        { "notnr": 1, "text": "Medlemsavgifterna höjdes med 50 kr/år från 2025." },
+        { "notnr": 2, "text": "Bidrag från kommunen för underhåll." }
+      ]
+    },
+
+    {
+      "type": "signatures",
+      "new_page": false,
+      "header": "Underskrifter",
+      "parties": [
+        { "name": "Klartex AB", "signatory": "Anna Andersson", "title": "VD" },
+        { "name": "Exempel HB", "signatory": "Bertil Bengtsson", "title": "Delägare" }
+      ]
+    }
+  ]
+}

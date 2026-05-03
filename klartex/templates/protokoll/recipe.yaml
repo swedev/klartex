@@ -23,6 +23,11 @@ document:
     - label: "Sekreterare:"
       field: secretary
       optional: true
+    - label: "Närvarande:"
+      field: attendees
+    - label: "Justerare:"
+      field: adjusters
+      optional: true
 
 components:
   - type: heading
@@ -35,11 +40,6 @@ components:
   - type: metadata_table
     options:
       source: document.metadata
-
-  - type: attendees
-    data_map:
-      attendees: attendees
-      adjusters: adjusters
 
   - type: klausuler
     data_map:

@@ -10,9 +10,12 @@
       ]
     },
     {
-      "type": "attendees",
-      "attendees": ["Anna Andersson", "Erik Eriksson", "Maria Karlsson"],
-      "adjusters": ["Anna Andersson", "Erik Eriksson"]
+      "type": "text",
+      "text": "**Närvarande:** Anna Andersson, Erik Eriksson, Maria Karlsson"
+    },
+    {
+      "type": "text",
+      "text": "**Justerare:** Anna Andersson, Erik Eriksson"
     },
     {
       "type": "agenda",

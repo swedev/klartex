@@ -33,16 +33,6 @@
 \BLOCK{endfor}
 \end{tabular}
 
-\BLOCK{elif comp.type == 'attendees'}
-\vspace{1em}
-\noindent\textbf{Närvarande:} \VAR{comp.data.get('attendees', []) | join(', ')}
-
-\BLOCK{if comp.data.get('adjusters')}
-\noindent\textbf{Justerare:} \VAR{comp.data.adjusters | join(', ')}
-\BLOCK{endif}
-
-\vspace{1em}
-
 \BLOCK{elif comp.type == 'klausuler'}
 \begin{clauses}
 \BLOCK{set items = comp.data.get('items', []) }

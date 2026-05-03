@@ -88,11 +88,6 @@
       ]
     },
     {
-      "type": "attendees",
-      "attendees": ["Anna Andersson", "Erik Eriksson", "Maria Johansson"],
-      "adjusters": ["Anna Andersson", "Erik Eriksson"]
-    },
-    {
       "type": "agenda",
       "items": [
         { "title": "Mötets öppnande" },

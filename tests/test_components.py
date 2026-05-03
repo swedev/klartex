@@ -42,8 +42,8 @@ class TestComponentRegistry:
         """Block engine block types should be registered."""
         components = list_components()
         for block_type in [
-            "heading", "text", "preamble", "title_page", "parties",
-            "clause", "signatures", "metadata_table", "attendees", "latex",
+            "heading", "text", "title_page", "parties",
+            "clause", "signatures", "metadata_table", "latex",
             "agenda", "name_roster",
         ]:
             assert block_type in components, f"Missing block type: {block_type}"

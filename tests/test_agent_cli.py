@@ -73,8 +73,5 @@ def test_block_example_covers_all_block_types():
     example_types = {block["type"] for block in data["body"]}
     expected = {name for name, spec in _COMPONENTS.items() if spec.block_schema_path}
 
-    # preamble is an alias for text, so we accept either
-    expected.discard("preamble")
-
     missing = expected - example_types
     assert not missing, f"Example is missing block types: {missing}"

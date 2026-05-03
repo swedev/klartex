@@ -45,13 +45,7 @@ _COMPONENTS: dict[str, ComponentSpec] = {
     "text": ComponentSpec(
         name="text",
         sty_package=None,
-        description="Free-form text paragraph (also known as preamble)",
-        block_schema_path="text.schema.json",
-    ),
-    "preamble": ComponentSpec(
-        name="preamble",
-        sty_package=None,
-        description="Introductory text paragraph (alias for text)",
+        description="Free-form text paragraph",
         block_schema_path="text.schema.json",
     ),
     "title_page": ComponentSpec(
@@ -83,12 +77,6 @@ _COMPONENTS: dict[str, ComponentSpec] = {
         sty_package=None,
         description="Key-value metadata table (date, location, etc.)",
         block_schema_path="metadata_table.schema.json",
-    ),
-    "attendees": ComponentSpec(
-        name="attendees",
-        sty_package=None,
-        description="Attendee and adjuster list",
-        block_schema_path="attendees.schema.json",
     ),
     "agenda": ComponentSpec(
         name="agenda",

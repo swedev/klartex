@@ -114,8 +114,10 @@ Personnr: \VAR{party.id_number}\\
 \BLOCK{set _size = "\\Large" if _level == 2 else ("\\large" if _level == 3 else "") }
 \BLOCK{set _bold = _level is not none }
 \BLOCK{set _needspace = "4\\baselineskip" if _level in [2, 3] else "2\\baselineskip" }
+\BLOCK{set _vspace_above = "1.4em" if _level == 2 else ("1.0em" if _level == 3 else ("0.4em" if _level == 4 else "")) }
 \BLOCK{set _sub_indent = indent_cm + 0.5 }
 \par
+\BLOCK{if _vspace_above}\vspace{\VAR{_vspace_above}}\BLOCK{endif}
 \kxneedspace{\VAR{_needspace}}
 \begingroup
 \setlength{\leftskip}{\VAR{indent_cm}cm}
@@ -124,6 +126,7 @@ Personnr: \VAR{party.id_number}\\
 \noindent \BLOCK{if _size}\VAR{_size} \BLOCK{endif}\makebox[\kxgrouplabelw][l]{\BLOCK{if _bold}\textbf{\VAR{block.number}.}\BLOCK{else}\VAR{block.number}.\BLOCK{endif}}\BLOCK{if block.get("text")}\BLOCK{if _bold}\textbf{\VAR{block.text | inline}}\BLOCK{else}\VAR{block.text | inline}\BLOCK{endif}\BLOCK{endif}\par
 \endgroup
 \BLOCK{if block.get("content")}
+\nopagebreak[4]
 \begingroup
 \VAR{kxsetgroupw(block.content)}
 \BLOCK{for sub in block.content}

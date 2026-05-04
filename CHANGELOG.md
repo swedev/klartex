@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.9.2 — 2026-05-04
+
+### Fixes
+- **`clause`: title no longer strands alone at the bottom of a page when content[] follows.** `\kxneedspace{4\baselineskip}` runs *before* the title is placed and only checks room for the title itself; once the title fit, the first sub-item's own `\kxneedspace` would then break the page, leaving the title orphaned. The renderer now emits `\nopagebreak[4]` between the title and `content[]` so TeX keeps them together — if there isn't room for both, the page breaks before the whole section.
+
+### Spacing
+- **`clause`: more breathing room above the title, scaled by `level`.** Previously the title rode straight on `\parskip` from the previous block, which made `§ 3.` clauses sit too close to the last sub-item of `§ 2.`. Now: `level: 2` adds `1.4em` (matches heading H2), `level: 3` adds `1.0em` (H3), `level: 4` adds `0.4em`. Regel-style clauses (no `level`) stay tight so consecutive regelpunkter still hug each other.
+
 ## 0.9.1 — 2026-05-04
 
 ### Fixes

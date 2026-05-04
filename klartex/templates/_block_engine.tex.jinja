@@ -109,7 +109,7 @@ Personnr: \VAR{party.id_number}\\
 %# kxsetgroupw helper macro below). The clause uses \kxgrouplabelw for its own
 %# label box and hangindent. For content[], it opens a new scope and runs its
 %# own group-width pre-pass before iterating children.
-\BLOCK{macro render_clause(block, lang, indent_cm)}
+\BLOCK{macro render_clause(block, lang, indent_cm, suppress_needspace=false)}
 \BLOCK{set _level = block.get("level") }
 \BLOCK{set _size = "\\Large" if _level == 2 else ("\\large" if _level == 3 else "") }
 \BLOCK{set _bold = _level is not none }
@@ -122,7 +122,12 @@ Personnr: \VAR{party.id_number}\\
 \BLOCK{set _sub_indent = indent_cm + 0.5 }
 \par
 \BLOCK{if _vspace_above}\vspace{\VAR{_vspace_above}}\BLOCK{endif}
-\kxneedspace{\VAR{_needspace}}
+%# When this clause is the first sub-item of a parent clause, the parent's
+%# \kxneedspace already covers room for itself + this first sub. Emitting our
+%# own \kxneedspace here would just create a competing \penalty -100 break
+%# point that TeX could pick instead, stranding the parent title. Suppressing
+%# the first sub's needspace eliminates that competing break.
+\BLOCK{if not suppress_needspace}\kxneedspace{\VAR{_needspace}}\BLOCK{endif}
 \begingroup
 \setlength{\leftskip}{\VAR{indent_cm}cm}
 \hangindent=\kxgrouplabelw
@@ -135,7 +140,7 @@ Personnr: \VAR{party.id_number}\\
 \VAR{kxsetgroupw(block.content)}
 \BLOCK{for sub in block.content}
 \BLOCK{if sub.type == "clause"}
-\VAR{render_clause(sub, lang, _sub_indent)}
+\VAR{render_clause(sub, lang, _sub_indent, loop.first)}
 \BLOCK{else}
 \begin{list}{}{\setlength{\leftmargin}{\VAR{_sub_indent}cm}\setlength{\rightmargin}{0pt}\setlength{\topsep}{0pt}\setlength{\partopsep}{0pt}\setlength{\itemsep}{0pt}\setlength{\parsep}{\parskip}}
 \item[]

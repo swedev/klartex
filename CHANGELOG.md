@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.4 — 2026-05-04
+
+### Fixes
+- **`clause`: title orphan finally fixed by suppressing the first sub-clause's `\kxneedspace`.** Earlier patches (v0.9.2 `\nopagebreak[4]`, v0.9.3 bumped needspace value) didn't address the actual root cause: the parent's `\kxneedspace` and the first sub's `\kxneedspace` both emit `\penalty -100`, so when the page is too full TeX picks one of two equally attractive break points — and would pick the inner one, stranding the title. Fix: when iterating `content[]`, the first clause sub now receives `suppress_needspace=true` so it doesn't emit its own `\kxneedspace`. The parent's penalty is then the only attractive break, so the break happens before the title and the section moves to the next page intact. Subsequent sub-clauses still get `\kxneedspace` so they're individually orphan-protected.
+
 ## 0.9.3 — 2026-05-04
 
 ### Fixes

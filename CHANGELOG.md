@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.1 — 2026-05-04
+
+### Style
+- **`form`: blank fields now use dotted lines (`\dotfill`) instead of solid (`\hrulefill`).** Matches the dotted style used in `signatures` blocks for consistent paper-signing aesthetics across a document.
+
 ## 0.7.0 — 2026-05-04
 
 ### Breaking changes

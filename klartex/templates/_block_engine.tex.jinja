@@ -248,7 +248,7 @@ Personnr: \VAR{party.id_number}\\
 \renewcommand{\arraystretch}{1.6}
 \noindent\begin{tabularx}{\linewidth}{@{}l >{\raggedright\arraybackslash}X@{}}
 \BLOCK{for field in block.fields}
-\textbf{\VAR{field.label | inline}:} & \BLOCK{if field.get('value')}\VAR{field.value | inline}\BLOCK{else}\hrulefill\BLOCK{endif} \\
+\textbf{\VAR{field.label | inline}:} & \BLOCK{if field.get('value')}\VAR{field.value | inline}\BLOCK{else}\dotfill\BLOCK{endif} \\
 \BLOCK{endfor}
 \end{tabularx}
 \endgroup

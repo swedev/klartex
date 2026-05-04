@@ -831,9 +831,10 @@ class TestArsmotespaket:
         assert pdf[:5] == b"%PDF-"
 
 
-class TestClauseNumber:
-    """Tests for the optional `number` field on clause blocks — explicit
-    paragraph numbering with § prefix and matching sub-numbering."""
+class TestClauseBlock:
+    """Tests for the new clause block: manual numbering (free-form `number` string),
+    optional `text` and `level`, and recursive `content[]` for nested blocks
+    including nested clauses for sub-sections."""
 
     def _render_tex(self, data: dict) -> str:
         """Helper: run the renderer's pre-compile pipeline and return the
@@ -845,72 +846,123 @@ class TestClauseNumber:
         _restore_block_types(data["body"], escaped["body"])
         return _render_block_engine(escaped)
 
-    def test_number_must_be_integer(self):
+    def test_number_required(self):
+        from klartex.renderer import render
+
+        data = {"body": [{"type": "clause", "text": "no number"}]}
+        with pytest.raises(ValueError, match="Invalid 'clause' block"):
+            render(BLOCK_ENGINE_TEMPLATE, data)
+
+    def test_number_must_be_string(self):
+        from klartex.renderer import render
+
+        data = {"body": [{"type": "clause", "number": 7, "text": "x"}]}
+        with pytest.raises(ValueError, match="Invalid 'clause' block"):
+            render(BLOCK_ENGINE_TEMPLATE, data)
+
+    def test_text_or_content_required(self):
+        """A clause with only `number` is rejected — must also have text or content."""
+        from klartex.renderer import render
+
+        data = {"body": [{"type": "clause", "number": "§ 7"}]}
+        with pytest.raises(ValueError, match="Invalid 'clause' block"):
+            render(BLOCK_ENGINE_TEMPLATE, data)
+
+    def test_invalid_level_rejected(self):
+        from klartex.renderer import render
+
+        data = {
+            "body": [{"type": "clause", "number": "§ 1", "level": 1, "text": "x"}],
+        }
+        with pytest.raises(ValueError, match="Invalid 'clause' block"):
+            render(BLOCK_ENGINE_TEMPLATE, data)
+
+    def test_disallowed_nested_block_type_rejected(self):
+        """Top-only block types (e.g. signatures) cannot live inside content[]."""
         from klartex.renderer import render
 
         data = {
             "body": [
                 {
                     "type": "clause",
-                    "number": "8",
-                    "title": "Byggnader",
-                    "items": ["Stuga får uppföras."],
-                },
-            ],
+                    "number": "§ 1",
+                    "text": "x",
+                    "content": [{"type": "signatures", "parties": []}],
+                }
+            ]
         }
         with pytest.raises(ValueError, match="Invalid 'clause' block"):
             render(BLOCK_ENGINE_TEMPLATE, data)
 
-    def test_number_must_be_positive(self):
-        from klartex.renderer import render
-
+    def test_freeform_number_passes_through_verbatim(self):
+        """The number string is rendered as written — § symbol, dotted form, etc."""
         data = {
             "body": [
                 {
                     "type": "clause",
-                    "number": 0,
-                    "title": "Byggnader",
-                    "items": ["x"],
-                },
-            ],
-        }
-        with pytest.raises(ValueError, match="Invalid 'clause' block"):
-            render(BLOCK_ENGINE_TEMPLATE, data)
-
-    def test_number_emits_clausenum_macro(self):
-        """When `number` is set, the renderer must emit \\clausenum, not \\clause."""
-        data = {
-            "body": [
-                {
-                    "type": "clause",
-                    "number": 8,
-                    "title": "Byggnader",
-                    "items": ["Stuga.", "Förråd."],
+                    "number": "§ 7",
+                    "level": 3,
+                    "text": "Arrendatorns skyldigheter",
                 },
             ],
         }
         tex = self._render_tex(data)
-        assert r"\clausenum{8}{Byggnader}" in tex
-        assert r"\clause{Byggnader}" not in tex
+        # number rendered with trailing period via \makebox
+        assert r"\textbf{§ 7.}" in tex
+        # level 3 → \large + bold text
+        assert r"\large" in tex
+        assert r"\textbf{Arrendatorns skyldigheter}" in tex
 
-    def test_no_number_uses_auto_clause(self):
-        """When `number` is absent, the renderer falls back to auto-numbered \\clause."""
+    def test_omitted_level_neither_bold(self):
+        """Without level, neither label nor text is bold (matched weight)."""
+        data = {
+            "body": [
+                {"type": "clause", "number": "7.1", "text": "vara folkbokförd..."},
+            ],
+        }
+        tex = self._render_tex(data)
+        # neither label nor text wrapped in \textbf
+        assert r"\textbf{7.1.}" not in tex
+        assert r"\textbf{vara folkbokförd...}" not in tex
+        # but the number and text are present verbatim
+        assert "7.1." in tex
+        assert "vara folkbokförd..." in tex
+
+    def test_level_4_text_bold_no_size(self):
+        """level 4 = body size + bold text."""
+        data = {
+            "body": [{"type": "clause", "number": "1", "level": 4, "text": "Body bold"}],
+        }
+        tex = self._render_tex(data)
+        assert r"\textbf{Body bold}" in tex
+        # no size macro
+        assert r"\Large" not in tex
+        assert r"\large" not in tex
+
+    def test_nested_clause_increases_indent(self):
+        """A nested clause is rendered at parent's label-width offset."""
         data = {
             "body": [
                 {
                     "type": "clause",
-                    "title": "Allmänt",
-                    "items": ["x"],
+                    "number": "§ 7",
+                    "level": 3,
+                    "text": "Outer",
+                    "content": [
+                        {"type": "clause", "number": "7.1", "text": "Inner"},
+                    ],
                 },
             ],
         }
         tex = self._render_tex(data)
-        assert r"\clause{Allmänt}" in tex
-        assert r"\clausenum" not in tex
+        # outer clause at indent 0
+        assert r"\setlength{\leftskip}{0cm}" in tex
+        # inner clause indented by sub_step (0.5cm), independent of parent label width
+        assert r"\setlength{\leftskip}{0.5cm}" in tex
 
     @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
-    def test_numbered_clause_renders(self):
-        """End-to-end: a clause with explicit number renders to a valid PDF."""
+    def test_recursive_clause_renders(self):
+        """End-to-end: § 7 with intro text and nested clauses produces a valid PDF."""
         from klartex.renderer import render
 
         data = {
@@ -918,12 +970,17 @@ class TestClauseNumber:
                 {"type": "heading", "text": "Arrendeavtal"},
                 {
                     "type": "clause",
-                    "number": 8,
-                    "title": "Byggnader",
-                    "items": [
-                        "Endast en stuga får uppföras.",
-                        "Förråd är tillåtet.",
-                        "Brandsäkerhet enligt bilaga.",
+                    "number": "§ 7",
+                    "level": 3,
+                    "text": "Arrendatorns skyldigheter",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "Arrendatorn förbinder sig under arrendetiden att:",
+                        },
+                        {"type": "clause", "number": "7.1", "text": "vara folkbokförd."},
+                        {"type": "clause", "number": "7.2", "text": "inte äga annan."},
+                        {"type": "clause", "number": "7.3", "text": "inte upplåta."},
                     ],
                 },
             ],
@@ -932,22 +989,28 @@ class TestClauseNumber:
         assert pdf[:5] == b"%PDF-"
 
     @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
-    def test_numbered_then_auto_clause(self):
-        """A numbered clause followed by auto-clauses keeps stepping from there."""
+    def test_three_levels_of_nesting(self):
+        """Deep nesting (§ 1 > 1.1 > 1.1.1) renders without errors."""
         from klartex.renderer import render
 
         data = {
             "body": [
                 {
                     "type": "clause",
-                    "number": 8,
-                    "title": "Byggnader",
-                    "items": ["a"],
-                },
-                {
-                    "type": "clause",
-                    "title": "Underhåll",
-                    "items": ["b"],
+                    "number": "§ 1",
+                    "level": 3,
+                    "text": "Top",
+                    "content": [
+                        {
+                            "type": "clause",
+                            "number": "1.1",
+                            "level": 4,
+                            "text": "Mid",
+                            "content": [
+                                {"type": "clause", "number": "1.1.1", "text": "Leaf"},
+                            ],
+                        },
+                    ],
                 },
             ],
         }

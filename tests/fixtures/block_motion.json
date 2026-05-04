@@ -15,11 +15,13 @@
     { "type": "heading", "text": "Förslag", "level": 2 },
     {
       "type": "clause",
-      "title": "Motionären yrkar",
-      "items": [
-        "att årsmötet beslutar att anlägga en gemensam odlingslott på den oanvända ytan bakom föreningsstugan",
-        "att styrelsen avsätter 5 000 kr ur föreningens medel för inköp av jord, odlingslådor och redskap",
-        "att en odlingsgrupp om minst tre intresserade medlemmar tillsätts för att ansvara för skötseln"
+      "number": "§ 1",
+      "level": 3,
+      "text": "Motionären yrkar",
+      "content": [
+        { "type": "clause", "number": "1.1", "text": "att årsmötet beslutar att anlägga en gemensam odlingslott på den oanvända ytan bakom föreningsstugan" },
+        { "type": "clause", "number": "1.2", "text": "att styrelsen avsätter 5 000 kr ur föreningens medel för inköp av jord, odlingslådor och redskap" },
+        { "type": "clause", "number": "1.3", "text": "att en odlingsgrupp om minst tre intresserade medlemmar tillsätts för att ansvara för skötseln" }
       ]
     },
     {

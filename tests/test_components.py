@@ -16,7 +16,7 @@ class TestComponentRegistry:
     def test_get_known_component(self):
         spec = get_component("klausuler")
         assert spec.name == "klausuler"
-        assert spec.sty_package == "klartex-klausuler"
+        assert spec.sty_package is None
 
     def test_get_signatureblock(self):
         spec = get_component("signatureblock")
@@ -59,7 +59,9 @@ class TestComponentRegistry:
         spec = get_component("clause")
         schema = spec.get_block_schema()
         assert schema is not None
-        assert "items" in schema["properties"]
+        assert "number" in schema["properties"]
+        assert "text" in schema["properties"]
+        assert "content" in schema["properties"]
 
     def test_signatures_block_schema(self):
         spec = get_component("signatures")

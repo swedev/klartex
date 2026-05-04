@@ -17,30 +17,6 @@
         "address_line2": { "type": "string", "description": "Postal code and city" },
         "signatory": { "type": "string", "description": "Name of person signing" }
       }
-    },
-    "clause_item": {
-      "description": "A clause item — plain string, or object with nested items. Use 'title' for a bold heading, 'text' for plain inline text.",
-      "oneOf": [
-        { "type": "string" },
-        {
-          "type": "object",
-          "required": ["items"],
-          "anyOf": [
-            { "required": ["title"] },
-            { "required": ["text"] }
-          ],
-          "properties": {
-            "title": { "type": "string", "description": "Bold heading for the sub-clause" },
-            "text": { "type": "string", "description": "Plain (non-bold) text under the heading" },
-            "list": { "type": "string", "enum": ["numbered", "bullet"], "default": "numbered", "description": "List style for child items" },
-            "items": {
-              "type": "array",
-              "items": { "$ref": "#/definitions/clause_item" },
-              "minItems": 1
-            }
-          }
-        }
-      ]
     }
   },
   "properties": {
@@ -92,14 +68,23 @@
           },
           {
             "type": "object",
-            "required": ["type", "title", "items"],
+            "required": ["type", "number"],
+            "anyOf": [
+              { "required": ["text"] },
+              { "required": ["content"] }
+            ],
             "properties": {
               "type": { "type": "string", "enum": ["clause"] },
-              "title": { "type": "string" },
-              "items": {
+              "number": { "type": "string", "minLength": 1 },
+              "text": { "type": "string" },
+              "level": { "type": "integer", "enum": [2, 3, 4] },
+              "content": {
                 "type": "array",
-                "items": { "$ref": "#/definitions/clause_item" },
-                "minItems": 1
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "required": ["type"]
+                }
               }
             },
             "additionalProperties": false

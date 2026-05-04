@@ -107,14 +107,19 @@
     },
     {
       "type": "clause",
-      "title": "Uppdrag",
-      "items": [
-        "Företaget åtar sig att leverera de tjänster som specificeras i detta avtal.",
+      "number": "§ 1",
+      "level": 3,
+      "text": "Uppdrag",
+      "content": [
+        { "type": "clause", "number": "1.1", "text": "Företaget åtar sig att leverera de tjänster som specificeras i detta avtal." },
         {
-          "title": "Leveransvillkor",
-          "items": [
-            "Leverans sker inom 30 dagar.",
-            "Kvalitetskontroll ingår."
+          "type": "clause",
+          "number": "1.2",
+          "level": 4,
+          "text": "Leveransvillkor",
+          "content": [
+            { "type": "clause", "number": "1.2.1", "text": "Leverans sker inom 30 dagar." },
+            { "type": "clause", "number": "1.2.2", "text": "Kvalitetskontroll ingår." }
           ]
         }
       ]

@@ -132,24 +132,31 @@
     { "type": "heading", "text": "5. Klausuler", "level": 2 },
     {
       "type": "clause",
-      "title": "Föremål",
-      "items": [
-        "Säljaren överlåter härmed äganderätten till de varor som specificeras i bilaga 1 till köparen, med tillträde den dag som anges där. Bilagan utgör en integrerad del av detta avtal och har samma juridiska verkan som dess övriga bestämmelser."
+      "number": "§ 1",
+      "level": 3,
+      "text": "Föremål",
+      "content": [
+        { "type": "clause", "number": "1.1", "text": "Säljaren överlåter härmed äganderätten till de varor som specificeras i bilaga 1 till köparen, med tillträde den dag som anges där. Bilagan utgör en integrerad del av detta avtal och har samma juridiska verkan som dess övriga bestämmelser." }
       ]
     },
     {
       "type": "clause",
-      "title": "Betalning",
-      "items": [
+      "number": "§ 2",
+      "level": 3,
+      "text": "Betalning",
+      "content": [
         {
-          "title": "Betalningsvillkor",
-          "text": "Betalning ska erläggas enligt nedanstående punkter:",
-          "items": [
-            "30 dagar netto från fakturadatum.",
-            "Dröjsmålsränta utgår enligt räntelagen."
+          "type": "clause",
+          "number": "2.1",
+          "level": 4,
+          "text": "Betalningsvillkor",
+          "content": [
+            { "type": "text", "text": "Betalning ska erläggas enligt nedanstående punkter:" },
+            { "type": "clause", "number": "2.1.1", "text": "30 dagar netto från fakturadatum." },
+            { "type": "clause", "number": "2.1.2", "text": "Dröjsmålsränta utgår enligt räntelagen." }
           ]
         },
-        "Betalning sker till säljarens bankgiro."
+        { "type": "clause", "number": "2.2", "text": "Betalning sker till säljarens bankgiro." }
       ]
     },
 

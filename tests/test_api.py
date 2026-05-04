@@ -107,7 +107,8 @@ def test_get_block_schema_clause():
     resp = client.get("/blocks/clause/schema")
     assert resp.status_code == 200
     schema = resp.json()
-    assert "items" in schema["properties"]
+    assert "number" in schema["properties"]
+    assert "content" in schema["properties"]
 
 
 def test_get_block_schema_not_found():

@@ -154,6 +154,8 @@ def _restore_block_types(orig_blocks: list, esc_blocks: list) -> None:
             for o_col, e_col in zip(orig.get("items", []), esc.get("items", [])):
                 if isinstance(o_col, list) and isinstance(e_col, list):
                     _restore_block_types(o_col, e_col)
+        elif btype == "clause":
+            _restore_block_types(orig.get("content", []), esc.get("content", []))
 
 
 def _render_block_engine(

@@ -34,52 +34,67 @@
     },
     {
       "type": "clause",
-      "title": "Uppdrag",
-      "items": [
-        "Konsulten atar sig att utfora de tjanster som specificeras i bilaga 1."
+      "number": "§ 1",
+      "level": 3,
+      "text": "Uppdrag",
+      "content": [
+        { "type": "clause", "number": "1.1", "text": "Konsulten atar sig att utfora de tjanster som specificeras i bilaga 1." }
       ]
     },
     {
       "type": "clause",
-      "title": "Avtalstid",
-      "items": [
-        "Avtalet galler fran och med 2026-03-01 till och med 2026-12-31.",
-        "Avtalet kan forlangas med 12 manader i taget om ingen part sager upp det senast 3 manader fore avtalstidens utgang.",
-        "Uppsagning ska ske skriftligen."
+      "number": "§ 2",
+      "level": 3,
+      "text": "Avtalstid",
+      "content": [
+        { "type": "clause", "number": "2.1", "text": "Avtalet galler fran och med 2026-03-01 till och med 2026-12-31." },
+        { "type": "clause", "number": "2.2", "text": "Avtalet kan forlangas med 12 manader i taget om ingen part sager upp det senast 3 manader fore avtalstidens utgang." },
+        { "type": "clause", "number": "2.3", "text": "Uppsagning ska ske skriftligen." }
       ]
     },
     {
       "type": "clause",
-      "title": "Ersattning",
-      "items": [
-        "Konsulten erhaller ersattning enligt overenskommen timtaxa.",
+      "number": "§ 3",
+      "level": 3,
+      "text": "Ersattning",
+      "content": [
+        { "type": "clause", "number": "3.1", "text": "Konsulten erhaller ersattning enligt overenskommen timtaxa." },
         {
-          "title": "Fakturering",
-          "items": [
-            "Fakturering sker manadsvis i efterskott.",
+          "type": "clause",
+          "number": "3.2",
+          "level": 4,
+          "text": "Fakturering",
+          "content": [
+            { "type": "clause", "number": "3.2.1", "text": "Fakturering sker manadsvis i efterskott." },
             {
-              "title": "Fakturauppgifter",
-              "text": "Varje faktura ska innehalla:",
-              "list": "bullet",
-              "items": [
-                "Avtalsnummer och referensperson",
-                "Aktuell period",
-                "Specifikation av utforda timmar per uppdrag",
-                "Tillambar timtaxa"
+              "type": "clause",
+              "number": "3.2.2",
+              "level": 4,
+              "text": "Fakturauppgifter",
+              "content": [
+                { "type": "text", "text": "Varje faktura ska innehalla:" },
+                { "type": "list", "style": "bullet", "items": [
+                  "Avtalsnummer och referensperson",
+                  "Aktuell period",
+                  "Specifikation av utforda timmar per uppdrag",
+                  "Tillambar timtaxa"
+                ] }
               ]
             },
-            "Fakturor ska skickas elektroniskt i PDF-format.",
-            "Betalningsvillkor: 30 dagar netto."
+            { "type": "clause", "number": "3.2.3", "text": "Fakturor ska skickas elektroniskt i PDF-format." },
+            { "type": "clause", "number": "3.2.4", "text": "Betalningsvillkor: 30 dagar netto." }
           ]
         },
-        "Vid forsenad betalning utgar drojsmalsranta enligt rantelagen."
+        { "type": "clause", "number": "3.3", "text": "Vid forsenad betalning utgar drojsmalsranta enligt rantelagen." }
       ]
     },
     {
       "type": "clause",
-      "title": "Sekretess",
-      "items": [
-        "Parterna forbinder sig att inte utan den andra partens medgivande roja konfidentiell information som erhallits inom ramen for detta avtal."
+      "number": "§ 4",
+      "level": 3,
+      "text": "Sekretess",
+      "content": [
+        { "type": "clause", "number": "4.1", "text": "Parterna forbinder sig att inte utan den andra partens medgivande roja konfidentiell information som erhallits inom ramen for detta avtal." }
       ]
     },
     {

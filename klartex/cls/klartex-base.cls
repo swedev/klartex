@@ -156,7 +156,6 @@
 % Load extracted components
 % These .sty files use \providecommand so the language strings
 % defined above take precedence (no redefinition conflicts).
-\RequirePackage{klartex-klausuler}
 \RequirePackage{klartex-titelsida}
 \RequirePackage{klartex-signatureblock}
 \RequirePackage{klartex-agenda}

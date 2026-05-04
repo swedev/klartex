@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.9.0 — 2026-05-04
+
+### Breaking changes
+- **`clause` block fully redesigned** for flexibility. The old shape (`{title, items: [...]}` with auto-numbering 1, 2, 3 and rigid `items[]` regelpunkter) is replaced by:
+  ```json
+  {
+    "type": "clause",
+    "number": "§ 7",        // free-form string, manual
+    "text": "...",          // optional inline text on the label row
+    "level": 2 | 3 | 4,     // optional visual prominence
+    "content": [Block, ...] // optional nested blocks (including nested clauses)
+  }
+  ```
+  - **Manual numbering**: author writes `"§ 7"`, `"7.1"`, `"I"`, `"A"`, etc. — verbatim. No automatic counters.
+  - **Recursive nesting**: a `clause` block's `content[]` can contain another `clause` (sub-section). Nesting supports text, list, callout, quote, table, latex, form, description_list as well.
+  - **Levels are optional and purely visual**: `level: 2` = `\Large` bold (matches heading H2), `level: 3` = `\large` bold (H3), `level: 4` = body bold. **Omit `level`** for regel-style: body-size, regular weight (label and text matched).
+  - **Indent is depth-based** (0.5cm per nesting level) and decoupled from label width — sub-content position is independent of how wide the parent label was.
+  - **Label width per sibling group**: the renderer measures the longest `number` in each sibling group and uses that for all labels in the group, so columns align even when one sibling is `7.9` and another is `7.10`.
+  - Migration: replace `items: ["a", "b", "c"]` with `content: [{type: "clause", number: "1.1", text: "a"}, {type: "clause", number: "1.2", text: "b"}, ...]`. For old nested `{title, items}` items, use a nested `clause` with `text` and `content`.
+
+### Removed
+- **`klartex-klausuler.sty`** removed. The old `\clauses`/`\subclauses` enumitem environments and `\clause`/`\clausenum` macros are gone — clause rendering now uses `\hangindent` + `\makebox` + `\leftskip` directly. The `klausuler` recipe component (used by `protokoll`) is migrated to inline rendering with position-based numbering; recipe data shape is unchanged.
+
+### Internal
+- `_block_engine.tex.jinja` got a recursive `render_clause(block, lang, indent_cm, label_w)` macro. Top-level body loop pre-computes the group label-width for top-level clause-typed siblings; nested clauses do the same per `content[]`. Heuristic char-width per level (body 0.16cm, `\large` 0.20cm, `\Large` 0.24cm) plus 0.15cm padding.
+- `klartex/renderer.py` `_restore_block_types` recurses into `clause.content[]` so nested block-type strings survive escaping.
+- `avtal/schema.json` `clause` definition migrated to the new shape.
+- 5 fixtures migrated (`block_motion`, `block_spacing_all`, `avtal_block`, `avtal`, `block_engine.example`).
+- `TestClauseNumber` (introduced in v0.8.0) replaced with `TestClauseBlock` covering schema validation, group label-width, recursive nesting, and depth-based indent.
+
 ## 0.8.0 — 2026-05-04
 
 ### New features

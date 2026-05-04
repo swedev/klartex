@@ -1,42 +1,54 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://klartex.se/schemas/blocks/clause/v0.1",
+  "$id": "https://klartex.se/schemas/blocks/clause/v0.2",
   "title": "Clause Block",
-  "description": "Numbered legal clause with title and items",
+  "description": "Numbered legal clause: a section of a contract or document with a free-form number, optional inline text on the label row, and optional nested content (which may itself contain clauses for sub-sections).",
   "type": "object",
-  "required": ["type", "title", "items"],
+  "required": ["type", "number"],
   "additionalProperties": false,
+  "anyOf": [
+    { "required": ["text"] },
+    { "required": ["content"] }
+  ],
   "properties": {
     "type": { "type": "string", "const": "clause" },
-    "title": { "type": "string", "description": "Clause title" },
     "number": {
-      "type": "integer",
-      "minimum": 1,
-      "description": "Explicit clause number. When set, the clause renders as '§ N. Title' and sub-items use 'N.1, N.2, …' regardless of position in body[]. When absent, the clause is auto-numbered as 'N. Title' (no §)."
+      "type": "string",
+      "minLength": 1,
+      "description": "Free-form label rendered before the text. Examples: '§ 7', '7.1', 'I', 'A'. The author writes the § symbol explicitly when wanted — there is no automatic numbering."
     },
-    "items": {
+    "text": {
+      "type": "string",
+      "description": "Optional inline text rendered on the label row, after the number. Style depends on `level`: with level set, both number and text render bold + sized; without level, number is bold and text is regular body text."
+    },
+    "level": {
+      "type": "integer",
+      "enum": [2, 3, 4],
+      "description": "Optional visual prominence. 2 = \\Large bold (matches heading H2), 3 = \\large bold (matches heading H3), 4 = body-size bold. When omitted, the clause renders in regel-style: body-size, bold label, regular text."
+    },
+    "content": {
       "type": "array",
-      "description": "Clause items (strings or nested objects with sub-items)",
+      "minItems": 1,
+      "description": "Optional nested blocks rendered indented under the clause. A nested `clause` block becomes a sub-section (e.g. § 7 with 7.1, 7.2, 7.3 inside).",
       "items": {
-        "oneOf": [
-          { "type": "string" },
-          {
-            "type": "object",
-            "required": ["items"],
-            "anyOf": [
-              { "required": ["title"] },
-              { "required": ["text"] }
-            ],
-            "properties": {
-              "title": { "type": "string" },
-              "text": { "type": "string" },
-              "list": { "type": "string", "enum": ["numbered", "bullet"], "default": "numbered" },
-              "items": { "type": "array", "minItems": 1 }
-            }
+        "type": "object",
+        "required": ["type"],
+        "properties": {
+          "type": {
+            "enum": [
+              "text",
+              "list",
+              "callout",
+              "quote",
+              "table",
+              "latex",
+              "form",
+              "description_list",
+              "clause"
+            ]
           }
-        ]
-      },
-      "minItems": 1
+        }
+      }
     }
   }
 }

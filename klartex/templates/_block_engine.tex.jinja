@@ -99,38 +99,53 @@ Personnr: \VAR{party.id_number}\\
 \BLOCK{endif}
 \BLOCK{endmacro}
 
-%# --- Recursive macro for clause items ---
-\BLOCK{macro render_items(item_list, list_type="numbered")}
-\BLOCK{if list_type == "bullet"}
-\begin{itemize}[leftmargin=1.2em, itemsep=0.5em, topsep=0.3em]
+%# --- Recursive macro for clause blocks ---
+%# Renders a clause (manual numbering, free-form `number` string) at a given
+%# nesting depth. Each level of `content[]` containing a nested clause adds
+%# 1cm of left indent. Non-clause content inside `content[]` is wrapped in a
+%# group with the same leftskip so it visually belongs to the parent clause.
+\BLOCK{macro render_clause(block, lang, indent_cm, label_w)}
+\BLOCK{set _level = block.get("level") }
+\BLOCK{set _size = "\\Large" if _level == 2 else ("\\large" if _level == 3 else "") }
+\BLOCK{set _bold = _level is not none }
+\BLOCK{set _needspace = "4\\baselineskip" if _level in [2, 3] else "2\\baselineskip" }
+\BLOCK{set _sub_indent = indent_cm + 0.5 }
+\par
+\kxneedspace{\VAR{_needspace}}
+\begingroup
+\setlength{\leftskip}{\VAR{indent_cm}cm}
+\hangindent=\VAR{label_w}cm
+\hangafter=1
+\noindent \BLOCK{if _size}\VAR{_size} \BLOCK{endif}\makebox[\VAR{label_w}cm][l]{\BLOCK{if _bold}\textbf{\VAR{block.number}.}\BLOCK{else}\VAR{block.number}.\BLOCK{endif}}\BLOCK{if block.get("text")}\BLOCK{if _bold}\textbf{\VAR{block.text | inline}}\BLOCK{else}\VAR{block.text | inline}\BLOCK{endif}\BLOCK{endif}\par
+\endgroup
+\BLOCK{if block.get("content")}
+%# Compute group label-width once for clause-typed siblings in this content[].
+%# Heuristic: max(len(number)+1) * char_w(level) + 0.15cm padding.
+\BLOCK{set _sub_clauses = block.content | selectattr("type", "equalto", "clause") | list }
+\BLOCK{if _sub_clauses}
+\BLOCK{set _first_sub = _sub_clauses[0] }
+\BLOCK{set _sub_cw = 0.24 if _first_sub.get("level") == 2 else (0.20 if _first_sub.get("level") == 3 else 0.16) }
+\BLOCK{set _sub_maxn = (_sub_clauses | map(attribute="number") | map("length") | max) + 1 }
+\BLOCK{set _sub_label_w = (_sub_maxn * _sub_cw + 0.15) | round(3) }
 \BLOCK{else}
-\begin{subclauses}
+\BLOCK{set _sub_label_w = 0.7 }
 \BLOCK{endif}
-\BLOCK{for item in item_list}
-\BLOCK{if item is string}
-\item {\interlinepenalty=10000 \VAR{item}\par}
+\BLOCK{for sub in block.content}
+\BLOCK{if sub.type == "clause"}
+\VAR{render_clause(sub, lang, _sub_indent, _sub_label_w)}
 \BLOCK{else}
-\BLOCK{if item.get("title")}
-\item \textbf{\VAR{item.title}}
-\BLOCK{if item.get("text")}
-\\ \VAR{item.text}
-\BLOCK{endif}
-\BLOCK{else}
-\item \VAR{item.text}
-\BLOCK{endif}
-\VAR{render_items(item["items"], item.get("list", "numbered"))}
+\begin{list}{}{\setlength{\leftmargin}{\VAR{_sub_indent}cm}\setlength{\rightmargin}{0pt}\setlength{\topsep}{0pt}\setlength{\partopsep}{0pt}\setlength{\itemsep}{0pt}\setlength{\parsep}{\parskip}}
+\item[]
+\VAR{render_block(sub, lang)}
+\end{list}
 \BLOCK{endif}
 \BLOCK{endfor}
-\BLOCK{if list_type == "bullet"}
-\end{itemize}
-\BLOCK{else}
-\end{subclauses}
 \BLOCK{endif}
 \BLOCK{endmacro}
 
 %# --- Block dispatch macro: renders a single block to LaTeX ---
 %# Called from the top-level body loop and recursively from render_list for
-%# items with content[]. Clause-state tracking lives in the top-level loop.
+%# items with content[].
 \BLOCK{macro render_block(block, lang)}
 
 \BLOCK{if block.type == 'title_page'}
@@ -175,18 +190,6 @@ Personnr: \VAR{party.id_number}\\
 \BLOCK{elif block.type == 'text'}
 
 \noindent \VAR{block.text | inline}
-
-\BLOCK{elif block.type == 'clause'}
-\BLOCK{if block.get('number') is not none}
-\clausenum{\VAR{block.number}}{\VAR{block.title}}
-\BLOCK{else}
-\clause{\VAR{block.title}}
-\BLOCK{endif}
-\BLOCK{if block["items"] | length == 1 and block["items"][0] is string}
-\\ \VAR{block["items"][0]}
-\BLOCK{else}
-\VAR{render_items(block["items"])}
-\BLOCK{endif}
 
 \BLOCK{elif block.type == 'list'}
 \VAR{render_list(block["items"], block.get("style", "bullet"), lang)}
@@ -333,26 +336,23 @@ Personnr: \VAR{party.id_number}\\
 \BLOCK{endmacro}
 
 %# --- Body blocks ---
-%# Top-level loop manages the lazily-opened "clauses" environment around runs
-%# of clause blocks; everything else dispatches through render_block.
-\BLOCK{set clause_started = [false] }
-\BLOCK{for block in body}
-\BLOCK{if block.type == 'clause'}
-\BLOCK{if not clause_started[0]}
-\begin{clauses}
-\BLOCK{set _ = clause_started.__setitem__(0, true) }
-\BLOCK{endif}
+%# Pre-compute group label-width for top-level clause-typed blocks
+%# (heuristic: max(len(number)+1) * char_w(level) + 0.15cm padding).
+\BLOCK{set _top_clauses = body | selectattr("type", "equalto", "clause") | list }
+\BLOCK{if _top_clauses}
+\BLOCK{set _first_top = _top_clauses[0] }
+\BLOCK{set _top_cw = 0.24 if _first_top.get("level") == 2 else (0.20 if _first_top.get("level") == 3 else 0.16) }
+\BLOCK{set _top_maxn = (_top_clauses | map(attribute="number") | map("length") | max) + 1 }
+\BLOCK{set _top_label_w = (_top_maxn * _top_cw + 0.15) | round(3) }
 \BLOCK{else}
-\BLOCK{if clause_started[0]}
-\end{clauses}
-\BLOCK{set _ = clause_started.__setitem__(0, false) }
+\BLOCK{set _top_label_w = 0.7 }
 \BLOCK{endif}
-\BLOCK{endif}
+\BLOCK{for block in body}
+\BLOCK{if block.type == "clause"}
+\VAR{render_clause(block, lang, 0, _top_label_w)}
+\BLOCK{else}
 \VAR{render_block(block, lang)}
-\BLOCK{endfor}
-
-\BLOCK{if clause_started[0]}
-\end{clauses}
 \BLOCK{endif}
+\BLOCK{endfor}
 
 \end{document}

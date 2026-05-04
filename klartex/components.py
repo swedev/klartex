@@ -74,8 +74,8 @@ _COMPONENTS: dict[str, ComponentSpec] = {
     ),
     "clause": ComponentSpec(
         name="clause",
-        sty_package="klartex-klausuler",
-        description="Numbered legal clause with title and items",
+        sty_package=None,
+        description="Manually numbered legal clause with optional text and nested content (including nested clauses)",
         block_schema_path="clause.schema.json",
     ),
     "signatures": ComponentSpec(
@@ -159,8 +159,8 @@ _COMPONENTS: dict[str, ComponentSpec] = {
     # Legacy recipe component names (used by _recipe_base.tex.jinja)
     "klausuler": ComponentSpec(
         name="klausuler",
-        sty_package="klartex-klausuler",
-        description="Legal clause numbering with \\clause command (recipe component)",
+        sty_package=None,
+        description="Position-numbered agenda/clause-style items (recipe component, no .sty dependency)",
     ),
     "signatureblock": ComponentSpec(
         name="signatureblock",

@@ -113,7 +113,11 @@ Personnr: \VAR{party.id_number}\\
 \BLOCK{set _level = block.get("level") }
 \BLOCK{set _size = "\\Large" if _level == 2 else ("\\large" if _level == 3 else "") }
 \BLOCK{set _bold = _level is not none }
-\BLOCK{set _needspace = "4\\baselineskip" if _level in [2, 3] else "2\\baselineskip" }
+%# Reserve enough space for the title PLUS the first sub-item of content[]
+%# so the title can never strand alone at the bottom of a page. Heading-style
+%# clauses (with level) typically have content[]; bump generously. Regel
+%# clauses (no level) just need room for themselves.
+\BLOCK{set _needspace = "8\\baselineskip" if _level == 2 else ("6\\baselineskip" if _level == 3 else ("4\\baselineskip" if _level == 4 else "2\\baselineskip")) }
 \BLOCK{set _vspace_above = "1.4em" if _level == 2 else ("1.0em" if _level == 3 else ("0.4em" if _level == 4 else "")) }
 \BLOCK{set _sub_indent = indent_cm + 0.5 }
 \par

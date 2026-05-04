@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.3 — 2026-05-04
+
+### Fixes
+- **`clause`: titles no longer strand alone at the bottom of a page (full fix).** v0.9.2's `\nopagebreak[4]` only forbade *one* break point between the title and the first sub-item, leaving the `\kxneedspace` penalty inside the first sub-item as a still-attractive break that TeX would happily pick. The pre-title `\kxneedspace` value is now bumped to reserve room for the title **plus** the first sub-item: `level: 2` reserves 8 baselineskip, `level: 3` reserves 6, `level: 4` reserves 4, regel-style stays at 2. With this, when the page is too full for both, the break is taken before the title — the title moves to the next page together with its first sub-item, instead of being orphaned. (An interim attempt to switch `\kxneedspace` to a hard `\pagegoal-\pagetotal` check using `\pagebreak` was reverted; in the recursive clause structure it interacted badly and stranded *single* sub-items on otherwise empty pages.)
+
 ## 0.9.2 — 2026-05-04
 
 ### Fixes

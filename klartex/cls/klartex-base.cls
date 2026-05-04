@@ -31,10 +31,13 @@
 \RequirePackage{tabularx}
 \RequirePackage{booktabs}
 
-% Inline implementation of \kxneedspace{<dim>} to avoid depending on the
-% `needspace` package (not present in texlive-basic). Standard glue trick:
-% inserts removable +/- glue around a -100 penalty so a page break is taken
-% when less than <dim> remains on the current page.
+% Inline implementation of \kxneedspace{<dim>} matching needspace.sty's
+% default (non-starred) behavior: a glue-trick that inserts removable +/-
+% rubber glue around a -100 penalty so the page break is taken near the
+% penalty when less than <dim> remains. Soft — TeX may stretch slightly to
+% fit when conditions are close. Avoid \pagegoal/\pagetotal hard checks; in
+% the block engine those interact badly with consecutive clauses by
+% triggering forced breaks that strand single items on otherwise empty pages.
 \newcommand{\kxneedspace}[1]{%
     \begingroup
     \setlength{\dimen@}{#1}%

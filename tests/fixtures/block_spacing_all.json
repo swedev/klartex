@@ -22,7 +22,7 @@
     { "type": "heading", "text": "2. Strukturerade datablock", "level": 1 },
 
     {
-      "type": "metadata_table",
+      "type": "description_list",
       "entries": [
         { "label": "Dokument:", "value": "Spacing-test" },
         { "label": "Datum:",    "value": "2026-05-03" },

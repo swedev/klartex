@@ -60,6 +60,18 @@ _COMPONENTS: dict[str, ComponentSpec] = {
         description="Side-by-side display of two contract parties",
         block_schema_path="parties.schema.json",
     ),
+    "form": ComponentSpec(
+        name="form",
+        sty_package=None,
+        description="Label/value rows where blank values render as horizontal rules for handwritten signing",
+        block_schema_path="form.schema.json",
+    ),
+    "columns": ComponentSpec(
+        name="columns",
+        sty_package=None,
+        description="Side-by-side layout of 1-4 column-stacks of blocks",
+        block_schema_path="columns.schema.json",
+    ),
     "clause": ComponentSpec(
         name="clause",
         sty_package="klartex-klausuler",
@@ -72,11 +84,11 @@ _COMPONENTS: dict[str, ComponentSpec] = {
         description="Signature block for parties",
         block_schema_path="signatures.schema.json",
     ),
-    "metadata_table": ComponentSpec(
-        name="metadata_table",
+    "description_list": ComponentSpec(
+        name="description_list",
         sty_package=None,
-        description="Key-value metadata table (date, location, etc.)",
-        block_schema_path="metadata_table.schema.json",
+        description="Label/value definition list (HTML <dl>) for meeting metadata, party info, key-value displays",
+        block_schema_path="description_list.schema.json",
     ),
     "agenda": ComponentSpec(
         name="agenda",

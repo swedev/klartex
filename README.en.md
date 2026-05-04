@@ -166,9 +166,9 @@ components:
 schema: schema.json
 ```
 
-Available recipe components: `heading`, `metadata_table`, `attendees`, `klausuler`, `signatureblock`, `titelsida`, `invoice_header`, `invoice_recipient`, `invoice_table`, `payment_info`, `invoice_note`.
+Available recipe components: `heading`, `description_list`, `attendees`, `klausuler`, `signatureblock`, `titelsida`, `invoice_header`, `invoice_recipient`, `invoice_table`, `payment_info`, `invoice_note`.
 
-Block engine blocks: `heading`, `text`, `list`, `table`, `callout`, `quote`, `title_page`, `parties`, `clause`, `signatures`, `metadata_table`, `attendees`, `agenda`, `name_roster`, `resultatrakning`, `budgettabell`, `notapparat`, `page_break`, `latex`.
+Block engine blocks: `heading`, `text`, `list`, `table`, `callout`, `quote`, `title_page`, `parties`, `clause`, `signatures`, `description_list`, `form`, `columns`, `agenda`, `name_roster`, `resultatrakning`, `budgettabell`, `notapparat`, `page_break`, `latex`.
 
 ## Annual Meeting Package
 
@@ -176,7 +176,7 @@ The block engine can compose all documents needed for a Swedish association's an
 
 | Document | Block types |
 |----------|-----------|
-| Summons + agenda | heading, metadata_table, agenda |
+| Summons + agenda | heading, description_list, agenda |
 | Annual report | heading, name_roster, text, signatures |
 | Financial report | heading, text, resultatrakning, notapparat, signatures |
 | Audit report | heading, text, signatures |

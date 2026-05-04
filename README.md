@@ -166,9 +166,9 @@ components:
 schema: schema.json
 ```
 
-Tillgängliga recept-komponenter: `heading`, `metadata_table`, `attendees`, `klausuler`, `signatureblock`, `titelsida`, `invoice_header`, `invoice_recipient`, `invoice_table`, `payment_info`, `invoice_note`.
+Tillgängliga recept-komponenter: `heading`, `description_list`, `attendees`, `klausuler`, `signatureblock`, `titelsida`, `invoice_header`, `invoice_recipient`, `invoice_table`, `payment_info`, `invoice_note`.
 
-Block engine-block: `heading`, `text`, `list`, `table`, `callout`, `quote`, `title_page`, `parties`, `clause`, `signatures`, `metadata_table`, `attendees`, `agenda`, `name_roster`, `resultatrakning`, `budgettabell`, `notapparat`, `page_break`, `latex`.
+Block engine-block: `heading`, `text`, `list`, `table`, `callout`, `quote`, `title_page`, `parties`, `clause`, `signatures`, `description_list`, `form`, `columns`, `agenda`, `name_roster`, `resultatrakning`, `budgettabell`, `notapparat`, `page_break`, `latex`.
 
 ## Årsmötespaket
 
@@ -176,7 +176,7 @@ Blockmotorn kan komponera alla dokument som behövs för ett föreningsårsmöte
 
 | Dokument | Blocktyper |
 |----------|-----------|
-| Kallelse + dagordning | heading, metadata_table, agenda |
+| Kallelse + dagordning | heading, description_list, agenda |
 | Verksamhetsberättelse | heading, name_roster, text, signatures |
 | Ekonomisk årsredovisning | heading, text, resultatrakning, notapparat, signatures |
 | Revisionsberättelse | heading, text, signatures |

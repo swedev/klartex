@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://klartex.se/schemas/blocks/description-list/v0.2",
+  "title": "Description List Block",
+  "description": "Label/value definition list (HTML <dl>). Used for meeting metadata, party info, key-value displays — anywhere a sequence of label-value pairs needs to be rendered. Compose with the columns block for side-by-side layouts.",
+  "type": "object",
+  "required": ["type", "entries"],
+  "additionalProperties": false,
+  "properties": {
+    "type": { "type": "string", "const": "description_list" },
+    "entries": {
+      "type": "array",
+      "description": "Label-value pairs.",
+      "items": {
+        "type": "object",
+        "required": ["label", "value"],
+        "additionalProperties": false,
+        "properties": {
+          "label": { "type": "string" },
+          "value": { "type": "string" }
+        }
+      },
+      "minItems": 1
+    }
+  }
+}

@@ -14,7 +14,7 @@
       "level": 1
     },
     {
-      "type": "metadata_table",
+      "type": "description_list",
       "entries": [
         { "label": "Datum:", "value": "2026-01-15" },
         { "label": "Plats:", "value": "Stockholm" }
@@ -57,6 +57,36 @@
       "type": "quote",
       "text": "Endast servicebyggnader med koppling till koloniområdet är tillåtna.",
       "attribution": "Detaljplan Dp 5804, bestämmelse s1"
+    },
+    {
+      "type": "columns",
+      "items": [
+        [
+          { "type": "heading", "level": 3, "text": "Upplåtare" },
+          {
+            "type": "description_list",
+            "entries": [
+              { "label": "Namn", "value": "Föreningen AB" },
+              { "label": "Org.nr", "value": "846003-6034" }
+            ]
+          }
+        ],
+        [
+          { "type": "heading", "level": 3, "text": "Arrendator" },
+          {
+            "type": "form",
+            "fields": [
+              { "label": "Namn" },
+              { "label": "Personnr" },
+              { "label": "Telefon" }
+            ]
+          }
+        ]
+      ]
+    },
+    {
+      "type": "form",
+      "fields": [{ "label": "Tillträdesdag" }]
     },
     {
       "type": "parties",

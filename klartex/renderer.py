@@ -118,18 +118,42 @@ def render(
 
     # Block engine path
     if template_info.is_block_engine:
-        for i, block in enumerate(data.get("body", [])):
-            # Restore block type (escaping mangles underscores: title_page → title\_page)
-            escaped_data["body"][i]["type"] = block["type"]
-            # Restore raw source on latex blocks (must not be escaped)
-            if block.get("type") == "latex" and "source" in block:
-                escaped_data["body"][i]["source"] = block["source"]
+        # Walk nested block structures and restore unescaped block type strings
+        # (escaping turns "description_list" into "description\_list", which then
+        # fails to match the dispatch). Also restore raw source on latex blocks.
+        _restore_block_types(data.get("body", []), escaped_data["body"])
         tex_source = _render_block_engine(escaped_data, page_template_source)
         return _compile_tex(tex_source)
 
     # Recipe path
     tex_source = _render_recipe(template_info, escaped_data, page_template_source)
     return _compile_tex(tex_source)
+
+
+def _restore_block_types(orig_blocks: list, esc_blocks: list) -> None:
+    """Walk parallel block-arrays and copy unescaped `type` (and raw `latex.source`)
+    from the original onto the escape-mangled copy.
+
+    Recurses into nested block carriers: ``list.items[].content[]`` and
+    ``columns.items[][]``.
+    """
+    for orig, esc in zip(orig_blocks, esc_blocks):
+        if not isinstance(orig, dict) or not isinstance(esc, dict):
+            continue
+        btype = orig.get("type")
+        if btype is None:
+            continue
+        esc["type"] = btype
+        if btype == "latex" and "source" in orig:
+            esc["source"] = orig["source"]
+        elif btype == "list":
+            for o_item, e_item in zip(orig.get("items", []), esc.get("items", [])):
+                if isinstance(o_item, dict) and isinstance(e_item, dict):
+                    _restore_block_types(o_item.get("content", []), e_item.get("content", []))
+        elif btype == "columns":
+            for o_col, e_col in zip(orig.get("items", []), esc.get("items", [])):
+                if isinstance(o_col, list) and isinstance(e_col, list):
+                    _restore_block_types(o_col, e_col)
 
 
 def _render_block_engine(

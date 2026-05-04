@@ -43,7 +43,7 @@ class TestComponentRegistry:
         components = list_components()
         for block_type in [
             "heading", "text", "title_page", "parties",
-            "clause", "signatures", "metadata_table", "latex",
+            "clause", "signatures", "description_list", "latex",
             "agenda", "name_roster",
         ]:
             assert block_type in components, f"Missing block type: {block_type}"

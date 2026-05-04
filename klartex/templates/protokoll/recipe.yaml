@@ -37,7 +37,7 @@ components:
     options:
       subtitle_prefix: "Nr "
 
-  - type: metadata_table
+  - type: description_list
     options:
       source: document.metadata
 

@@ -138,7 +138,7 @@ class TestBlockTypeValidation:
 
     @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
     def test_underscore_block_types_render(self):
-        """Block types with underscores (title_page, metadata_table) must render."""
+        """Block types with underscores (title_page, description_list) must render."""
         from klartex.renderer import render
 
         data = {
@@ -146,7 +146,7 @@ class TestBlockTypeValidation:
                 {"type": "title_page", "title": "Test", "party1": "A", "party2": "B"},
                 {"type": "heading", "text": "Test Document"},
                 {
-                    "type": "metadata_table",
+                    "type": "description_list",
                     "entries": [
                         {"label": "Date:", "value": "2026-02-22"},
                     ],
@@ -222,7 +222,7 @@ class TestBlockEngineRendering:
         assert pdf[:5] == b"%PDF-"
 
     @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
-    def test_metadata_table_block(self):
+    def test_description_list_block(self):
         """Metadata table block renders."""
         from klartex.renderer import render
 
@@ -230,7 +230,7 @@ class TestBlockEngineRendering:
             "body": [
                 {"type": "heading", "text": "Meeting Notes"},
                 {
-                    "type": "metadata_table",
+                    "type": "description_list",
                     "entries": [
                         {"label": "Date:", "value": "2026-02-22"},
                         {"label": "Location:", "value": "Stockholm"},
@@ -471,6 +471,193 @@ class TestListContentField:
                     ],
                 },
             ],
+        }
+        pdf = render(BLOCK_ENGINE_TEMPLATE, data)
+        assert pdf[:5] == b"%PDF-"
+
+
+class TestFormBlock:
+    """Tests for the form block — label/value rows with blank or pre-filled fields."""
+
+    def test_missing_fields_raises(self):
+        from klartex.renderer import render
+
+        data = {"body": [{"type": "form"}]}
+        with pytest.raises(ValueError, match="Invalid 'form' block"):
+            render(BLOCK_ENGINE_TEMPLATE, data)
+
+    def test_field_without_label_raises(self):
+        from klartex.renderer import render
+
+        data = {
+            "body": [{"type": "form", "fields": [{"value": "no label"}]}]
+        }
+        with pytest.raises(ValueError, match="Invalid 'form' block"):
+            render(BLOCK_ENGINE_TEMPLATE, data)
+
+    def test_form_does_not_accept_title(self):
+        """Composition: use a heading block before the form for sub-titles."""
+        from klartex.renderer import render
+
+        data = {
+            "body": [
+                {
+                    "type": "form",
+                    "title": "rejected",
+                    "fields": [{"label": "X"}],
+                }
+            ]
+        }
+        with pytest.raises(ValueError, match="Invalid 'form' block"):
+            render(BLOCK_ENGINE_TEMPLATE, data)
+
+    @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+    def test_blank_and_filled_renders(self):
+        from klartex.renderer import render
+
+        data = {
+            "body": [
+                {"type": "heading", "text": "Avtal"},
+                {
+                    "type": "form",
+                    "fields": [
+                        {"label": "Namn"},
+                        {"label": "Personnr", "value": "19700101-0000"},
+                        {"label": "Telefon"},
+                    ],
+                },
+            ]
+        }
+        pdf = render(BLOCK_ENGINE_TEMPLATE, data)
+        assert pdf[:5] == b"%PDF-"
+
+
+class TestColumnsBlock:
+    """Tests for the columns block — side-by-side layout of column-stacks."""
+
+    def test_missing_items_raises(self):
+        from klartex.renderer import render
+
+        data = {"body": [{"type": "columns"}]}
+        with pytest.raises(ValueError, match="Invalid 'columns' block"):
+            render(BLOCK_ENGINE_TEMPLATE, data)
+
+    def test_too_many_columns_raises(self):
+        from klartex.renderer import render
+
+        data = {
+            "body": [
+                {
+                    "type": "columns",
+                    "items": [
+                        [{"type": "text", "text": str(i)}] for i in range(5)
+                    ],
+                }
+            ]
+        }
+        with pytest.raises(ValueError, match="Invalid 'columns' block"):
+            render(BLOCK_ENGINE_TEMPLATE, data)
+
+    def test_disallowed_inner_type_rejected(self):
+        from klartex.renderer import render
+
+        data = {
+            "body": [
+                {
+                    "type": "columns",
+                    "items": [[{"type": "signatures", "parties": []}]],
+                }
+            ]
+        }
+        with pytest.raises(ValueError, match="Invalid 'columns' block"):
+            render(BLOCK_ENGINE_TEMPLATE, data)
+
+    def test_nested_columns_rejected(self):
+        from klartex.renderer import render
+
+        data = {
+            "body": [
+                {
+                    "type": "columns",
+                    "items": [
+                        [{"type": "columns", "items": [[{"type": "text", "text": "x"}]]}]
+                    ],
+                }
+            ]
+        }
+        with pytest.raises(ValueError, match="Invalid 'columns' block"):
+            render(BLOCK_ENGINE_TEMPLATE, data)
+
+    def test_empty_column_rejected(self):
+        from klartex.renderer import render
+
+        data = {"body": [{"type": "columns", "items": [[]]}]}
+        with pytest.raises(ValueError, match="Invalid 'columns' block"):
+            render(BLOCK_ENGINE_TEMPLATE, data)
+
+    @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+    def test_two_columns_with_heading_and_form(self):
+        from klartex.renderer import render
+
+        data = {
+            "body": [
+                {
+                    "type": "columns",
+                    "items": [
+                        [
+                            {"type": "heading", "level": 3, "text": "Upplåtare"},
+                            {
+                                "type": "description_list",
+                                "entries": [{"label": "Namn", "value": "Förening"}],
+                            },
+                        ],
+                        [
+                            {"type": "heading", "level": 3, "text": "Arrendator"},
+                            {
+                                "type": "form",
+                                "fields": [{"label": "Namn"}, {"label": "Personnr"}],
+                            },
+                        ],
+                    ],
+                }
+            ]
+        }
+        pdf = render(BLOCK_ENGINE_TEMPLATE, data)
+        assert pdf[:5] == b"%PDF-"
+
+    @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+    def test_four_columns_renders(self):
+        from klartex.renderer import render
+
+        data = {
+            "body": [
+                {
+                    "type": "columns",
+                    "items": [
+                        [{"type": "text", "text": f"Col {i}"}] for i in range(4)
+                    ],
+                }
+            ]
+        }
+        pdf = render(BLOCK_ENGINE_TEMPLATE, data)
+        assert pdf[:5] == b"%PDF-"
+
+    @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+    def test_single_column_renders_as_full_width(self):
+        from klartex.renderer import render
+
+        data = {
+            "body": [
+                {
+                    "type": "columns",
+                    "items": [
+                        [
+                            {"type": "text", "text": "single column passes through"},
+                            {"type": "form", "fields": [{"label": "X"}]},
+                        ]
+                    ],
+                }
+            ]
         }
         pdf = render(BLOCK_ENGINE_TEMPLATE, data)
         assert pdf[:5] == b"%PDF-"

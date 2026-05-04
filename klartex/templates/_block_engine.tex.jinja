@@ -242,7 +242,38 @@ Personnr: \VAR{party.id_number}\\
 \BLOCK{endif}
 \BLOCK{endfor}
 
-\BLOCK{elif block.type == 'metadata_table'}
+\BLOCK{elif block.type == 'form'}
+\vspace{0.5em}
+\begingroup
+\renewcommand{\arraystretch}{1.6}
+\noindent\begin{tabularx}{\linewidth}{@{}l >{\raggedright\arraybackslash}X@{}}
+\BLOCK{for field in block.fields}
+\textbf{\VAR{field.label | inline}:} & \BLOCK{if field.get('value')}\VAR{field.value | inline}\BLOCK{else}\hrulefill\BLOCK{endif} \\
+\BLOCK{endfor}
+\end{tabularx}
+\endgroup
+\vspace{0.5em}
+
+\BLOCK{elif block.type == 'columns'}
+\BLOCK{set ncols = block["items"] | length }
+\BLOCK{if ncols == 1}
+\BLOCK{for sub in block["items"][0]}
+\VAR{render_block(sub, lang)}
+\BLOCK{endfor}
+\BLOCK{else}
+\BLOCK{set gap = 0.04 }
+\BLOCK{set width = ((1.0 - (ncols - 1) * gap) / ncols) | round(4) }
+\noindent
+\BLOCK{for col in block["items"]}
+\begin{minipage}[t]{\VAR{width}\linewidth}
+\BLOCK{for sub in col}
+\VAR{render_block(sub, lang)}
+\BLOCK{endfor}
+\end{minipage}\BLOCK{if not loop.last}\hspace{\VAR{gap}\linewidth}\BLOCK{endif}
+\BLOCK{endfor}\par
+\BLOCK{endif}
+
+\BLOCK{elif block.type == 'description_list'}
 \vspace{2em}
 \noindent
 \begin{tabularx}{\linewidth}{@{}l >{\raggedright\arraybackslash}X@{}}

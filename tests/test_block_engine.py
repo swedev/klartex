@@ -326,6 +326,156 @@ class TestBlockEngineRendering:
             render(BLOCK_ENGINE_TEMPLATE, data)
 
 
+class TestListContentField:
+    """Tests for the list-item content[] field — block-level continuation
+    inside a single list item, replacing the old nested-items shorthand."""
+
+    def test_object_item_requires_content(self):
+        """An object-form item must have content[] — bare {text} is invalid."""
+        from klartex.renderer import render
+
+        data = {
+            "body": [
+                {
+                    "type": "list",
+                    "items": [{"text": "no content"}],
+                },
+            ],
+        }
+        with pytest.raises(ValueError, match="Invalid 'list' block"):
+            render(BLOCK_ENGINE_TEMPLATE, data)
+
+    def test_old_nested_items_shorthand_rejected(self):
+        """The pre-0.6 'items' field on an object item is no longer accepted."""
+        from klartex.renderer import render
+
+        data = {
+            "body": [
+                {
+                    "type": "list",
+                    "items": [
+                        {"text": "main", "items": ["sub a", "sub b"]},
+                    ],
+                },
+            ],
+        }
+        with pytest.raises(ValueError, match="Invalid 'list' block"):
+            render(BLOCK_ENGINE_TEMPLATE, data)
+
+    def test_disallowed_nested_block_type_rejected(self):
+        """Block types that only make sense at top level are rejected in content[]."""
+        from klartex.renderer import render
+
+        data = {
+            "body": [
+                {
+                    "type": "list",
+                    "items": [
+                        {
+                            "text": "main",
+                            "content": [{"type": "heading", "text": "no"}],
+                        },
+                    ],
+                },
+            ],
+        }
+        with pytest.raises(ValueError, match="Invalid 'list' block"):
+            render(BLOCK_ENGINE_TEMPLATE, data)
+
+    @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+    def test_quote_inside_numbered_item_keeps_numbering(self):
+        """A numbered list with a quote in content[] must not introduce sub-numbering."""
+        from klartex.renderer import render
+
+        data = {
+            "body": [
+                {
+                    "type": "list",
+                    "style": "numbered",
+                    "items": [
+                        "First.",
+                        {
+                            "text": "Second with a continuation quote.",
+                            "content": [
+                                {"type": "quote", "text": "Föreslagen formulering."}
+                            ],
+                        },
+                        "Third.",
+                    ],
+                },
+            ],
+        }
+        pdf = render(BLOCK_ENGINE_TEMPLATE, data)
+        assert pdf[:5] == b"%PDF-"
+
+    @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+    def test_text_and_sublist_inside_item(self):
+        """text + nested list in content[] should both render under the parent item."""
+        from klartex.renderer import render
+
+        data = {
+            "body": [
+                {
+                    "type": "list",
+                    "style": "numbered",
+                    "items": [
+                        {
+                            "text": "Outer item.",
+                            "content": [
+                                {"type": "text", "text": "Förklarande paragraf."},
+                                {
+                                    "type": "list",
+                                    "style": "numbered",
+                                    "items": ["Alt 1", "Alt 2"],
+                                },
+                            ],
+                        }
+                    ],
+                },
+            ],
+        }
+        pdf = render(BLOCK_ENGINE_TEMPLATE, data)
+        assert pdf[:5] == b"%PDF-"
+
+    @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+    def test_callout_table_latex_allowed_in_content(self):
+        """callout, table and latex blocks are valid nested content."""
+        from klartex.renderer import render
+
+        data = {
+            "body": [
+                {
+                    "type": "list",
+                    "style": "bullet",
+                    "items": [
+                        {
+                            "text": "Item with callout.",
+                            "content": [
+                                {"type": "callout", "variant": "info", "text": "FYI"}
+                            ],
+                        },
+                        {
+                            "text": "Item with table.",
+                            "content": [
+                                {
+                                    "type": "table",
+                                    "header": ["A", "B"],
+                                    "rows": [["1", "2"]],
+                                }
+                            ],
+                        },
+                        {
+                            "text": "Item with latex.",
+                            "content": [{"type": "latex", "source": "\\textbf{x}"}],
+                        },
+                    ],
+                },
+            ],
+        }
+        pdf = render(BLOCK_ENGINE_TEMPLATE, data)
+        assert pdf[:5] == b"%PDF-"
+
+
 class TestSignaturesFeatures:
     """Tests for signatures signatory/title fallback."""
 

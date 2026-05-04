@@ -36,9 +36,11 @@
       "items": [
         "Punkter med **inline-markup** fungerar.",
         {
-          "text": "Nestade listor stöds också.",
-          "items": ["Underpunkt A", "Underpunkt B"],
-          "style": "numbered"
+          "text": "List-items kan ha block-content (paragrafer, sub-listor, citat, callouts) som hör till samma punkt.",
+          "content": [
+            { "type": "text", "text": "En fortsättningsparagraf inuti samma punkt — utan att den blir undernumrerad." },
+            { "type": "list", "style": "numbered", "items": ["Underpunkt A", "Underpunkt B"] }
+          ]
         }
       ]
     },

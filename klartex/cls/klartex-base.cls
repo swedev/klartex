@@ -31,6 +31,20 @@
 \RequirePackage{tabularx}
 \RequirePackage{booktabs}
 
+% Inline implementation of \kxneedspace{<dim>} to avoid depending on the
+% `needspace` package (not present in texlive-basic). Standard glue trick:
+% inserts removable +/- glue around a -100 penalty so a page break is taken
+% when less than <dim> remains on the current page.
+\newcommand{\kxneedspace}[1]{%
+    \begingroup
+    \setlength{\dimen@}{#1}%
+    \vskip\z@\@plus\dimen@
+    \penalty-100
+    \vskip\z@\@plus-\dimen@
+    \endgroup
+    \vskip\z@\@plus\z@
+}
+
 % Set line spacing
 \setstretch{1.3}
 
@@ -38,6 +52,11 @@
 \tolerance=800
 \emergencystretch=3em
 \hbadness=800
+
+% Forbid 1- and 2-line widows (last lines of a paragraph alone on a new page)
+% and orphans (first lines of a paragraph alone at the bottom of a page).
+\widowpenalties 2 10000 10000
+\clubpenalties 2 10000 10000
 
 % Font — no default override; fontspec uses Latin Modern automatically.
 % Page templates can set a custom font via \setmainfont in the preamble.

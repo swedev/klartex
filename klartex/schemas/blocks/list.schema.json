@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://klartex.se/schemas/blocks/list/v0.1",
+  "$id": "https://klartex.se/schemas/blocks/list/v0.2",
   "title": "List Block",
-  "description": "Bullet or numbered list, optionally nested. Items pass through inline markup.",
+  "description": "Bullet or numbered list. Items are strings, or objects with text + nested content blocks. Items pass through inline markup.",
   "type": "object",
   "required": ["type", "items"],
   "additionalProperties": false,
@@ -17,21 +17,31 @@
     "items": {
       "type": "array",
       "minItems": 1,
-      "description": "Items: strings (leaves) or objects with text + nested items",
+      "description": "Items: strings (leaves) or objects with text + content[] blocks belonging to the same item",
       "items": {
         "oneOf": [
           { "type": "string" },
           {
             "type": "object",
-            "required": ["text", "items"],
+            "required": ["text", "content"],
             "additionalProperties": false,
             "properties": {
               "text": { "type": "string" },
-              "items": { "type": "array", "minItems": 1 },
-              "style": {
-                "type": "string",
-                "enum": ["bullet", "numbered"],
-                "description": "Override style for nested list (defaults to parent's style)"
+              "content": {
+                "type": "array",
+                "minItems": 1,
+                "description": "Block-level content rendered inside the same list item (paragraphs, sub-lists, callouts, quotes, tables, raw latex)",
+                "items": {
+                  "type": "object",
+                  "required": ["type"],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": ["text", "list", "callout", "quote", "table", "latex"],
+                      "description": "Allowed nested block types. Other block types only make sense at top level."
+                    }
+                  }
+                }
               }
             }
           }

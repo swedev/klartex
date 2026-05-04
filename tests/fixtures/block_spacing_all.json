@@ -60,7 +60,9 @@
         "Punktlista — andra punkten",
         {
           "text": "Punkt med nästlade underpunkter",
-          "items": ["Underpunkt A", "Underpunkt B"]
+          "content": [
+            { "type": "list", "style": "bullet", "items": ["Underpunkt A", "Underpunkt B"] }
+          ]
         }
       ]
     },

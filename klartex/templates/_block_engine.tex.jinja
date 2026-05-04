@@ -73,7 +73,10 @@ Personnr: \VAR{party.id_number}\\
 \BLOCK{endmacro}
 
 %# --- Recursive macro for generic list block (#24) ---
-\BLOCK{macro render_list(item_list, style)}
+%# Items are strings (leaves) or {text, content[]} where content[] is rendered
+%# inside the same \item via render_block, allowing paragraphs, sub-lists,
+%# callouts, quotes, tables and raw latex to belong to the parent item.
+\BLOCK{macro render_list(item_list, style, lang)}
 \BLOCK{if style == "numbered"}
 \begin{enumerate}
 \BLOCK{else}
@@ -84,7 +87,9 @@ Personnr: \VAR{party.id_number}\\
 \item \VAR{item | inline}
 \BLOCK{else}
 \item \VAR{item.text | inline}
-\VAR{render_list(item["items"], item.get("style", style))}
+\BLOCK{for sub in item["content"]}
+\VAR{render_block(sub, lang)}
+\BLOCK{endfor}
 \BLOCK{endif}
 \BLOCK{endfor}
 \BLOCK{if style == "numbered"}
@@ -123,44 +128,39 @@ Personnr: \VAR{party.id_number}\\
 \BLOCK{endif}
 \BLOCK{endmacro}
 
-%# --- Body blocks ---
-\BLOCK{set clause_started = [false] }
-\BLOCK{for block in body}
+%# --- Block dispatch macro: renders a single block to LaTeX ---
+%# Called from the top-level body loop and recursively from render_list for
+%# items with content[]. Clause-state tracking lives in the top-level loop.
+\BLOCK{macro render_block(block, lang)}
 
 \BLOCK{if block.type == 'title_page'}
-\BLOCK{if clause_started[0]}
-\end{clauses}
-\BLOCK{set _ = clause_started.__setitem__(0, false) }
-\BLOCK{endif}
 \makedoctitle{\VAR{block.get('party1', '')}}{\VAR{block.get('party2', '')}}{\VAR{block.get('title', '')}}
 
 \BLOCK{elif block.type == 'heading'}
-\BLOCK{if clause_started[0]}
-\end{clauses}
-\BLOCK{set _ = clause_started.__setitem__(0, false) }
-\BLOCK{endif}
+%# \needspace ensures the heading does not land alone at the bottom of a page —
+%# if there is not room for the heading plus a few lines of body text, the
+%# page breaks before the heading instead.
 %# parskip is canceled after each heading so the explicit \vspace below
 %# governs the visible gap on its own (otherwise parskip dwarfs the level
 %# differences and H1/H2/H3 trailing space looks identical).
 \BLOCK{if block.get('level', 1) == 1}
+\kxneedspace{6\baselineskip}
 \vspace{2.0em}
 {\fontsize{24pt}{29pt}\selectfont\bfseries \VAR{block.text | inline}\par}
 \nopagebreak[4]\vspace*{-\parskip}\vspace{1.2em}
 \BLOCK{elif block.get('level', 1) == 2}
+\kxneedspace{4\baselineskip}
 \vspace{1.4em}
 {\Large\bfseries \VAR{block.text | inline}\par}
 \nopagebreak[4]\vspace*{-\parskip}\vspace{0.5em}
 \BLOCK{else}
+\kxneedspace{3\baselineskip}
 \vspace{1.0em}
 {\large\bfseries \VAR{block.text | inline}\par}
 \nopagebreak[4]\vspace*{-\parskip}\vspace{0.15em}
 \BLOCK{endif}
 
 \BLOCK{elif block.type == 'parties'}
-\BLOCK{if clause_started[0]}
-\end{clauses}
-\BLOCK{set _ = clause_started.__setitem__(0, false) }
-\BLOCK{endif}
 \vspace{3em}
 \noindent
 \begin{minipage}[t]{0.48\textwidth}
@@ -173,18 +173,10 @@ Personnr: \VAR{party.id_number}\\
 \vspace{3em}
 
 \BLOCK{elif block.type == 'text'}
-\BLOCK{if clause_started[0]}
-\end{clauses}
-\BLOCK{set _ = clause_started.__setitem__(0, false) }
-\BLOCK{endif}
 
 \noindent \VAR{block.text | inline}
 
 \BLOCK{elif block.type == 'clause'}
-\BLOCK{if not clause_started[0]}
-\begin{clauses}
-\BLOCK{set _ = clause_started.__setitem__(0, true) }
-\BLOCK{endif}
 \clause{\VAR{block.title}}
 \BLOCK{if block["items"] | length == 1 and block["items"][0] is string}
 \\ \VAR{block["items"][0]}
@@ -193,24 +185,12 @@ Personnr: \VAR{party.id_number}\\
 \BLOCK{endif}
 
 \BLOCK{elif block.type == 'list'}
-\BLOCK{if clause_started[0]}
-\end{clauses}
-\BLOCK{set _ = clause_started.__setitem__(0, false) }
-\BLOCK{endif}
-\VAR{render_list(block["items"], block.get("style", "bullet"))}
+\VAR{render_list(block["items"], block.get("style", "bullet"), lang)}
 
 \BLOCK{elif block.type == 'table'}
-\BLOCK{if clause_started[0]}
-\end{clauses}
-\BLOCK{set _ = clause_started.__setitem__(0, false) }
-\BLOCK{endif}
 \VAR{render_table(block.header, block.rows, block.get("columns"), block.get("size", "small"))}
 
 \BLOCK{elif block.type == 'callout'}
-\BLOCK{if clause_started[0]}
-\end{clauses}
-\BLOCK{set _ = clause_started.__setitem__(0, false) }
-\BLOCK{endif}
 \BLOCK{set _variant = block.get("variant", "note") }
 \BLOCK{set _default_titles_sv = {"info": "Information", "tip": "Tips", "warning": "OBS!", "danger": "Varning", "note": "Notera"} }
 \BLOCK{set _default_titles_en = {"info": "Info", "tip": "Tip", "warning": "Note", "danger": "Warning", "note": "Note"} }
@@ -221,10 +201,6 @@ Personnr: \VAR{party.id_number}\\
 \end{callout}
 
 \BLOCK{elif block.type == 'quote'}
-\BLOCK{if clause_started[0]}
-\end{clauses}
-\BLOCK{set _ = clause_started.__setitem__(0, false) }
-\BLOCK{endif}
 \vspace{2em}
 \begin{quote}\itshape
 \makebox[0pt][r]{\fontsize{36pt}{0pt}\selectfont\raisebox{-0.25em}{“}\hspace{0.15em}}\VAR{block.text | inline}”
@@ -239,10 +215,6 @@ Personnr: \VAR{party.id_number}\\
 \clearpage
 
 \BLOCK{elif block.type == 'signatures'}
-\BLOCK{if clause_started[0]}
-\end{clauses}
-\BLOCK{set _ = clause_started.__setitem__(0, false) }
-\BLOCK{endif}
 \BLOCK{if block.get("new_page", true)}\clearpage\BLOCK{else}\vspace{1cm}\BLOCK{endif}
 \BLOCK{if block.get('header')}
 \section*{\VAR{block.header}}
@@ -271,10 +243,6 @@ Personnr: \VAR{party.id_number}\\
 \BLOCK{endfor}
 
 \BLOCK{elif block.type == 'metadata_table'}
-\BLOCK{if clause_started[0]}
-\end{clauses}
-\BLOCK{set _ = clause_started.__setitem__(0, false) }
-\BLOCK{endif}
 \vspace{2em}
 \noindent
 \begin{tabular}{@{}ll}
@@ -285,10 +253,6 @@ Personnr: \VAR{party.id_number}\\
 \vspace{2em}
 
 \BLOCK{elif block.type == 'agenda'}
-\BLOCK{if clause_started[0]}
-\end{clauses}
-\BLOCK{set _ = clause_started.__setitem__(0, false) }
-\BLOCK{endif}
 \begin{dagordning}
 \BLOCK{for item in block["items"]}
 \punkt{\VAR{item.title}}
@@ -304,10 +268,6 @@ Personnr: \VAR{party.id_number}\\
 \end{dagordning}
 
 \BLOCK{elif block.type == 'name_roster'}
-\BLOCK{if clause_started[0]}
-\end{clauses}
-\BLOCK{set _ = clause_started.__setitem__(0, false) }
-\BLOCK{endif}
 \vspace{1em}
 \namnrollista{\VAR{block.title}}{%
 \BLOCK{for person in block.people}
@@ -317,40 +277,43 @@ Personnr: \VAR{party.id_number}\\
 \vspace{1em}
 
 \BLOCK{elif block.type == 'resultatrakning'}
-\BLOCK{if clause_started[0]}
-\end{clauses}
-\BLOCK{set _ = clause_started.__setitem__(0, false) }
-\BLOCK{endif}
 \vspace{1.5em}
 \VAR{render_resultatrakning(block.rubrik_ar1, block.rubrik_ar2, block.grupper, block.get('resultat'))}
 \vspace{1.5em}
 
 \BLOCK{elif block.type == 'budgettabell'}
-\BLOCK{if clause_started[0]}
-\end{clauses}
-\BLOCK{set _ = clause_started.__setitem__(0, false) }
-\BLOCK{endif}
 \vspace{1.5em}
 \VAR{render_budgettabell(block.rubrik_budget, block.rubrik_ar1, block.rubrik_ar2, block.poster)}
 \vspace{1.5em}
 
 \BLOCK{elif block.type == 'notapparat'}
-\BLOCK{if clause_started[0]}
-\end{clauses}
-\BLOCK{set _ = clause_started.__setitem__(0, false) }
-\BLOCK{endif}
 \vspace{1.5em}
 \VAR{render_notapparat(block.noter)}
 \vspace{1.5em}
 
 \BLOCK{elif block.type == 'latex'}
+\VAR{block.source}
+
+\BLOCK{endif}
+\BLOCK{endmacro}
+
+%# --- Body blocks ---
+%# Top-level loop manages the lazily-opened "clauses" environment around runs
+%# of clause blocks; everything else dispatches through render_block.
+\BLOCK{set clause_started = [false] }
+\BLOCK{for block in body}
+\BLOCK{if block.type == 'clause'}
+\BLOCK{if not clause_started[0]}
+\begin{clauses}
+\BLOCK{set _ = clause_started.__setitem__(0, true) }
+\BLOCK{endif}
+\BLOCK{else}
 \BLOCK{if clause_started[0]}
 \end{clauses}
 \BLOCK{set _ = clause_started.__setitem__(0, false) }
 \BLOCK{endif}
-\VAR{block.source}
-
 \BLOCK{endif}
+\VAR{render_block(block, lang)}
 \BLOCK{endfor}
 
 \BLOCK{if clause_started[0]}

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.1 — 2026-05-04
+
+### Fixes
+- **`metadata_table`: long values no longer overflow the right margin.** Both the recipe path (`protokoll`, `faktura`, etc.) and the block engine path now render the value column with `tabularx` `>{\raggedright\arraybackslash}X` so a long Närvarande/attendees row, an unusually long location, etc. wraps to the next line within the page width instead of running off the edge.
+
 ## 0.6.0 — 2026-05-04
 
 ### Breaking changes

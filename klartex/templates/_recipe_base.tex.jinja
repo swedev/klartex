@@ -27,11 +27,11 @@
 
 \BLOCK{elif comp.type == 'metadata_table'}
 \noindent
-\begin{tabular}{@{}ll}
+\begin{tabularx}{\linewidth}{@{}l >{\raggedright\arraybackslash}X@{}}
 \BLOCK{for meta in metadata}
 \textbf{\VAR{meta.label}} & \BLOCK{if meta.value is iterable and meta.value is not string}\VAR{meta.value | join(', ')}\BLOCK{else}\VAR{meta.value}\BLOCK{endif} \\
 \BLOCK{endfor}
-\end{tabular}
+\end{tabularx}
 
 \BLOCK{elif comp.type == 'klausuler'}
 \begin{clauses}

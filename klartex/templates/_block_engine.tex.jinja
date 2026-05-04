@@ -245,11 +245,11 @@ Personnr: \VAR{party.id_number}\\
 \BLOCK{elif block.type == 'metadata_table'}
 \vspace{2em}
 \noindent
-\begin{tabular}{@{}ll}
+\begin{tabularx}{\linewidth}{@{}l >{\raggedright\arraybackslash}X@{}}
 \BLOCK{for entry in block.entries}
 \textbf{\VAR{entry.label}} & \VAR{entry.value} \\
 \BLOCK{endfor}
-\end{tabular}
+\end{tabularx}
 \vspace{2em}
 
 \BLOCK{elif block.type == 'agenda'}

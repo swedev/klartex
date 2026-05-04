@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.1 — 2026-05-04
+
+### Fixes
+- **`clause`: label box now sized via LaTeX `\settowidth` per sibling group.** v0.9.0 used a Python-side char-width heuristic that systematically underestimated `§` (and other wide glyphs) at `\Large`, so labels like `§ 13.` overflowed their box and touched the title with no visible padding. The renderer now emits a `\settowidth` + `\ifdim`-max pre-pass per sibling group (including top-level body) into a scoped `\kxgrouplabelw`, then uses that for the box width and `\hangindent`. Always pixel-accurate, regardless of font size or character widths.
+
 ## 0.9.0 — 2026-05-04
 
 ### Breaking changes

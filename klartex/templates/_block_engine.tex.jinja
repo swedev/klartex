@@ -104,7 +104,12 @@ Personnr: \VAR{party.id_number}\\
 %# nesting depth. Each level of `content[]` containing a nested clause adds
 %# 1cm of left indent. Non-clause content inside `content[]` is wrapped in a
 %# group with the same leftskip so it visually belongs to the parent clause.
-\BLOCK{macro render_clause(block, lang, indent_cm, label_w)}
+%# Render a single clause. The caller is expected to have set \kxgrouplabelw to
+%# the max rendered label width across this clause's sibling group (see the
+%# kxsetgroupw helper macro below). The clause uses \kxgrouplabelw for its own
+%# label box and hangindent. For content[], it opens a new scope and runs its
+%# own group-width pre-pass before iterating children.
+\BLOCK{macro render_clause(block, lang, indent_cm)}
 \BLOCK{set _level = block.get("level") }
 \BLOCK{set _size = "\\Large" if _level == 2 else ("\\large" if _level == 3 else "") }
 \BLOCK{set _bold = _level is not none }
@@ -114,25 +119,16 @@ Personnr: \VAR{party.id_number}\\
 \kxneedspace{\VAR{_needspace}}
 \begingroup
 \setlength{\leftskip}{\VAR{indent_cm}cm}
-\hangindent=\VAR{label_w}cm
+\hangindent=\kxgrouplabelw
 \hangafter=1
-\noindent \BLOCK{if _size}\VAR{_size} \BLOCK{endif}\makebox[\VAR{label_w}cm][l]{\BLOCK{if _bold}\textbf{\VAR{block.number}.}\BLOCK{else}\VAR{block.number}.\BLOCK{endif}}\BLOCK{if block.get("text")}\BLOCK{if _bold}\textbf{\VAR{block.text | inline}}\BLOCK{else}\VAR{block.text | inline}\BLOCK{endif}\BLOCK{endif}\par
+\noindent \BLOCK{if _size}\VAR{_size} \BLOCK{endif}\makebox[\kxgrouplabelw][l]{\BLOCK{if _bold}\textbf{\VAR{block.number}.}\BLOCK{else}\VAR{block.number}.\BLOCK{endif}}\BLOCK{if block.get("text")}\BLOCK{if _bold}\textbf{\VAR{block.text | inline}}\BLOCK{else}\VAR{block.text | inline}\BLOCK{endif}\BLOCK{endif}\par
 \endgroup
 \BLOCK{if block.get("content")}
-%# Compute group label-width once for clause-typed siblings in this content[].
-%# Heuristic: max(len(number)+1) * char_w(level) + 0.15cm padding.
-\BLOCK{set _sub_clauses = block.content | selectattr("type", "equalto", "clause") | list }
-\BLOCK{if _sub_clauses}
-\BLOCK{set _first_sub = _sub_clauses[0] }
-\BLOCK{set _sub_cw = 0.24 if _first_sub.get("level") == 2 else (0.20 if _first_sub.get("level") == 3 else 0.16) }
-\BLOCK{set _sub_maxn = (_sub_clauses | map(attribute="number") | map("length") | max) + 1 }
-\BLOCK{set _sub_label_w = (_sub_maxn * _sub_cw + 0.15) | round(3) }
-\BLOCK{else}
-\BLOCK{set _sub_label_w = 0.7 }
-\BLOCK{endif}
+\begingroup
+\VAR{kxsetgroupw(block.content)}
 \BLOCK{for sub in block.content}
 \BLOCK{if sub.type == "clause"}
-\VAR{render_clause(sub, lang, _sub_indent, _sub_label_w)}
+\VAR{render_clause(sub, lang, _sub_indent)}
 \BLOCK{else}
 \begin{list}{}{\setlength{\leftmargin}{\VAR{_sub_indent}cm}\setlength{\rightmargin}{0pt}\setlength{\topsep}{0pt}\setlength{\partopsep}{0pt}\setlength{\itemsep}{0pt}\setlength{\parsep}{\parskip}}
 \item[]
@@ -140,6 +136,29 @@ Personnr: \VAR{party.id_number}\\
 \end{list}
 \BLOCK{endif}
 \BLOCK{endfor}
+\endgroup
+\BLOCK{endif}
+\BLOCK{endmacro}
+
+%# Emit a TeX pre-pass that sets \kxgrouplabelw to the max rendered label
+%# width across the clause-typed entries in `siblings`, plus a 0.4em padding.
+%# Mirrors the rendering of the label inside settowidth so that font size and
+%# weight are accounted for. If there are no clauses, falls back to 0.7cm so
+%# unrelated downstream uses don't see a zero-width register.
+\BLOCK{macro kxsetgroupw(siblings)}
+\BLOCK{set _clauses = siblings | selectattr("type", "equalto", "clause") | list }
+\BLOCK{if _clauses}
+\setlength{\kxgrouplabelw}{0pt}
+\BLOCK{for c in _clauses}
+\BLOCK{set _c_level = c.get("level") }
+\BLOCK{set _c_size = "\\Large" if _c_level == 2 else ("\\large" if _c_level == 3 else "") }
+\BLOCK{set _c_bold = _c_level is not none }
+\settowidth{\kxtempdim}{\BLOCK{if _c_size}\VAR{_c_size} \BLOCK{endif}\BLOCK{if _c_bold}\textbf{\VAR{c.number}.}\BLOCK{else}\VAR{c.number}.\BLOCK{endif}}
+\ifdim\kxtempdim>\kxgrouplabelw \kxgrouplabelw=\kxtempdim\fi
+\BLOCK{endfor}
+\addtolength{\kxgrouplabelw}{0.4em}
+\BLOCK{else}
+\setlength{\kxgrouplabelw}{0.7cm}
 \BLOCK{endif}
 \BLOCK{endmacro}
 
@@ -336,23 +355,16 @@ Personnr: \VAR{party.id_number}\\
 \BLOCK{endmacro}
 
 %# --- Body blocks ---
-%# Pre-compute group label-width for top-level clause-typed blocks
-%# (heuristic: max(len(number)+1) * char_w(level) + 0.15cm padding).
-\BLOCK{set _top_clauses = body | selectattr("type", "equalto", "clause") | list }
-\BLOCK{if _top_clauses}
-\BLOCK{set _first_top = _top_clauses[0] }
-\BLOCK{set _top_cw = 0.24 if _first_top.get("level") == 2 else (0.20 if _first_top.get("level") == 3 else 0.16) }
-\BLOCK{set _top_maxn = (_top_clauses | map(attribute="number") | map("length") | max) + 1 }
-\BLOCK{set _top_label_w = (_top_maxn * _top_cw + 0.15) | round(3) }
-\BLOCK{else}
-\BLOCK{set _top_label_w = 0.7 }
-\BLOCK{endif}
+%# Open a TeX scope so the top-level group's \kxgrouplabelw is locally bound.
+\begingroup
+\VAR{kxsetgroupw(body)}
 \BLOCK{for block in body}
 \BLOCK{if block.type == "clause"}
-\VAR{render_clause(block, lang, 0, _top_label_w)}
+\VAR{render_clause(block, lang, 0)}
 \BLOCK{else}
 \VAR{render_block(block, lang)}
 \BLOCK{endif}
 \BLOCK{endfor}
+\endgroup
 
 \end{document}

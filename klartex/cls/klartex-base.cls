@@ -121,6 +121,13 @@
 \setlist[enumerate]{leftmargin=*, labelsep=0.5em}
 \setlist[itemize]{leftmargin=*, labelsep=0.5em}
 
+% Scratch lengths used by clause rendering. \kxgrouplabelw holds the maximum
+% rendered label width across a sibling group of clauses; \kxtempdim is a
+% temporary register used by the pre-pass that computes that maximum via
+% \settowidth + \ifdim.
+\newlength{\kxgrouplabelw}
+\newlength{\kxtempdim}
+
 % Hyperlink setup
 \hypersetup{
     colorlinks=true,

@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.6.0 — 2026-05-04
+
+### Breaking changes
+- **`list` block: nested-items shorthand replaced with `content[]`.** A list item that previously expressed a sub-list as `{"text": "...", "items": [...]}` now uses `{"text": "...", "content": [{"type": "list", "items": [...]}]}`. The `content[]` array accepts nested blocks of types `text`, `list`, `callout`, `quote`, `table`, and `latex` — not just sub-lists. Top-only block types (`heading`, `signatures`, `title_page`, `parties`, `agenda`, `metadata_table`, `name_roster`, `clause`, `page_break`, financial blocks) are rejected at validation. This lets a numbered list item carry a continuation paragraph, suggested wording, embedded callout, etc., without introducing `(a)`-style sub-numbering.
+
+### Typography
+- **Widow and orphan protection.** `klartex-base.cls` now sets `\widowpenalties 2 10000 10000` and `\clubpenalties 2 10000 10000`, forbidding 1- and 2-line widows (last lines of a paragraph stranded on a new page) and orphans (first lines stranded at the bottom).
+- **Heading-orphan protection.** Headings in the block engine call `\kxneedspace{6/4/3 \baselineskip}` (H1/H2/H3) so a heading cannot land alone at the bottom of a page — if the heading plus a few lines of body text doesn't fit, the page breaks before the heading. `\kxneedspace` is implemented inline in `klartex-base.cls` (no `needspace.sty` dependency).
+
+### Internal
+- Block-dispatch in `_block_engine.tex.jinja` is now a single `render_block` macro called both from the top-level body loop and recursively from `render_list` for items with `content[]`. The top-level loop continues to own the lazily-opened `clauses` environment around runs of `clause` blocks.
+
 ## 0.5.0 — 2026-05-03
 
 ### Breaking changes

@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.7.0 — 2026-05-04
+
+### Breaking changes
+- **`metadata_table` renamed to `description_list`.** The block has always been a definition list (HTML `<dl>` of label/value pairs), not a table. Field shape (`entries[]` with `{label, value}`) is unchanged — only the type name moves. The `protokoll`, `sie-exportrapport`, `budgetrapport`, `resultatrakning`, and `balansrakning` recipes now emit `description_list` internally; recipe input data is unaffected. Migration: replace `{"type": "metadata_table", ...}` with `{"type": "description_list", ...}` in any block-engine documents.
+
+### New blocks
+- **`form`**: label/value rows where missing values render as `\hrulefill` horizontal rules for handwritten signing. No `title` field — compose with a `heading` block before the form when a sub-title is needed. Suitable for arrendeavtal, hyresavtal, and similar paper-signed contracts.
+- **`columns`**: side-by-side layout container holding 1–4 column-stacks. Each item in `items[]` is an array of blocks rendered as a single column at equal width. Allowed inner block types: `heading`, `text`, `list`, `callout`, `quote`, `table`, `latex`, `form`, `description_list`. Top-only types and nested `columns` are rejected at validation. Combine with `form` and `description_list` to build party sections, side-by-side details, etc.
+
+### Bug fixes
+- **Nested block dispatch.** The renderer now recursively restores unescaped `block.type` strings into nested carriers (`list.items[].content[]` and `columns.items[][]`). Previously type-restoration only walked top-level `body[]`, so a nested `description_list` — or any underscore-named block type — survived as `description\_list` through the Jinja dispatch and was silently dropped from the rendered LaTeX.
+
 ## 0.6.1 — 2026-05-04
 
 ### Fixes

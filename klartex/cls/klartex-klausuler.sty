@@ -29,6 +29,10 @@
 }
 \newcommand{\clause}[1]{\stepcounter{clausecounter}\item \textbf{#1}}
 
+% Explicitly numbered clause: \clausenum{N}{title} renders as "§ N. title"
+% and sets clausecounter to N so subclauses become "N.1, N.2, …".
+\newcommand{\clausenum}[2]{\setcounter{clausecounter}{#1}\item[\textbf{\S\,#1.}] \textbf{#2}}
+
 % Subclauses: single list with 4 nestable levels.
 % LaTeX tracks depth automatically — just nest \begin{subclauses} inside itself.
 \newlist{subclauses}{enumerate}{4}

@@ -177,7 +177,11 @@ Personnr: \VAR{party.id_number}\\
 \noindent \VAR{block.text | inline}
 
 \BLOCK{elif block.type == 'clause'}
+\BLOCK{if block.get('number') is not none}
+\clausenum{\VAR{block.number}}{\VAR{block.title}}
+\BLOCK{else}
 \clause{\VAR{block.title}}
+\BLOCK{endif}
 \BLOCK{if block["items"] | length == 1 and block["items"][0] is string}
 \\ \VAR{block["items"][0]}
 \BLOCK{else}

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.0 — 2026-05-04
+
+### New features
+- **`clause`: explicit paragraph numbering via optional `number` field.** When set, the clause renders as `§ N. Title` and its sub-items use `N.1, N.2, …` regardless of the block's position in `body[]`. When omitted, behavior is unchanged — auto-numbered as `M. Title` with sub-items `M.1, M.2, …` (no §). Use case: legal contracts (arrendeavtal, hyresavtal) where paragraph numbers are determined by document role, not by `body[]` order. Implemented as a new `\clausenum{N}{title}` macro in `klartex-klausuler.sty` that calls `\setcounter{clausecounter}{N}` so subclauses pick up the explicit number automatically.
+
 ## 0.7.1 — 2026-05-04
 
 ### Style

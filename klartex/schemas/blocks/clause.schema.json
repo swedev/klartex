@@ -9,6 +9,11 @@
   "properties": {
     "type": { "type": "string", "const": "clause" },
     "title": { "type": "string", "description": "Clause title" },
+    "number": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Explicit clause number. When set, the clause renders as '§ N. Title' and sub-items use 'N.1, N.2, …' regardless of position in body[]. When absent, the clause is auto-numbered as 'N. Title' (no §)."
+    },
     "items": {
       "type": "array",
       "description": "Clause items (strings or nested objects with sub-items)",

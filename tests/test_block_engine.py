@@ -831,6 +831,130 @@ class TestArsmotespaket:
         assert pdf[:5] == b"%PDF-"
 
 
+class TestClauseNumber:
+    """Tests for the optional `number` field on clause blocks — explicit
+    paragraph numbering with § prefix and matching sub-numbering."""
+
+    def _render_tex(self, data: dict) -> str:
+        """Helper: run the renderer's pre-compile pipeline and return the
+        rendered LaTeX source (no xelatex needed)."""
+        from klartex.renderer import _render_block_engine, _restore_block_types
+        from klartex.tex_escape import escape_data
+
+        escaped = escape_data(data)
+        _restore_block_types(data["body"], escaped["body"])
+        return _render_block_engine(escaped)
+
+    def test_number_must_be_integer(self):
+        from klartex.renderer import render
+
+        data = {
+            "body": [
+                {
+                    "type": "clause",
+                    "number": "8",
+                    "title": "Byggnader",
+                    "items": ["Stuga får uppföras."],
+                },
+            ],
+        }
+        with pytest.raises(ValueError, match="Invalid 'clause' block"):
+            render(BLOCK_ENGINE_TEMPLATE, data)
+
+    def test_number_must_be_positive(self):
+        from klartex.renderer import render
+
+        data = {
+            "body": [
+                {
+                    "type": "clause",
+                    "number": 0,
+                    "title": "Byggnader",
+                    "items": ["x"],
+                },
+            ],
+        }
+        with pytest.raises(ValueError, match="Invalid 'clause' block"):
+            render(BLOCK_ENGINE_TEMPLATE, data)
+
+    def test_number_emits_clausenum_macro(self):
+        """When `number` is set, the renderer must emit \\clausenum, not \\clause."""
+        data = {
+            "body": [
+                {
+                    "type": "clause",
+                    "number": 8,
+                    "title": "Byggnader",
+                    "items": ["Stuga.", "Förråd."],
+                },
+            ],
+        }
+        tex = self._render_tex(data)
+        assert r"\clausenum{8}{Byggnader}" in tex
+        assert r"\clause{Byggnader}" not in tex
+
+    def test_no_number_uses_auto_clause(self):
+        """When `number` is absent, the renderer falls back to auto-numbered \\clause."""
+        data = {
+            "body": [
+                {
+                    "type": "clause",
+                    "title": "Allmänt",
+                    "items": ["x"],
+                },
+            ],
+        }
+        tex = self._render_tex(data)
+        assert r"\clause{Allmänt}" in tex
+        assert r"\clausenum" not in tex
+
+    @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+    def test_numbered_clause_renders(self):
+        """End-to-end: a clause with explicit number renders to a valid PDF."""
+        from klartex.renderer import render
+
+        data = {
+            "body": [
+                {"type": "heading", "text": "Arrendeavtal"},
+                {
+                    "type": "clause",
+                    "number": 8,
+                    "title": "Byggnader",
+                    "items": [
+                        "Endast en stuga får uppföras.",
+                        "Förråd är tillåtet.",
+                        "Brandsäkerhet enligt bilaga.",
+                    ],
+                },
+            ],
+        }
+        pdf = render(BLOCK_ENGINE_TEMPLATE, data)
+        assert pdf[:5] == b"%PDF-"
+
+    @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+    def test_numbered_then_auto_clause(self):
+        """A numbered clause followed by auto-clauses keeps stepping from there."""
+        from klartex.renderer import render
+
+        data = {
+            "body": [
+                {
+                    "type": "clause",
+                    "number": 8,
+                    "title": "Byggnader",
+                    "items": ["a"],
+                },
+                {
+                    "type": "clause",
+                    "title": "Underhåll",
+                    "items": ["b"],
+                },
+            ],
+        }
+        pdf = render(BLOCK_ENGINE_TEMPLATE, data)
+        assert pdf[:5] == b"%PDF-"
+
+
 class TestRecipeTemplatesStillWork:
     """Ensure recipe templates are unaffected by block engine changes."""
 

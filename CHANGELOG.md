@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.7 — 2026-05-06
+
+### Spacing
+- **`signatures`: inter-row vspace 0.5cm → 1cm.** v0.9.6's combined fixes (empty-title pane shorter + row-gap halved) overshot — rows visually too tight. Back to 1cm gap between rows. Header `\vspace{0.5cm}` stays for the tight top rhythm.
+
 ## 0.9.6 — 2026-05-06
 
 ### Fixes

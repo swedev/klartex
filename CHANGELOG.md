@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.9.6 — 2026-05-06
+
+### Fixes
+- **`signatures`: empty `title` no longer reserves a phantom line of vertical space.** The trailing `\\[0.25cm]` in `\kxsignaturepane` ran unconditionally before `\kx@signatory@line`, so even when no signatory text was rendered, a full line's worth of vertical space was still reserved at the bottom of each pane. The line break is now emitted *inside* `\kx@signatory@line`, only when there is actual content (party≠signatory or non-empty title) — empty signatory line now takes zero vertical space.
+
+### Spacing
+- **`signatures`: uniform 0.5cm rhythm.** Section header now has `\vspace{0.5cm}` below (was using only `\section*`'s default 12pt, mismatching the row gap). Inter-row vspace 1cm → 0.5cm. `new_page: false` preceding margin 1cm → 0.5cm. The whole block now has consistent 0.5cm vertical breathing space between header, intro, and signature rows.
+
 ## 0.9.5 — 2026-05-06
 
 ### New features

@@ -23,12 +23,15 @@
 
 % Helper: print signatory name + title under the line, but skip name if same as party name
 % Args: #1=party name, #2=signatory name, #3=title
+% Emits its own leading line break (\\[0.25cm]) only when there is content
+% to render — otherwise an empty signatory line still reserved a full line
+% of vertical space inside the pane.
 \newcommand{\kx@signatory@line}[3]{%
     \def\kx@tmp@party{#1}\def\kx@tmp@sig{#2}%
     \ifx\kx@tmp@party\kx@tmp@sig
-        \ifx\relax#3\relax\else{\small #3}\fi
+        \ifx\relax#3\relax\else\\[0.25cm]{\small #3}\fi
     \else
-        #2\ifx\relax#3\relax\else\\{\small #3}\fi
+        \\[0.25cm]#2\ifx\relax#3\relax\else\\{\small #3}\fi
     \fi
 }
 
@@ -51,7 +54,7 @@
         \dottedline[\linewidth]\\[0.4cm]
     \fi
     \kx@signature\\[0.6cm]
-    \dottedline[\linewidth]\\[0.25cm]
+    \dottedline[\linewidth]%
     \kx@signatory@line{#1}{#2}{#3}%
 }
 \makeatother
@@ -76,7 +79,7 @@
         \kx@locationdate\\[0.6cm]
         \dottedline\\[0.4cm]
         \kx@signature\\[0.6cm]
-        \dottedline\\[0.25cm]
+        \dottedline%
         \kx@signatory@line{#1}{#3}{#5}
     \end{minipage}%
     \hfill
@@ -85,7 +88,7 @@
         \kx@locationdate\\[0.6cm]
         \dottedline\\[0.4cm]
         \kx@signature\\[0.6cm]
-        \dottedline\\[0.25cm]
+        \dottedline%
         \kx@signatory@line{#2}{#4}{#6}
     \end{minipage}
 }

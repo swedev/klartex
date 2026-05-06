@@ -1,6 +1,6 @@
 [project]
 name = "klartex"
-version = "0.9.5"
+version = "0.9.6"
 description = "PDF generation via LaTeX — structured data in, professional documents out"
 readme = "README.md"
 license = "MIT"

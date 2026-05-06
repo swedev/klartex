@@ -256,10 +256,11 @@ Personnr: \VAR{party.id_number}\\
 \clearpage
 
 \BLOCK{elif block.type == 'signatures'}
-\BLOCK{if block.get("new_page", true)}\clearpage\BLOCK{else}\vspace{1cm}\BLOCK{endif}
+\BLOCK{if block.get("new_page", true)}\clearpage\BLOCK{else}\vspace{0.5cm}\BLOCK{endif}
 \BLOCK{if block.get('header')}
 \section*{\VAR{block.header}}
 \addcontentsline{toc}{section}{\VAR{block.header}}
+\vspace{0.5cm}
 \BLOCK{endif}
 \BLOCK{if block.parties | length == 2}
 \kxsignaturesintro
@@ -278,7 +279,7 @@ Personnr: \VAR{party.id_number}\\
 \end{minipage}\BLOCK{if (loop.index % sig_cols != 0) and (not loop.last)}\hfill\BLOCK{endif}
 \BLOCK{if (loop.index % sig_cols == 0) and (not loop.last)}
 
-\vspace{1cm}
+\vspace{0.5cm}
 
 \BLOCK{endif}
 \BLOCK{endfor}

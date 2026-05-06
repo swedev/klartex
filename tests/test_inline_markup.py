@@ -75,3 +75,15 @@ def test_escaped_underscore_inside_code():
 
 def test_lang_default_is_sv():
     assert render_inline('"x"') == "”x”"
+
+
+def test_newline_becomes_latex_line_break():
+    assert render_inline("a\nb") == "a \\\\ b"
+
+
+def test_multiple_newlines():
+    assert render_inline("a\nb\nc") == "a \\\\ b \\\\ c"
+
+
+def test_newline_works_with_other_markup():
+    assert render_inline("**bold**\n*italic*") == r"\textbf{bold} \\ \textit{italic}"

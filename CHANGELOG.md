@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.9.5 — 2026-05-06
+
+### New features
+- **Inline `\n` → LaTeX line break.** Literal newlines in JSON strings (`"line 1\nline 2"`) now render as in-paragraph line breaks. Applies to all inline-filtered text fields (heading, text, clause text, callout, quote, etc.). For separate paragraphs, use separate text blocks.
+
+### Fixes
+- **`heading`: orphan-protection generalized.** v0.9.4 only suppressed the competing `\kxneedspace` for clause→clause. The same orphan mechanic also affected heading→clause and heading→heading: the second block's own `\kxneedspace` lured TeX into breaking between them. The top-level body loop now tracks the previous block type; when the previous block was a `heading`, the next clause or heading suppresses its `\kxneedspace`.
+
+### Spacing
+- **`callout`: top/bottom margin bumped from 1em to 1.5em** (50%) so callouts breathe properly between adjacent paragraphs.
+- **`heading`: tighter line height for multi-line wrap.** Headings now wrap their text in `\setstretch{1.1}` so multi-line titles don't inherit the document's default 1.3 line stretch — fixes the visually loose 2-line wrap.
+
 ## 0.9.4 — 2026-05-04
 
 ### Fixes

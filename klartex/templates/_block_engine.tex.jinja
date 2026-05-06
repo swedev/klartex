@@ -177,7 +177,7 @@ Personnr: \VAR{party.id_number}\\
 %# --- Block dispatch macro: renders a single block to LaTeX ---
 %# Called from the top-level body loop and recursively from render_list for
 %# items with content[].
-\BLOCK{macro render_block(block, lang)}
+\BLOCK{macro render_block(block, lang, suppress_needspace=false)}
 
 \BLOCK{if block.type == 'title_page'}
 \makedoctitle{\VAR{block.get('party1', '')}}{\VAR{block.get('party2', '')}}{\VAR{block.get('title', '')}}
@@ -189,20 +189,23 @@ Personnr: \VAR{party.id_number}\\
 %# parskip is canceled after each heading so the explicit \vspace below
 %# governs the visible gap on its own (otherwise parskip dwarfs the level
 %# differences and H1/H2/H3 trailing space looks identical).
+%# When suppress_needspace is set (heading directly after a previous heading
+%# whose own \kxneedspace already covers the buffer), skip our \kxneedspace
+%# to avoid a competing -100 penalty that would strand the previous heading.
 \BLOCK{if block.get('level', 1) == 1}
-\kxneedspace{6\baselineskip}
+\BLOCK{if not suppress_needspace}\kxneedspace{6\baselineskip}\BLOCK{endif}
 \vspace{2.0em}
-{\fontsize{24pt}{29pt}\selectfont\bfseries \VAR{block.text | inline}\par}
+{\setstretch{1.1}\fontsize{24pt}{29pt}\selectfont\bfseries \VAR{block.text | inline}\par}
 \nopagebreak[4]\vspace*{-\parskip}\vspace{1.2em}
 \BLOCK{elif block.get('level', 1) == 2}
-\kxneedspace{4\baselineskip}
+\BLOCK{if not suppress_needspace}\kxneedspace{4\baselineskip}\BLOCK{endif}
 \vspace{1.4em}
-{\Large\bfseries \VAR{block.text | inline}\par}
+{\setstretch{1.1}\Large\bfseries \VAR{block.text | inline}\par}
 \nopagebreak[4]\vspace*{-\parskip}\vspace{0.5em}
 \BLOCK{else}
-\kxneedspace{3\baselineskip}
+\BLOCK{if not suppress_needspace}\kxneedspace{3\baselineskip}\BLOCK{endif}
 \vspace{1.0em}
-{\large\bfseries \VAR{block.text | inline}\par}
+{\setstretch{1.1}\large\bfseries \VAR{block.text | inline}\par}
 \nopagebreak[4]\vspace*{-\parskip}\vspace{0.15em}
 \BLOCK{endif}
 
@@ -368,14 +371,24 @@ Personnr: \VAR{party.id_number}\\
 
 %# --- Body blocks ---
 %# Open a TeX scope so the top-level group's \kxgrouplabelw is locally bound.
+%# Track whether the previous block was a heading so we can suppress the
+%# next clause's \kxneedspace — heading's own \kxneedspace already reserves
+%# space for itself + the following block, and a competing -100 penalty in
+%# the clause would otherwise lure TeX into stranding the heading at the
+%# bottom of a page (same orphan-mechanic that v0.9.4 fixed for nested
+%# clauses).
 \begingroup
 \VAR{kxsetgroupw(body)}
+\BLOCK{set prev_was_heading = [false] }
 \BLOCK{for block in body}
 \BLOCK{if block.type == "clause"}
-\VAR{render_clause(block, lang, 0)}
+\VAR{render_clause(block, lang, 0, prev_was_heading[0])}
+\BLOCK{elif block.type == "heading"}
+\VAR{render_block(block, lang, prev_was_heading[0])}
 \BLOCK{else}
 \VAR{render_block(block, lang)}
 \BLOCK{endif}
+\BLOCK{set _ = prev_was_heading.__setitem__(0, block.type == "heading") }
 \BLOCK{endfor}
 \endgroup
 

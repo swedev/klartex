@@ -53,6 +53,12 @@ def render_inline(text: str, lang: str = "sv") -> str:
     for i, code in enumerate(code_spans):
         text = text.replace(_CODE_PLACEHOLDER.format(i), f"\\texttt{{{code}}}")
 
+    # Literal newlines in JSON strings ("line 1\nline 2") become LaTeX line
+    # breaks within the current paragraph. For separate paragraphs, use
+    # separate text blocks. Done last so it doesn't interfere with the regex
+    # passes above that operate within a single line.
+    text = text.replace("\n", " \\\\ ")
+
     return text
 
 

@@ -895,29 +895,40 @@ class TestClauseBlock:
             render(BLOCK_ENGINE_TEMPLATE, data)
 
     def test_freeform_number_passes_through_verbatim(self):
-        """The number string is rendered as written — § symbol, dotted form, etc."""
+        """The number string is rendered exactly as written — no auto-period."""
         data = {
             "body": [
                 {
                     "type": "clause",
-                    "number": "§ 7",
+                    "number": "§ 7.",
                     "level": 3,
                     "text": "Arrendatorns skyldigheter",
                 },
             ],
         }
         tex = self._render_tex(data)
-        # number rendered with trailing period via \makebox
+        # number rendered verbatim (period was in the input)
         assert r"\textbf{§ 7.}" in tex
         # level 3 → \large + bold text
         assert r"\large" in tex
         assert r"\textbf{Arrendatorns skyldigheter}" in tex
 
+    def test_number_no_auto_period(self):
+        """An author-written 'a)' label renders as 'a)', not 'a).'."""
+        data = {
+            "body": [
+                {"type": "clause", "number": "a)", "text": "alternative one"},
+            ],
+        }
+        tex = self._render_tex(data)
+        assert "a)" in tex
+        assert "a)." not in tex
+
     def test_omitted_level_neither_bold(self):
         """Without level, neither label nor text is bold (matched weight)."""
         data = {
             "body": [
-                {"type": "clause", "number": "7.1", "text": "vara folkbokförd..."},
+                {"type": "clause", "number": "7.1.", "text": "vara folkbokförd..."},
             ],
         }
         tex = self._render_tex(data)

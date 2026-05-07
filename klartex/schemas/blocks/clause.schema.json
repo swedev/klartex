@@ -15,7 +15,7 @@
     "number": {
       "type": "string",
       "minLength": 1,
-      "description": "Free-form label rendered before the text. Examples: '§ 7', '7.1', 'I', 'A'. The author writes the § symbol explicitly when wanted — there is no automatic numbering."
+      "description": "Free-form label rendered verbatim before the text. Examples: '§ 7.', '7.1.', 'I.', 'a)'. The author writes the full label including any trailing period — nothing is auto-appended, so 'a)' renders as 'a)' (not 'a).')."
     },
     "text": {
       "type": "string",

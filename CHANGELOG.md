@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.8 — 2026-05-06
+
+### Breaking changes
+- **`clause`: label no longer auto-appends a period.** The renderer used to hard-code a `.` after `block.number`, so `"§ 7"` rendered as `§ 7.` and `"a)"` would have become `a).`. The number string is now passed through verbatim — `"§ 7"` → `§ 7`, `"a)"` → `a)`. To get the dotted form, write `"§ 7."` in the `number` field. Migration: existing documents using `"§ N"` style numbers should be updated to `"§ N."` if the period is wanted in the rendering.
+
 ## 0.9.7 — 2026-05-06
 
 ### Spacing

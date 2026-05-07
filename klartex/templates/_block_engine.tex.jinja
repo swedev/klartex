@@ -132,7 +132,7 @@ Personnr: \VAR{party.id_number}\\
 \setlength{\leftskip}{\VAR{indent_cm}cm}
 \hangindent=\kxgrouplabelw
 \hangafter=1
-\noindent \BLOCK{if _size}\VAR{_size} \BLOCK{endif}\makebox[\kxgrouplabelw][l]{\BLOCK{if _bold}\textbf{\VAR{block.number}.}\BLOCK{else}\VAR{block.number}.\BLOCK{endif}}\BLOCK{if block.get("text")}\BLOCK{if _bold}\textbf{\VAR{block.text | inline}}\BLOCK{else}\VAR{block.text | inline}\BLOCK{endif}\BLOCK{endif}\par
+\noindent \BLOCK{if _size}\VAR{_size} \BLOCK{endif}\makebox[\kxgrouplabelw][l]{\BLOCK{if _bold}\textbf{\VAR{block.number}}\BLOCK{else}\VAR{block.number}\BLOCK{endif}}\BLOCK{if block.get("text")}\BLOCK{if _bold}\textbf{\VAR{block.text | inline}}\BLOCK{else}\VAR{block.text | inline}\BLOCK{endif}\BLOCK{endif}\par
 \endgroup
 \BLOCK{if block.get("content")}
 \nopagebreak[4]
@@ -165,7 +165,7 @@ Personnr: \VAR{party.id_number}\\
 \BLOCK{set _c_level = c.get("level") }
 \BLOCK{set _c_size = "\\Large" if _c_level == 2 else ("\\large" if _c_level == 3 else "") }
 \BLOCK{set _c_bold = _c_level is not none }
-\settowidth{\kxtempdim}{\BLOCK{if _c_size}\VAR{_c_size} \BLOCK{endif}\BLOCK{if _c_bold}\textbf{\VAR{c.number}.}\BLOCK{else}\VAR{c.number}.\BLOCK{endif}}
+\settowidth{\kxtempdim}{\BLOCK{if _c_size}\VAR{_c_size} \BLOCK{endif}\BLOCK{if _c_bold}\textbf{\VAR{c.number}}\BLOCK{else}\VAR{c.number}\BLOCK{endif}}
 \ifdim\kxtempdim>\kxgrouplabelw \kxgrouplabelw=\kxtempdim\fi
 \BLOCK{endfor}
 \addtolength{\kxgrouplabelw}{0.4em}

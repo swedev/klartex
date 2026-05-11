@@ -67,6 +67,17 @@ klartex schema protokoll
 klartex serve
 ```
 
+### As Docker image
+
+Official multi-arch image (`linux/amd64` + `linux/arm64`) is published to GitHub Container Registry on every release:
+
+```bash
+docker run --rm -p 8000:8000 ghcr.io/swedev/klartex:latest
+# or pin a version: ghcr.io/swedev/klartex:0.9.8
+```
+
+The image starts the HTTP service on port 8000. Available tags: `X.Y.Z` (exact version), `X.Y` (latest in the minor series) and `latest`.
+
 ### As HTTP service
 
 ```bash

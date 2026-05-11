@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### New features
+- **Docker image published to GHCR on release.** Each `vX.Y.Z` tag now triggers `.github/workflows/docker.yml`, which builds a multi-arch image (`linux/amd64` + `linux/arm64`) and pushes it to `ghcr.io/swedev/klartex` with tags `X.Y.Z`, `X.Y`, and `latest`. Pull: `docker pull ghcr.io/swedev/klartex:latest`. The image starts the HTTP service on port 8000 by default.
+
 ## 0.9.8 — 2026-05-06
 
 ### Breaking changes

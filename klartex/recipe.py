@@ -178,8 +178,15 @@ def prepare_recipe_context(
         if optional and value is None:
             continue
 
-        # Build display value with optional suffix fields (e.g., time_start/time_end)
-        display_value = value if value is not None else ""
+        # Build display value with optional suffix fields (e.g., time_start/time_end).
+        # List-typed values (e.g. attendees, adjusters) are joined with ', ' so the
+        # downstream description_list renderer can treat every value as a string.
+        if isinstance(value, list):
+            display_value = ", ".join(str(v) for v in value)
+        elif value is not None:
+            display_value = value
+        else:
+            display_value = ""
         suffix_fields = meta.get("suffix_fields", [])
         if suffix_fields:
             separator = meta.get("suffix_separator", ", ")

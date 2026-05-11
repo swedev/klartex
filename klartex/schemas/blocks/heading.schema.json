@@ -1,14 +1,20 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://klartex.se/schemas/blocks/heading/v0.1",
+  "$id": "https://klartex.se/schemas/blocks/heading/v0.2",
   "title": "Heading Block",
-  "description": "Large bold heading text",
+  "description": "Bold heading text with level and horizontal alignment.",
   "type": "object",
   "required": ["type", "text"],
   "additionalProperties": false,
   "properties": {
     "type": { "type": "string", "const": "heading" },
     "text": { "type": "string", "description": "Heading text" },
-    "level": { "type": "integer", "enum": [1, 2, 3], "default": 1, "description": "Heading level (1=largest)" }
+    "level": { "type": "integer", "enum": [1, 2, 3], "default": 1, "description": "Heading level (1=largest)" },
+    "textAlign": {
+      "type": "string",
+      "enum": ["left", "center", "right"],
+      "default": "left",
+      "description": "Horizontal alignment."
+    }
   }
 }

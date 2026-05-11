@@ -41,13 +41,11 @@ components:
     options:
       source: document.metadata
 
-  - type: klausuler
+  - type: agenda
     data_map:
       items: agenda_items
     options:
-      item_title_field: title
-      item_body_field: discussion
-      item_decision_field: decision
-      decision_label: "Beslut:"
+      numberingStyle: decimal
+      decisionLabel: "Beslut:"
 
 schema: schema.json

@@ -1,4 +1,5 @@
 \BLOCK{from '_financial_macros.tex.jinja' import render_resultatrakning, render_budgettabell, render_notapparat}
+\BLOCK{from '_block_macros.tex.jinja' import render_agenda, render_heading, render_description_list}
 \documentclass{klartex-base}
 
 \VAR{page_template_source}
@@ -183,31 +184,7 @@ Personnr: \VAR{party.id_number}\\
 \makedoctitle{\VAR{block.get('party1', '')}}{\VAR{block.get('party2', '')}}{\VAR{block.get('title', '')}}
 
 \BLOCK{elif block.type == 'heading'}
-%# \needspace ensures the heading does not land alone at the bottom of a page —
-%# if there is not room for the heading plus a few lines of body text, the
-%# page breaks before the heading instead.
-%# parskip is canceled after each heading so the explicit \vspace below
-%# governs the visible gap on its own (otherwise parskip dwarfs the level
-%# differences and H1/H2/H3 trailing space looks identical).
-%# When suppress_needspace is set (heading directly after a previous heading
-%# whose own \kxneedspace already covers the buffer), skip our \kxneedspace
-%# to avoid a competing -100 penalty that would strand the previous heading.
-\BLOCK{if block.get('level', 1) == 1}
-\BLOCK{if not suppress_needspace}\kxneedspace{6\baselineskip}\BLOCK{endif}
-\vspace{2.0em}
-{\setstretch{1.1}\fontsize{24pt}{29pt}\selectfont\bfseries \VAR{block.text | inline}\par}
-\nopagebreak[4]\vspace*{-\parskip}\vspace{1.2em}
-\BLOCK{elif block.get('level', 1) == 2}
-\BLOCK{if not suppress_needspace}\kxneedspace{4\baselineskip}\BLOCK{endif}
-\vspace{1.4em}
-{\setstretch{1.1}\Large\bfseries \VAR{block.text | inline}\par}
-\nopagebreak[4]\vspace*{-\parskip}\vspace{0.5em}
-\BLOCK{else}
-\BLOCK{if not suppress_needspace}\kxneedspace{3\baselineskip}\BLOCK{endif}
-\vspace{1.0em}
-{\setstretch{1.1}\large\bfseries \VAR{block.text | inline}\par}
-\nopagebreak[4]\vspace*{-\parskip}\vspace{0.15em}
-\BLOCK{endif}
+\VAR{render_heading(block.text, block.get('level', 1), block.get('textAlign', 'left'), suppress_needspace)}
 
 \BLOCK{elif block.type == 'parties'}
 \vspace{3em}
@@ -316,29 +293,10 @@ Personnr: \VAR{party.id_number}\\
 \BLOCK{endif}
 
 \BLOCK{elif block.type == 'description_list'}
-\vspace{2em}
-\noindent
-\begin{tabularx}{\linewidth}{@{}l >{\raggedright\arraybackslash}X@{}}
-\BLOCK{for entry in block.entries}
-\textbf{\VAR{entry.label}} & \VAR{entry.value} \\
-\BLOCK{endfor}
-\end{tabularx}
-\vspace{2em}
+\VAR{render_description_list(block.entries)}
 
 \BLOCK{elif block.type == 'agenda'}
-\begin{dagordning}
-\BLOCK{for item in block["items"]}
-\punkt{\VAR{item.title}}
-\BLOCK{if item.get('discussion')}
-
-\noindent \VAR{item.discussion}
-\BLOCK{endif}
-\BLOCK{if item.get('decision')}
-
-\noindent \textbf{Beslut:} \VAR{item.decision}
-\BLOCK{endif}
-\BLOCK{endfor}
-\end{dagordning}
+\VAR{render_agenda(block["items"], block.get('numberingStyle', 'section'), block.get('decisionLabel', 'Beslut:'))}
 
 \BLOCK{elif block.type == 'name_roster'}
 \vspace{1em}

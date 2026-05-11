@@ -14,13 +14,9 @@ class TestComponentRegistry:
     """Tests for component lookup and listing."""
 
     def test_get_known_component(self):
-        spec = get_component("klausuler")
-        assert spec.name == "klausuler"
+        spec = get_component("invoice_header")
+        assert spec.name == "invoice_header"
         assert spec.sty_package is None
-
-    def test_get_signatureblock(self):
-        spec = get_component("signatureblock")
-        assert spec.sty_package == "klartex-signatureblock"
 
     def test_get_heading_no_sty(self):
         spec = get_component("heading")
@@ -32,10 +28,9 @@ class TestComponentRegistry:
 
     def test_list_components_returns_all(self):
         components = list_components()
-        assert "klausuler" in components
-        assert "signatureblock" in components
-        assert "titelsida" in components
+        assert "invoice_header" in components
         assert "heading" in components
+        assert "agenda" in components
         assert len(components) >= 5
 
     def test_block_types_registered(self):
@@ -125,8 +120,8 @@ class TestComponentRegistry:
         assert spec.sty_package == "klartex-notapparat"
 
     def test_recipe_component_no_block_schema(self):
-        """Recipe-only components (klausuler, signatureblock) don't need block schemas."""
-        spec = get_component("klausuler")
+        """Recipe-only components (invoice_*) don't need block schemas."""
+        spec = get_component("invoice_header")
         assert spec.block_schema_path is None or spec.get_block_schema() is not None
 
 

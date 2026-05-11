@@ -156,22 +156,7 @@ _COMPONENTS: dict[str, ComponentSpec] = {
         description="Numbered notes linked to financial tables",
         block_schema_path="notapparat.schema.json",
     ),
-    # Legacy recipe component names (used by _recipe_base.tex.jinja)
-    "klausuler": ComponentSpec(
-        name="klausuler",
-        sty_package=None,
-        description="Position-numbered agenda/clause-style items (recipe component, no .sty dependency)",
-    ),
-    "signatureblock": ComponentSpec(
-        name="signatureblock",
-        sty_package="klartex-signatureblock",
-        description="Two-party signature block (recipe component)",
-    ),
-    "titelsida": ComponentSpec(
-        name="titelsida",
-        sty_package="klartex-titelsida",
-        description="Title page with two party names and document title (recipe component)",
-    ),
+    # Recipe-only components (used by _recipe_base.tex.jinja, no block-engine equivalent)
     "invoice_header": ComponentSpec(
         name="invoice_header",
         sty_package=None,

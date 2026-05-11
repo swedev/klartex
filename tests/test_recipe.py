@@ -30,7 +30,7 @@ class TestLoadRecipe:
         recipe = load_recipe(TEMPLATES_DIR / "protokoll" / "recipe.yaml")
         component_types = [c.type for c in recipe.components]
         assert "heading" in component_types
-        assert "klausuler" in component_types
+        assert "agenda" in component_types
 
     def test_recipe_document_section(self):
         recipe = load_recipe(TEMPLATES_DIR / "protokoll" / "recipe.yaml")
@@ -109,10 +109,10 @@ class TestPrepareRecipeContext:
         recipe = load_recipe(TEMPLATES_DIR / "protokoll" / "recipe.yaml")
         data = json.loads((FIXTURES / "protokoll.json").read_text())
         ctx = prepare_recipe_context(recipe, data)
-        # Find the klausuler component
-        klausuler = [c for c in ctx["components"] if c["type"] == "klausuler"]
-        assert len(klausuler) == 1
-        assert klausuler[0]["data"]["items"] == data["agenda_items"]
+        # Find the agenda component (replaced klausuler in v0.10)
+        agenda = [c for c in ctx["components"] if c["type"] == "agenda"]
+        assert len(agenda) == 1
+        assert agenda[0]["data"]["items"] == data["agenda_items"]
 
 
 class TestRecipeEscaping:

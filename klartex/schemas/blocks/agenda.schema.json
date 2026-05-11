@@ -1,13 +1,24 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://klartex.se/schemas/blocks/agenda/v0.1",
+  "$id": "https://klartex.se/schemas/blocks/agenda/v0.2",
   "title": "Agenda Block",
-  "description": "§-numbered agenda with optional discussion and decisions",
+  "description": "Numbered agenda items with optional discussion, decision, and sub-items. Use `numberingStyle: \"section\"` (default) for §-prefixed items (meeting minutes), or `numberingStyle: \"decimal\"` for plain numbered items (1., 2., …) with optional decimal sub-items (1.1., 1.2., …).",
   "type": "object",
   "required": ["type", "items"],
   "additionalProperties": false,
   "properties": {
     "type": { "type": "string", "const": "agenda" },
+    "numberingStyle": {
+      "type": "string",
+      "enum": ["section", "decimal"],
+      "default": "section",
+      "description": "Top-level item numbering. `section` renders `§ 1`, `§ 2`, … `decimal` renders `1.`, `2.`, … (and enables `subItems` decimal sub-numbering)."
+    },
+    "decisionLabel": {
+      "type": "string",
+      "default": "Beslut:",
+      "description": "Label for the decision line. Default is Swedish \"Beslut:\"."
+    },
     "items": {
       "type": "array",
       "description": "Agenda items",
@@ -18,7 +29,12 @@
         "properties": {
           "title": { "type": "string", "description": "Agenda item title" },
           "discussion": { "type": "string", "description": "Discussion text" },
-          "decision": { "type": "string", "description": "Decision text" }
+          "decision": { "type": "string", "description": "Decision text" },
+          "subItems": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Optional flat sub-items rendered with decimal sub-numbering (1.1., 1.2., …). Only meaningful with `numberingStyle: \"decimal\"`."
+          }
         }
       },
       "minItems": 1

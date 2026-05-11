@@ -86,7 +86,7 @@
         "properties": {
           "type": {
             "type": "string",
-            "description": "Component type name (e.g. 'klausuler', 'signatureblock', 'titelsida')"
+            "description": "Component type name (e.g. 'heading', 'agenda', 'invoice_table')"
           },
           "data_map": {
             "type": "object",

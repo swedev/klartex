@@ -1,4 +1,5 @@
 \BLOCK{from '_financial_macros.tex.jinja' import render_resultatrakning, render_budgettabell, render_notapparat}
+\BLOCK{from '_block_macros.tex.jinja' import render_agenda, render_heading, render_description_list}
 \documentclass{klartex-base}
 \providecommand{\orgname}{}
 
@@ -15,72 +16,20 @@
 \BLOCK{for comp in components}
 %# ---- Component: \VAR{comp.type} ----
 \BLOCK{if comp.type == 'heading'}
-\begin{center}
-{\Large\bfseries \VAR{comp.data.get('title', '')}}\\[0.5em]
-\ifdefempty{\orgname}{}{{\normalsize \orgname}\\[0.3em]}
+%# Recipe heading is a title block: a centered heading + optional orgname
+%# (from page template) + optional subtitle. The heading itself goes through
+%# the shared render_heading; the metadata lines are recipe-specific layout.
+\VAR{render_heading(comp.data.get('title', ''), 2, 'center')}
+\ifdefempty{\orgname}{}{\begin{center}{\normalsize \orgname\par}\end{center}}
 \BLOCK{if comp.data.get('subtitle')}
-{\normalsize \VAR{comp.options.get('subtitle_prefix', '')}\VAR{comp.data.subtitle}}\\[1em]
-\BLOCK{else}
-\vspace{1em}
+\begin{center}{\normalsize \VAR{comp.options.get('subtitle_prefix', '')}\VAR{comp.data.subtitle | inline}\par}\end{center}
 \BLOCK{endif}
-\end{center}
 
 \BLOCK{elif comp.type == 'description_list'}
-\noindent
-\begin{tabularx}{\linewidth}{@{}l >{\raggedright\arraybackslash}X@{}}
-\BLOCK{for meta in metadata}
-\textbf{\VAR{meta.label}} & \BLOCK{if meta.value is iterable and meta.value is not string}\VAR{meta.value | join(', ')}\BLOCK{else}\VAR{meta.value}\BLOCK{endif} \\
-\BLOCK{endfor}
-\end{tabularx}
+\VAR{render_description_list(metadata)}
 
-\BLOCK{elif comp.type == 'klausuler'}
-\BLOCK{set items = comp.data.get('items', []) }
-\BLOCK{set title_field = comp.options.get('item_title_field', 'title') }
-\BLOCK{set body_field = comp.options.get('item_body_field', 'body') }
-\BLOCK{set decision_field = comp.options.get('item_decision_field', '') }
-\BLOCK{set decision_label = comp.options.get('decision_label', 'Beslut:') }
-\BLOCK{for item in items}
-\BLOCK{set parent_idx = loop.index }
-\par
-\kxneedspace{3\baselineskip}
-\begingroup
-\hangindent=1.0cm
-\hangafter=1
-\noindent \makebox[1.0cm][l]{\textbf{\VAR{parent_idx}.}}\textbf{\VAR{item[title_field]}}\par
-\endgroup
-\BLOCK{if item.get(body_field)}
-\par
-\begingroup
-\setlength{\leftskip}{1.0cm}
-\noindent \VAR{item[body_field]}\par
-\endgroup
-\BLOCK{endif}
-\BLOCK{if decision_field and item.get(decision_field)}
-\par
-\begingroup
-\setlength{\leftskip}{1.0cm}
-\noindent \textbf{\VAR{decision_label}} \VAR{item[decision_field]}\par
-\endgroup
-\BLOCK{endif}
-\BLOCK{if item.get('subclauses')}
-\BLOCK{for sub in item.subclauses}
-\par
-\begingroup
-\setlength{\leftskip}{1.0cm}
-\hangindent=1.0cm
-\hangafter=1
-\noindent \makebox[1.0cm][l]{\textbf{\VAR{parent_idx}.\VAR{loop.index}.}}\VAR{sub}\par
-\endgroup
-\BLOCK{endfor}
-\BLOCK{endif}
-\BLOCK{endfor}
-
-\BLOCK{elif comp.type == 'signatureblock'}
-\BLOCK{set _p = comp.data.parties}
-\signatureblock{\VAR{_p[0].name}}{\VAR{_p[1].name}}{\VAR{_p[0].get('signatory', _p[0].name)}}{\VAR{_p[1].get('signatory', _p[1].name)}}{\VAR{_p[0].get('title', '')}}{\VAR{_p[1].get('title', '')}}
-
-\BLOCK{elif comp.type == 'titelsida'}
-\makedoctitle{\VAR{comp.data.get('party1', '')}}{\VAR{comp.data.get('party2', '')}}{\VAR{comp.data.get('title', '')}}
+\BLOCK{elif comp.type == 'agenda'}
+\VAR{render_agenda(comp.data.get('items', []), comp.options.get('numberingStyle', 'section'), comp.options.get('decisionLabel', 'Beslut:'))}
 
 \BLOCK{elif comp.type == 'invoice_header'}
 \begin{flushright}
@@ -190,7 +139,7 @@ Org.nr: \VAR{comp.data.recipient.org_number}\\
 \BLOCK{elif comp.type == 'text'}
 \BLOCK{if comp.data.get('text')}
 \vspace{1em}
-\noindent \VAR{comp.data.text}
+\noindent \VAR{comp.data.text | inline}
 \BLOCK{endif}
 
 \BLOCK{endif}

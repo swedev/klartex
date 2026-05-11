@@ -1,0 +1,93 @@
+%# Shared block-rendering macros.
+%# Used by both _block_engine.tex.jinja (block path, dispatches per body[] block)
+%# and _recipe_base.tex.jinja (recipe path, dispatches per components[] entry).
+%# Each macro takes the values it needs directly so callers can pass either
+%# block-shaped data (block.field) or recipe-shaped data (comp.data.field).
+
+%# Render a heading. `level` selects size & spacing (1 largest). `textAlign`
+%# wraps the content in a center/flushright env. `suppress_needspace` skips
+%# the orphan-protection glue (used when this heading directly follows another
+%# heading whose own \kxneedspace already covers the buffer).
+\BLOCK{macro render_heading(text, level=1, textAlign="left", suppress_needspace=false)}
+\BLOCK{set _size = "\\fontsize{24pt}{29pt}\\selectfont" if level == 1 else ("\\Large" if level == 2 else "\\large") }
+\BLOCK{set _needspace = "6\\baselineskip" if level == 1 else ("4\\baselineskip" if level == 2 else "3\\baselineskip") }
+\BLOCK{set _vspace_above = "2.0em" if level == 1 else ("1.4em" if level == 2 else "1.0em") }
+\BLOCK{set _vspace_below = "1.2em" if level == 1 else ("0.5em" if level == 2 else "0.15em") }
+\BLOCK{if not suppress_needspace}\kxneedspace{\VAR{_needspace}}\BLOCK{endif}
+\vspace{\VAR{_vspace_above}}
+\BLOCK{if textAlign == "center"}\begin{center}\BLOCK{elif textAlign == "right"}\begin{flushright}\BLOCK{endif}
+{\setstretch{1.1}\VAR{_size}\bfseries \VAR{text | inline}\par}
+\BLOCK{if textAlign == "center"}\end{center}\BLOCK{elif textAlign == "right"}\end{flushright}\BLOCK{endif}
+\nopagebreak[4]\vspace*{-\parskip}\vspace{\VAR{_vspace_below}}
+\BLOCK{endmacro}
+
+%# Render a label/value description list. `entries` is a list of {label, value}.
+%# Used by both the block-engine `description_list` block and recipes that map
+%# document metadata (date, location, attendees, …) to a label-value table.
+\BLOCK{macro render_description_list(entries)}
+\vspace{2em}
+\noindent
+\begin{tabularx}{\linewidth}{@{}l >{\raggedright\arraybackslash}X@{}}
+\BLOCK{for entry in entries}
+\textbf{\VAR{entry.label}} & \VAR{entry.value} \\
+\BLOCK{endfor}
+\end{tabularx}
+\vspace{2em}
+\BLOCK{endmacro}
+
+%# Render the agenda block. `items` is a list of {title, discussion?, decision?, subItems?}.
+%# `numStyle` is "section" (§-numbered, dagordning environment) or "decimal"
+%# (1., 2., …, with optional decimal subItems 1.1., 1.2., …).
+\BLOCK{macro render_agenda(items, numStyle="section", decLabel="Beslut:")}
+\BLOCK{if numStyle == 'section'}
+\begin{dagordning}
+\BLOCK{for item in items}
+\punkt{\VAR{item.title}}
+\BLOCK{if item.get('discussion')}
+
+\noindent \VAR{item.discussion}
+\BLOCK{endif}
+\BLOCK{if item.get('decision')}
+
+\noindent \textbf{\VAR{decLabel}} \VAR{item.decision}
+\BLOCK{endif}
+\BLOCK{endfor}
+\end{dagordning}
+\BLOCK{else}
+\BLOCK{for item in items}
+\BLOCK{set parent_idx = loop.index }
+\par
+\kxneedspace{3\baselineskip}
+\begingroup
+\hangindent=1.0cm
+\hangafter=1
+\noindent \makebox[1.0cm][l]{\textbf{\VAR{parent_idx}.}}\textbf{\VAR{item.title}}\par
+\endgroup
+\BLOCK{if item.get('discussion')}
+\par
+\begingroup
+\setlength{\leftskip}{1.0cm}
+\noindent \VAR{item.discussion}\par
+\endgroup
+\BLOCK{endif}
+\BLOCK{if item.get('decision')}
+\par
+\begingroup
+\setlength{\leftskip}{1.0cm}
+\noindent \textbf{\VAR{decLabel}} \VAR{item.decision}\par
+\endgroup
+\BLOCK{endif}
+\BLOCK{if item.get('subItems')}
+\BLOCK{for sub in item.subItems}
+\par
+\begingroup
+\setlength{\leftskip}{1.0cm}
+\hangindent=1.0cm
+\hangafter=1
+\noindent \makebox[1.0cm][l]{\textbf{\VAR{parent_idx}.\VAR{loop.index}.}}\VAR{sub}\par
+\endgroup
+\BLOCK{endfor}
+\BLOCK{endif}
+\BLOCK{endfor}
+\BLOCK{endif}
+\BLOCK{endmacro}

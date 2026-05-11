@@ -12,11 +12,32 @@ from klartex.renderer import render, get_registry
 
 app = typer.Typer(help="Klartex — PDF generation via LaTeX", invoke_without_command=True)
 
+# Filename for cwd-level page template auto-discovery.
+DEFAULT_PAGE_TEMPLATE_FILENAME = "page_template.tex.jinja"
+
 
 def _version_callback(value: bool):
     if value:
         typer.echo(f"klartex {pkg_version('klartex')}")
         raise typer.Exit()
+
+
+def _autodetect_page_template(data_path: Optional[Path]) -> Optional[Path]:
+    """Return the page-template path inferred from the working directory.
+
+    Lookup order:
+      1. ``<data-stem>.tex.jinja`` next to the data file (if data is a file).
+      2. ``./page_template.tex.jinja`` in the current working directory.
+      3. None.
+    """
+    if data_path is not None:
+        sibling = data_path.with_suffix(".tex.jinja")
+        if sibling.exists():
+            return sibling
+    cwd_default = Path.cwd() / DEFAULT_PAGE_TEMPLATE_FILENAME
+    if cwd_default.exists():
+        return cwd_default
+    return None
 
 
 @app.callback()
@@ -28,7 +49,11 @@ def main(
     page_template: Optional[str] = typer.Option(
         None,
         "--page-template",
-        help="Page template file path. Overrides data.page_template.",
+        help=(
+            "Page template file path. Overrides data.page_template. "
+            "If omitted, klartex auto-detects <data-stem>.tex.jinja next to "
+            "the data file, then ./page_template.tex.jinja in cwd."
+        ),
     ),
     version: Optional[bool] = typer.Option(None, "--version", "-V", help="Show version and exit.", callback=_version_callback, is_eager=True),
 ):
@@ -48,7 +73,9 @@ def main(
             raise typer.Exit(1)
         raw_text = sys.stdin.read()
 
-    # Read page template source if provided
+    # Resolve page template source. Explicit --page-template wins; otherwise
+    # try <data-stem>.tex.jinja next to the data file, then
+    # ./page_template.tex.jinja in cwd.
     page_template_source = None
     if page_template is not None:
         pt_path = Path(page_template)
@@ -56,6 +83,11 @@ def main(
             typer.echo(f"Error: page template file not found: {page_template}", err=True)
             raise typer.Exit(1)
         page_template_source = pt_path.read_text()
+    else:
+        auto = _autodetect_page_template(data)
+        if auto is not None:
+            page_template_source = auto.read_text()
+            typer.echo(f"Using page template: {auto}", err=True)
 
     # Default output filename: same as input but with .pdf extension
     if output is None:

@@ -158,17 +158,5 @@ def show_example(
     typer.echo(example_path.read_text().rstrip())
 
 
-@app.command("serve")
-def serve(
-    host: str = typer.Option("0.0.0.0", "--host", "-h"),
-    port: int = typer.Option(8000, "--port", "-p"),
-):
-    """Start the HTTP server."""
-    import uvicorn
-    from klartex.main import app as fastapi_app
-
-    uvicorn.run(fastapi_app, host=host, port=port)
-
-
 if __name__ == "__main__":
     app()

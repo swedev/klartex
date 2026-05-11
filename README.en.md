@@ -6,7 +6,7 @@ PDF generation via LaTeX — structured data in, professional documents out.
 
 [klartex.se](https://klartex.se) · [PyPI](https://pypi.org/project/klartex/) · [GitHub](https://github.com/swedev/klartex)
 
-Klartex takes JSON data + template name and produces PDF via XeLaTeX. Can be used as a Python library, CLI tool, or HTTP service.
+Klartex takes JSON data + template name and produces PDF via XeLaTeX. Can be used as a Python library or CLI tool.
 
 ## Templates
 
@@ -62,46 +62,6 @@ klartex templates
 
 # Show JSON Schema for a template
 klartex schema protokoll
-
-# Start HTTP server
-klartex serve
-```
-
-### As Docker image
-
-Official multi-arch image (`linux/amd64` + `linux/arm64`) is published to GitHub Container Registry on every release:
-
-```bash
-docker run --rm -p 8000:8000 ghcr.io/swedev/klartex:latest
-# or pin a version: ghcr.io/swedev/klartex:0.9.8
-```
-
-The image starts the HTTP service on port 8000. Available tags: `X.Y.Z` (exact version), `X.Y` (latest in the minor series) and `latest`.
-
-### As HTTP service
-
-```bash
-klartex serve --port 8000
-```
-
-```bash
-# Render PDF
-curl -X POST http://localhost:8000/render \
-  -H "Content-Type: application/json" \
-  -d '{"template": "protokoll", "data": {...}}' \
-  -o output.pdf
-
-# Render with external page template
-curl -X POST http://localhost:8000/render \
-  -H "Content-Type: application/json" \
-  -d '{"template": "_block", "data": {...}, "page_template_source": "\\definecolor{brandprimary}{HTML}{2E5A1C}\\n..."}' \
-  -o output.pdf
-
-# List templates
-curl http://localhost:8000/templates
-
-# Get schema
-curl http://localhost:8000/templates/protokoll/schema
 ```
 
 ## Page Templates

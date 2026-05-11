@@ -62,6 +62,7 @@ def render(
     template_name: str,
     data: dict,
     page_template_source: str | None = None,
+    asset_dir: Path | str | None = None,
 ) -> bytes:
     """Render a template with data to PDF bytes.
 
@@ -71,6 +72,11 @@ def render(
         page_template_source: Optional raw .tex.jinja content for the page
             template. When set, this is used directly instead of looking up
             the built-in page template from data["page_template"].
+        asset_dir: Optional directory injected into TEXINPUTS so xelatex
+            resolves `\\includegraphics`, `\\input`, custom fonts, etc.
+            against it. Searched between the bundled `cls/` and the caller's
+            cwd. Useful when callers (e.g. a server) keep page-template
+            bundles in a known location separate from the working directory.
 
     Returns:
         PDF file contents as bytes
@@ -123,11 +129,11 @@ def render(
         # fails to match the dispatch). Also restore raw source on latex blocks.
         _restore_block_types(data.get("body", []), escaped_data["body"])
         tex_source = _render_block_engine(escaped_data, page_template_source)
-        return _compile_tex(tex_source)
+        return _compile_tex(tex_source, asset_dir=asset_dir)
 
     # Recipe path
     tex_source = _render_recipe(template_info, escaped_data, page_template_source)
-    return _compile_tex(tex_source)
+    return _compile_tex(tex_source, asset_dir=asset_dir)
 
 
 def _restore_block_types(orig_blocks: list, esc_blocks: list) -> None:
@@ -181,7 +187,7 @@ def _render_recipe(
     return template.render(context)
 
 
-def _compile_tex(tex_source: str) -> bytes:
+def _compile_tex(tex_source: str, asset_dir: Path | str | None = None) -> bytes:
     """Compile LaTeX source to PDF bytes."""
     if not shutil.which("xelatex"):
         raise RuntimeError(
@@ -201,13 +207,16 @@ def _compile_tex(tex_source: str) -> bytes:
         # Also symlink klartex-base.cls at top level for \documentclass{klartex-base}
         (tmp / "klartex-base.cls").symlink_to(CLS_DIR / "klartex-base.cls")
 
-        # Build environment with cls/ and caller's cwd on TEXINPUTS
+        # Build environment with cls/, optional asset_dir, and caller's cwd
+        # on TEXINPUTS. asset_dir slots in after the bundled cls/ so server
+        # callers can resolve page-template bundles without chdir.
         import os
 
         env = os.environ.copy()
         existing_texinputs = env.get("TEXINPUTS", "")
         cwd = os.getcwd()
-        env["TEXINPUTS"] = f".:{CLS_DIR}:{cwd}:{existing_texinputs}"
+        asset_part = f"{asset_dir}:" if asset_dir is not None else ""
+        env["TEXINPUTS"] = f".:{CLS_DIR}:{asset_part}{cwd}:{existing_texinputs}"
 
         # Run xelatex twice (for page references).
         # -no-shell-escape disables \write18 and shell command execution from

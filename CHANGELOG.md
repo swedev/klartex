@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.11.1 — 2026-05-11
+
+### New features
+- **`render(asset_dir=...)`-parameter.** `klartex.render()` accepterar nu en valfri `asset_dir: Path | str | None`. Katalogen läggs in i `TEXINPUTS` mellan den bundlade `cls/`-mappen och anroparens cwd, så `\includegraphics`, `\input`, custom fonts m.m. i en sidmall hittas där utan att anroparen behöver `chdir`. Tänkt huvudanvändning: serverlager (t.ex. `klartex.se`) som slår upp namngivna sidmalls-bundles i en lokal katalog och vill peka klartex på den utan globala sidoeffekter.
+
 ## 0.11.0 — 2026-05-11
 
 ### Breaking changes

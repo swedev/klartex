@@ -39,6 +39,34 @@ def test_render_with_special_chars():
     assert pdf_bytes[:5] == b"%PDF-"
 
 
+@pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+def test_render_resolves_asset_dir(tmp_path):
+    """Files in asset_dir should be resolvable by xelatex via TEXINPUTS."""
+    # Put a snippet only findable through asset_dir
+    (tmp_path / "brand-colors.tex").write_text(
+        r"\definecolor{brandprimary}{HTML}{2E5A1C}"
+    )
+    page_template = (
+        r"\input{brand-colors}"
+        "\n"
+        r"\fancyhead[L]{\color{brandprimary}Test}"
+        "\n"
+        r"\fancyfoot[C]{\thepage}"
+        "\n"
+    )
+    data = {"body": [{"type": "heading", "text": "Asset dir test"}]}
+
+    # With asset_dir: \input resolves, render succeeds
+    pdf = render(
+        "_block", data, page_template_source=page_template, asset_dir=tmp_path
+    )
+    assert pdf[:5] == b"%PDF-"
+
+    # Without asset_dir: \input cannot find brand-colors.tex, xelatex halts
+    with pytest.raises(RuntimeError, match="xelatex failed"):
+        render("_block", data, page_template_source=page_template)
+
+
 class TestDiscovery:
     """Tests for template discovery."""
 

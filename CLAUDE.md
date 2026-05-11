@@ -37,7 +37,9 @@ klartex example _block                         # canonical example payload
    1. Bump `version` in `pyproject.toml`.
    2. Add a dated entry at the top of `CHANGELOG.md` (groups: `Breaking changes` / `New features` / `Fixes` / `Spacing`).
    3. Commit as `Release vX.Y.Z: <summary>` and push to `main`.
-   4. `gh release create vX.Y.Z --generate-notes` — `.github/workflows/publish.yml` runs tests and publishes to PyPI.
+   4. `gh release create vX.Y.Z --generate-notes` pushes the tag and creates the release, which triggers:
+      - `.github/workflows/publish.yml` — runs tests and publishes to PyPI.
+      - `.github/workflows/docker.yml` — builds the multi-arch Docker image (`linux/amd64` + `linux/arm64`) and pushes to `ghcr.io/swedev/klartex` with tags `X.Y.Z`, `X.Y`, `latest`. Both workflows run in parallel.
 
 ## Architecture
 

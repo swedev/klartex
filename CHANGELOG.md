@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.11.0 — 2026-05-11
+
+### Breaking changes
+- **HTTP-server borttagen ur kärnpaketet.** `klartex serve`-kommandot, `klartex/main.py` (FastAPI-appen) och `fastapi`/`uvicorn`-beroendena är raderade. Konsumenter som behöver en HTTP-yta får importera `klartex` som library i ett eget webblager (det är vad `klartex.se` gör). Inga andra kända konsumenter — clean break utan deprecation-period.
+- **Docker-image borttagen.** `Dockerfile`, `docker-compose.yml` och `.github/workflows/docker.yml` raderade — imagen fanns enbart för att paketera HTTP-servern. `ghcr.io/swedev/klartex:0.10.1` är sista publicerade taggen och kommer inte uppdateras. Använd `pipx install klartex` eller importera som library.
+
+### Fixes
+- **`xelatex` körs nu med `-no-shell-escape`.** Stänger `\write18` och shell-exekvering från `.tex`-källan. Relevant när uppströmskonsumenter (t.ex. `klartex.se`) renderar användaruppladdade sidmallar — utan flaggan kunde en manipulerad page template köra godtyckliga shell-kommandon under kompilering.
+
 ## 0.10.1 — 2026-05-11
 
 ### Fixes

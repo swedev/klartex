@@ -18,9 +18,6 @@ pytest -k "not xelatex" -m "not slow"
 klartex -d tests/fixtures/block_kallelse.json -o /tmp/out.pdf
 cat data.json | klartex                       # stdin → output.pdf in cwd
 
-# HTTP server
-klartex serve --port 8000
-
 # Discovery commands the agent uses
 klartex templates                              # list all templates
 klartex blocks                                 # list block-engine block types
@@ -37,9 +34,7 @@ klartex example _block                         # canonical example payload
    1. Bump `version` in `pyproject.toml`.
    2. Add a dated entry at the top of `CHANGELOG.md` (groups: `Breaking changes` / `New features` / `Fixes` / `Spacing`).
    3. Commit as `Release vX.Y.Z: <summary>` and push to `main`.
-   4. `gh release create vX.Y.Z --generate-notes` pushes the tag and creates the release, which triggers:
-      - `.github/workflows/publish.yml` — runs tests and publishes to PyPI.
-      - `.github/workflows/docker.yml` — builds the multi-arch Docker image (`linux/amd64` + `linux/arm64`) and pushes to `ghcr.io/swedev/klartex` with tags `X.Y.Z`, `X.Y`, `latest`. Both workflows run in parallel.
+   4. `gh release create vX.Y.Z --generate-notes` pushes the tag and creates the release, which triggers `.github/workflows/publish.yml` — runs tests and publishes to PyPI.
 
 ## Architecture
 
@@ -111,8 +106,7 @@ Spacing fixes accumulate in `_block_engine.tex.jinja` as `\kxneedspace` glue tri
 - `test_renderer.py` — full pipeline including escape/restore
 - `test_page_templates.py` / `test_cli_page_template.py` — page-template resolution
 - `test_schemas.py` — schema validity and oneOf coverage of all block types
-- `test_api.py` — FastAPI surface
-- `test_agent_cli.py` — agent-discovery endpoints (`templates`, `blocks`, `schema`, `example`)
+- `test_agent_cli.py` — agent-discovery CLI commands (`templates`, `blocks`, `schema`, `example`)
 
 ## Languages
 

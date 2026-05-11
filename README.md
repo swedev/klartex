@@ -6,7 +6,7 @@ PDF-generering via LaTeX — strukturerad data in, professionella dokument ut.
 
 [klartex.se](https://klartex.se) · [PyPI](https://pypi.org/project/klartex/) · [GitHub](https://github.com/swedev/klartex)
 
-Klartex tar JSON-data + mallnamn och producerar PDF via XeLaTeX. Kan användas som Python-bibliotek, CLI-verktyg eller HTTP-tjänst.
+Klartex tar JSON-data + mallnamn och producerar PDF via XeLaTeX. Kan användas som Python-bibliotek eller CLI-verktyg.
 
 ## Mallar
 
@@ -62,46 +62,6 @@ klartex templates
 
 # Visa JSON Schema för en mall
 klartex schema protokoll
-
-# Starta HTTP-server
-klartex serve
-```
-
-### Som Docker-image
-
-Officiell multi-arch-image (`linux/amd64` + `linux/arm64`) publiceras till GitHub Container Registry vid varje release:
-
-```bash
-docker run --rm -p 8000:8000 ghcr.io/swedev/klartex:latest
-# eller låst version: ghcr.io/swedev/klartex:0.9.8
-```
-
-Imagen startar HTTP-tjänsten på port 8000. Tillgängliga taggar: `X.Y.Z` (exakt version), `X.Y` (senaste i minor-serien) och `latest`.
-
-### Som HTTP-tjänst
-
-```bash
-klartex serve --port 8000
-```
-
-```bash
-# Rendera PDF
-curl -X POST http://localhost:8000/render \
-  -H "Content-Type: application/json" \
-  -d '{"template": "protokoll", "data": {...}}' \
-  -o output.pdf
-
-# Rendera med extern sidmall
-curl -X POST http://localhost:8000/render \
-  -H "Content-Type: application/json" \
-  -d '{"template": "_block", "data": {...}, "page_template_source": "\\definecolor{brandprimary}{HTML}{2E5A1C}\\n..."}' \
-  -o output.pdf
-
-# Lista mallar
-curl http://localhost:8000/templates
-
-# Hämta schema
-curl http://localhost:8000/templates/protokoll/schema
 ```
 
 ## Sidmallar (Page Templates)

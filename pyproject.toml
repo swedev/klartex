@@ -1,6 +1,6 @@
 [project]
 name = "klartex"
-version = "0.10.1"
+version = "0.11.0"
 description = "PDF generation via LaTeX — structured data in, professional documents out"
 readme = "README.md"
 license = "MIT"
@@ -14,8 +14,6 @@ classifiers = [
     "Topic :: Text Processing :: Markup :: LaTeX",
 ]
 dependencies = [
-    "fastapi>=0.115.0",
-    "uvicorn>=0.34.0",
     "jinja2>=3.1.0",
     "pyyaml>=6.0",
     "jsonschema>=4.23.0",
@@ -32,7 +30,6 @@ klartex = "klartex.cli:app"
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
-    "httpx>=0.28.0",
 ]
 
 [tool.hatch.build]
@@ -42,8 +39,6 @@ exclude = [
     ".claude/",
     ".vscode/",
     ".github/",
-    "Dockerfile",
-    "docker-compose.yml",
 ]
 
 [tool.hatch.build.targets.wheel]

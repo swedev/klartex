@@ -209,13 +209,18 @@ def _compile_tex(tex_source: str) -> bytes:
         cwd = os.getcwd()
         env["TEXINPUTS"] = f".:{CLS_DIR}:{cwd}:{existing_texinputs}"
 
-        # Run xelatex twice (for page references)
+        # Run xelatex twice (for page references).
+        # -no-shell-escape disables \write18 and shell command execution from
+        # within the .tex source — important when callers (e.g. klartex.se)
+        # render user-supplied page templates that could otherwise execute
+        # arbitrary shell commands during compilation.
         for _ in range(2):
             result = subprocess.run(
                 [
                     "xelatex",
                     "-interaction=nonstopmode",
                     "-halt-on-error",
+                    "-no-shell-escape",
                     "document.tex",
                 ],
                 cwd=tmpdir,

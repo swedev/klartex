@@ -1,9 +1,23 @@
 # Changelog
 
-## Unreleased
+## 0.10.0 — 2026-05-11
+
+### Breaking changes
+- **`signatureblock` recipe component removed.** Use the `signatures` block instead — same `.sty` underneath, but the block supports N parties, configurable columns, and custom headers. No live recipe used `signatureblock`.
+- **`klausuler` recipe component removed.** Use the `agenda` block with `numberingStyle: "decimal"`. The `protokoll` recipe is migrated accordingly; custom recipes using `klausuler` should switch to `agenda` (items already use the same `{title, discussion, decision}` shape).
+- **`titelsida` recipe component removed.** Use the `title_page` block. No live recipe used it.
+- **Recipe `text` component now parses inline markup.** Strings like `**bold**` or `*italic*` in recipe text data are rendered as formatting instead of literal asterisks. Escape with `\*` for literal output.
+- **`prepare_recipe_context` joins list-typed metadata values to strings.** Direct callers that expected `metadata[].value` to sometimes be a list (e.g. `attendees`, `adjusters`) now always receive a comma-joined string.
 
 ### New features
-- **Docker image published to GHCR on release.** Each `vX.Y.Z` tag now triggers `.github/workflows/docker.yml`, which builds a multi-arch image (`linux/amd64` + `linux/arm64`) and pushes it to `ghcr.io/swedev/klartex` with tags `X.Y.Z`, `X.Y`, and `latest`. Pull: `docker pull ghcr.io/swedev/klartex:latest`. The image starts the HTTP service on port 8000 by default.
+- **Multi-arch Docker image published to GHCR on release.** `vX.Y.Z` tags trigger `.github/workflows/docker.yml`; image pushed to `ghcr.io/swedev/klartex` for `linux/amd64` + `linux/arm64` with tags `X.Y.Z`, `X.Y`, and `latest`. Pull: `docker run --rm -p 8000:8000 ghcr.io/swedev/klartex:latest`.
+- **CLI auto-detects page templates.** When `--page-template` is omitted, klartex looks for `<data-stem>.tex.jinja` next to the data file, then `./page_template.tex.jinja` in cwd. Explicit `--page-template` still wins.
+- **`agenda` block gains `numberingStyle`, `decisionLabel`, and per-item `subItems`.** `numberingStyle: "section"` (default, §-prefix) or `"decimal"` (1., 2., …). Per-item `subItems: string[]` renders decimal sub-numbering (1.1., 1.2., …). `decisionLabel` overrides the default "Beslut:".
+- **`heading` block gains `textAlign`.** Values `"left"` (default), `"center"`, `"right"`. Universal heading alignment usable in any block-engine document.
+- **Recipe rendering deduplicated via shared macros.** New `_block_macros.tex.jinja` holds the canonical implementations of `agenda`, `heading`, and `description_list`; both `_block_engine.tex.jinja` and `_recipe_base.tex.jinja` import from it. `_recipe_base.tex.jinja` shrinks from 195 → 141 lines.
+
+### Spacing
+- **Recipe headings now go through `render_heading`.** Recipe-rendered headings (protokoll, faktura, etc.) gain orphan protection (`\kxneedspace`) and parskip cancellation, matching block-engine heading semantics. Visual output is *not* pixel-identical to v0.9.8 — spacing above headings is slightly looser and orgname/subtitle metadata lines render as separate centered blocks rather than line-broken inside one group. Documents that were pixel-tuned to v0.9.x recipe output may need a re-look.
 
 ## 0.9.8 — 2026-05-06
 

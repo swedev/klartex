@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.10.1 — 2026-05-11
+
+### Fixes
+- **Docker build:** replace standalone `tabularx` tlmgr package with `tools` bundle. TeX Live 2026 no longer ships `tabularx` as its own tlmgr package (rolled into the `tools` LaTeX bundle), so the v0.10.0 Docker image failed to build with `tlmgr install: package tabularx not present in repository`. PyPI v0.10.0 is unaffected. GHCR `ghcr.io/swedev/klartex` first becomes available at this version.
+
 ## 0.10.0 — 2026-05-11
 
 ### Breaking changes

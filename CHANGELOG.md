@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.11.2 — 2026-05-13
+
+### Fixes
+- **`columns`: top-alignment fungerar nu även när första elementet i en kolumn är en bild (eller annat baseline-på-botten-element).** `\begin{minipage}[t]` alignar första radens *baseline*, inte visuella toppen. När en kolumn börjar med `\includegraphics` ligger den baselinen vid bildens **undre** kant, så en bild-vänster/text-höger-layout placerade textens första rad nere vid bildens nederkant — såg ut som om kolumnerna var center-aligned, men var i själva verket korrekt baseline-aligned mot fel referenspunkt. Lägger till `\null\vspace{-\baselineskip}` i varje minipage så de börjar med en text-baseline överst. Osynligt för text-text- och heading-cases (verifierat).
+
 ## 0.11.1 — 2026-05-11
 
 ### New features

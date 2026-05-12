@@ -284,7 +284,14 @@ Personnr: \VAR{party.id_number}\\
 \BLOCK{set width = ((1.0 - (ncols - 1) * gap) / ncols) | round(4) }
 \noindent
 \BLOCK{for col in block["items"]}
-\begin{minipage}[t]{\VAR{width}\linewidth}
+% \null\vspace{-\baselineskip} forces a text-level baseline at the top of
+% each minipage. Without it, [t] alignment uses the first item's natural
+% baseline — which for \includegraphics is the image bottom, so an image
+% column pairs with a text column at image-bottom-to-text-top, looking
+% wildly mis-aligned. The prefix is invisible for text-text columns
+% (verified) and only matters when an image or other zero-strut content
+% is the first item.
+\begin{minipage}[t]{\VAR{width}\linewidth}\null\vspace{-\baselineskip}
 \BLOCK{for sub in col}
 \VAR{render_block(sub, lang)}
 \BLOCK{endfor}

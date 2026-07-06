@@ -49,7 +49,7 @@
     },
     "spacing_before": {
       "type": "string",
-      "description": "Override the vertical space above this block. Any LaTeX dimension string ('1em', '0.5cm', '0em'). Not validated — an invalid dimension fails at compile time. Wins over block_settings and the built-in default."
+      "description": "Override the vertical space above this block. Plain-unit LaTeX dimension string ('1em', '0.5cm', '0em'). Macro-based dimensions ('\\baselineskip') are not supported — backslashes are escaped like in all other strings. Not validated beyond that — an invalid dimension fails at compile time. Wins over block_settings and the built-in default."
     },
     "spacing_after": {
       "type": "string",

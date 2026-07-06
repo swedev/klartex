@@ -41,7 +41,7 @@
         "properties": {
           "spacing_before": {
             "type": "string",
-            "description": "Vertical space above each instance. Any LaTeX dimension string ('1em', '0.5cm', '0em'). Not validated — an invalid dimension fails at compile time."
+            "description": "Vertical space above each instance. Plain-unit LaTeX dimension string ('1em', '0.5cm', '0em'). Macro-based dimensions ('\\baselineskip') are not supported — backslashes are escaped like in all other strings. Not validated beyond that — an invalid dimension fails at compile time."
           },
           "spacing_after": {
             "type": "string",

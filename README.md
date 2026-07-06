@@ -15,6 +15,7 @@ Klartex tar JSON-data + mallnamn och producerar PDF via XeLaTeX. Kan användas s
 | `_block` | Universell blockmotor — agenten komponerar dokumentet fritt |
 | `protokoll` | Mötesprotokoll med dagordning, beslut och justerare |
 | `faktura` | Faktura med rader, moms och betalningsinformation |
+| `kvitto` | Kvitto med enkel radlista, betalsätt och totalbelopp |
 | `resultatrakning` | Resultaträkning med jämförelseår och noter |
 | `balansrakning` | Balansräkning med tillgångar och skulder/eget kapital |
 | `budgetrapport` | Budgetrapport med kontokoder, budget och utfall |
@@ -106,7 +107,7 @@ Klartex har en trelagers-arkitektur:
 
 ### Renderingsvägar
 
-- **Recipe-mallar** (`protokoll`, `faktura`) — YAML-recept som deklarerar komponenter och mappningar
+- **Recipe-mallar** (`protokoll`, `faktura`, `kvitto`) — YAML-recept som deklarerar komponenter och mappningar
 - **Block engine** (`_block`) — Agenten komponerar `body[]` fritt från typade block
 
 ### Skapa en YAML-receptmall
@@ -137,7 +138,7 @@ components:
 schema: schema.json
 ```
 
-Tillgängliga recept-komponenter: `heading`, `description_list`, `agenda`, `text`, `resultatrakning`, `budgettabell`, `notapparat`, `invoice_header`, `invoice_recipient`, `invoice_table`, `payment_info`, `invoice_note`. Block-motsvarigheterna (`agenda`, `description_list`, `heading`, `resultatrakning`, `budgettabell`, `notapparat`, `text`) renderas via samma delade makron som block-engine-vägen.
+Tillgängliga recept-komponenter: `heading`, `description_list`, `agenda`, `text`, `resultatrakning`, `budgettabell`, `notapparat`, `invoice_header`, `invoice_recipient`, `invoice_table`, `payment_info`, `invoice_note`, `receipt_header`, `receipt_table`. Block-motsvarigheterna (`agenda`, `description_list`, `heading`, `resultatrakning`, `budgettabell`, `notapparat`, `text`) renderas via samma delade makron som block-engine-vägen.
 
 Block engine-block: `heading`, `text`, `list`, `table`, `callout`, `quote`, `title_page`, `parties`, `clause`, `signatures`, `description_list`, `form`, `columns`, `agenda`, `name_roster`, `resultatrakning`, `budgettabell`, `notapparat`, `page_break`, `latex`.
 

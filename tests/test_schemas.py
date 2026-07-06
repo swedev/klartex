@@ -15,6 +15,7 @@ def test_discover_all_templates():
     registry = get_registry()
     assert "protokoll" in registry
     assert "faktura" in registry
+    assert "kvitto" in registry
     assert "resultatrakning" in registry
     assert "balansrakning" in registry
     assert "budgetrapport" in registry
@@ -23,7 +24,7 @@ def test_discover_all_templates():
 
 
 @pytest.mark.parametrize("template_name", [
-    "protokoll", "faktura",
+    "protokoll", "faktura", "kvitto",
     "resultatrakning", "balansrakning", "budgetrapport", "sie-exportrapport",
 ])
 def test_fixture_validates(template_name):

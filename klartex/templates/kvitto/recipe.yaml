@@ -1,0 +1,37 @@
+# Kvitto (Receipt) — recipe definition
+
+template:
+  name: kvitto
+  description: "Kvitto / Receipt"
+  lang: sv
+
+document:
+  title: "Kvitto {{ data.receipt_number }}"
+  page_template: "{{ data.page_template | default('formal') }}"
+  metadata:
+    - field: payment_method
+      label: "Betalsätt"
+      optional: true
+    - field: paid_by
+      label: "Betalt av"
+      optional: true
+
+components:
+  - type: receipt_header
+    data_map:
+      receipt_number: receipt_number
+      date: date
+
+  - type: receipt_table
+    data_map:
+      items: items
+      total_amount: total_amount
+      currency: currency
+
+  - type: description_list
+
+  - type: invoice_note
+    data_map:
+      note: note
+
+schema: schema.json

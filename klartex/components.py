@@ -182,6 +182,16 @@ _COMPONENTS: dict[str, ComponentSpec] = {
         sty_package=None,
         description="Optional invoice footer note",
     ),
+    "receipt_header": ComponentSpec(
+        name="receipt_header",
+        sty_package=None,
+        description="Right-aligned receipt header with number and date",
+    ),
+    "receipt_table": ComponentSpec(
+        name="receipt_table",
+        sty_package=None,
+        description="Receipt items list with optional per-item amounts and explicit total",
+    ),
 }
 
 

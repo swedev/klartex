@@ -100,6 +100,7 @@
     {
       "type": "signatures",
       "new_page": false,
+      "contract_intro": true,
       "parties": [
         { "name": "Uppdragsgivaren AB", "signatory": "Anna Andersson, VD" },
         { "name": "Erik Eriksson", "signatory": "Erik Eriksson" }

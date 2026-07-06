@@ -15,13 +15,22 @@
 
 % Title page command (language-aware)
 % Args: #1=Party1, #2=Party2, #3=Document title
+% Empty party arguments are skipped entirely: with one party the "and"
+% separator is omitted, with no parties only the title renders — no stray
+% "Och" or blank party rows.
 \providecommand{\makedoctitle}[3]{%
     \kx@setlang%
+    \def\kx@tmp@pa{#1}\def\kx@tmp@pb{#2}%
     \begin{center}
         \vspace*{4cm}
-        {\Large\bfseries #1}\\[1em]
-        \kx@and\\[1em]
-        {\Large\bfseries #2}\\[4cm]
+        \ifx\kx@tmp@pa\@empty\else
+            {\Large\bfseries #1}\ifx\kx@tmp@pb\@empty\\[4cm]\else\\[1em]\fi
+        \fi
+        \ifx\kx@tmp@pb\@empty\else
+            \ifx\kx@tmp@pa\@empty\else\kx@and\\[1em]\fi
+            {\Large\bfseries #2}\\[4cm]
+        \fi
+        \ifx\kx@tmp@pa\@empty\ifx\kx@tmp@pb\@empty\vspace*{2cm}\fi\fi
         {\LARGE\bfseries #3}
     \end{center}
     \thispagestyle{fancy}

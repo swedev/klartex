@@ -31,7 +31,7 @@ class ComponentSpec:
         path = _SCHEMAS_DIR / self.block_schema_path
         if not path.exists():
             return None
-        return json.loads(path.read_text())
+        return json.loads(path.read_text(encoding="utf-8"))
 
 
 # Registry of known component types

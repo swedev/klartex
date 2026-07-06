@@ -1062,3 +1062,204 @@ class TestRecipeTemplatesStillWork:
         pdf = render("protokoll", data)
         assert pdf[:5] == b"%PDF-"
 
+
+
+def _render_tex(data: dict) -> str:
+    """Module helper: run the renderer's pre-compile pipeline and return the
+    rendered LaTeX source (no xelatex needed)."""
+    from klartex.renderer import _render_block_engine, _restore_block_types
+    from klartex.tex_escape import escape_data
+
+    escaped = escape_data(data)
+    _restore_block_types(data["body"], escaped["body"])
+    return _render_block_engine(escaped)
+
+
+class TestCellSafeLineBreaks:
+    """Literal \\n inside tabular cells must not become \\\\ — with
+    \\arraybackslash that ends the table row instead of breaking the line."""
+
+    def test_table_cell_newline_uses_newline_macro(self):
+        data = {"body": [{"type": "table", "header": ["A", "B"], "rows": [["x\ny", "z"]]}]}
+        tex = _render_tex(data)
+        assert r"x \newline y" in tex
+        assert r"x \\ y" not in tex
+
+    def test_table_header_cell_newline_uses_newline_macro(self):
+        data = {"body": [{"type": "table", "header": ["Lång\nrubrik", "B"], "rows": [["x", "z"]]}]}
+        tex = _render_tex(data)
+        assert r"Lång \newline rubrik" in tex
+
+    def test_form_value_newline_is_cell_safe(self):
+        data = {"body": [{"type": "form", "fields": [{"label": "Adress", "value": "Rad 1\nRad 2"}]}]}
+        tex = _render_tex(data)
+        assert r"Rad 1 \newline Rad 2" in tex
+
+    def test_form_label_newline_collapses_to_space(self):
+        """Labels sit in an LR-mode `l` column where no in-cell break exists."""
+        data = {"body": [{"type": "form", "fields": [{"label": "Två\nrader", "value": "x"}]}]}
+        tex = _render_tex(data)
+        assert "Två rader" in tex
+
+    def test_text_block_newline_still_paragraph_break(self):
+        data = {"body": [{"type": "text", "text": "rad 1\nrad 2"}]}
+        tex = _render_tex(data)
+        assert r"rad 1 \\ rad 2" in tex
+
+    @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+    def test_cell_newlines_compile(self):
+        from klartex.renderer import render
+
+        data = {"body": [
+            {"type": "table", "header": ["Rubrik\nrad två", "B"], "rows": [["x\ny", "z"], ["a", "b"]]},
+            {"type": "form", "fields": [{"label": "Fält\nnamn", "value": "v1\nv2"}]},
+        ]}
+        pdf = render(BLOCK_ENGINE_TEMPLATE, data)
+        assert pdf[:5] == b"%PDF-"
+
+
+class TestNestedBlockValidation:
+    """Nested blocks (clause.content[], list.items[].content[], columns.items[][])
+    are validated against their own schemas, with a path in the error."""
+
+    def test_nested_list_missing_items_rejected(self):
+        from klartex.renderer import render
+
+        data = {"body": [{"type": "clause", "number": "§ 1", "content": [{"type": "list"}]}]}
+        with pytest.raises(ValueError, match=r"Invalid 'list' block at body\[0\]\.content\[0\]"):
+            render(BLOCK_ENGINE_TEMPLATE, data)
+
+    def test_nested_text_missing_text_rejected(self):
+        from klartex.renderer import render
+
+        data = {"body": [{"type": "list", "items": [{"text": "punkt", "content": [{"type": "text"}]}]}]}
+        with pytest.raises(ValueError, match=r"Invalid 'text' block at body\[0\]\.items\[0\]\.content\[0\]"):
+            render(BLOCK_ENGINE_TEMPLATE, data)
+
+    def test_columns_nested_block_validated(self):
+        from klartex.renderer import render
+
+        data = {"body": [{"type": "columns", "items": [[{"type": "text"}]]}]}
+        with pytest.raises(ValueError, match=r"Invalid 'text' block at body\[0\]\.items\[0\]\[0\]"):
+            render(BLOCK_ENGINE_TEMPLATE, data)
+
+    def test_unknown_type_reports_path(self):
+        from klartex.renderer import render
+
+        data = {"body": [{"type": "foo"}]}
+        with pytest.raises(ValueError, match=r"Unknown block type 'foo' at body\[0\]"):
+            render(BLOCK_ENGINE_TEMPLATE, data)
+
+    def test_valid_nested_document_passes(self):
+        """A correctly shaped nested document still renders to .tex."""
+        data = {"body": [
+            {"type": "clause", "number": "§ 1", "text": "Topp", "content": [
+                {"type": "list", "items": ["a", {"text": "b", "content": [
+                    {"type": "text", "text": "nested"},
+                ]}]},
+            ]},
+            {"type": "columns", "items": [[{"type": "text", "text": "kolumn"}]]},
+        ]}
+        tex = _render_tex(data)
+        assert "nested" in tex and "kolumn" in tex
+
+
+class TestSignaturesContractIntro:
+    """The contract boilerplate intro is opt-in via contract_intro, not
+    inferred from the party count."""
+
+    def test_two_parties_without_flag_has_no_intro(self):
+        data = {"body": [{"type": "signatures", "new_page": False,
+                          "parties": [{"name": "A"}, {"name": "B"}]}]}
+        tex = _render_tex(data)
+        assert r"\kxsignaturesintro" not in tex
+
+    def test_contract_intro_true_renders_intro(self):
+        data = {"body": [{"type": "signatures", "new_page": False, "contract_intro": True,
+                          "parties": [{"name": "A"}, {"name": "B"}]}]}
+        tex = _render_tex(data)
+        assert r"\kxsignaturesintro" in tex
+
+    def test_contract_intro_independent_of_party_count(self):
+        data = {"body": [{"type": "signatures", "new_page": False, "contract_intro": True,
+                          "parties": [{"name": "A"}, {"name": "B"}, {"name": "C"}]}]}
+        tex = _render_tex(data)
+        assert r"\kxsignaturesintro" in tex
+
+    def test_contract_intro_accepted_by_schema(self):
+        from klartex.renderer import render
+
+        data = {"body": [{"type": "signatures", "contract_intro": True,
+                          "parties": [{"name": "A"}]}]}
+        if HAS_XELATEX:
+            assert render(BLOCK_ENGINE_TEMPLATE, data)[:5] == b"%PDF-"
+        else:
+            _render_tex(data)
+
+
+class TestPartySignatory:
+    """parties.party*.signatory renders as a 'Företräds av' line, skipped
+    when it equals the party name (same convention as the signature pane)."""
+
+    def _data(self, party1, party2):
+        return {"body": [{"type": "parties", "party1": party1, "party2": party2}]}
+
+    def test_signatory_rendered_when_differs_from_name(self):
+        tex = _render_tex(self._data(
+            {"name": "Acme AB", "org_number": "556789-0123", "signatory": "Anna Andersson, VD"},
+            {"name": "Erik Eriksson"},
+        ))
+        assert "Företräds av: Anna Andersson, VD" in tex
+
+    def test_signatory_skipped_when_same_as_name(self):
+        tex = _render_tex(self._data(
+            {"name": "Erik Eriksson", "signatory": "Erik Eriksson"},
+            {"name": "Acme AB"},
+        ))
+        assert "Företräds av" not in tex
+
+    def test_address_still_renders(self):
+        tex = _render_tex(self._data(
+            {"name": "Acme AB", "address": "Storgatan 1, 111 22 Stockholm"},
+            {"name": "Erik Eriksson", "address_line1": "Lilla vägen 3", "address_line2": "222 33 Göteborg"},
+        ))
+        assert "Storgatan 1" in tex
+        assert "Lilla vägen 3" in tex
+
+
+class TestTableColumnAlign:
+    """align must apply also when a fixed column width is given."""
+
+    def test_fixed_width_column_gets_align_prefix(self):
+        data = {"body": [{"type": "table", "header": ["A", "B"], "rows": [["1", "2"]],
+                          "columns": [{"width": "3cm", "align": "right"}, {"align": "left"}]}]}
+        tex = _render_tex(data)
+        assert r">{\raggedleft\arraybackslash}p{3cm}" in tex
+
+    @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+    def test_fixed_width_aligned_table_compiles(self):
+        from klartex.renderer import render
+
+        data = {"body": [{"type": "table", "header": ["A", "B"], "rows": [["1", "2"]],
+                          "columns": [{"width": "3cm", "align": "right"}, {"align": "center"}]}]}
+        assert render(BLOCK_ENGINE_TEMPLATE, data)[:5] == b"%PDF-"
+
+
+class TestTitlePageOptionalParties:
+    """title_page without parties renders only the title — no stray 'Och'
+    or blank party rows (handled inside \\makedoctitle)."""
+
+    @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+    def test_title_only_and_single_party_compile(self):
+        from klartex.renderer import render
+
+        data = {"body": [
+            {"type": "title_page", "title": "Verksamhetsberättelse 2025"},
+            {"type": "title_page", "party1": "Föreningen X", "title": "Stadgar"},
+        ]}
+        assert render(BLOCK_ENGINE_TEMPLATE, data)[:5] == b"%PDF-"
+
+    def test_title_only_passes_empty_party_args(self):
+        data = {"body": [{"type": "title_page", "title": "Bara titel"}]}
+        tex = _render_tex(data)
+        assert r"\makedoctitle{}{}{Bara titel}" in tex

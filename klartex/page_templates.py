@@ -109,7 +109,7 @@ def read_page_template_source(name: str) -> str:
         FileNotFoundError: If the template file doesn't exist.
     """
     path = PAGE_TEMPLATES_DIR / f"{name}.tex.jinja"
-    return path.read_text()
+    return path.read_text(encoding="utf-8")
 
 
 def list_page_templates() -> list[dict]:

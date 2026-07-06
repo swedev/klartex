@@ -8,11 +8,13 @@
 %# wraps the content in a center/flushright env. `suppress_needspace` skips
 %# the orphan-protection glue (used when this heading directly follows another
 %# heading whose own \kxneedspace already covers the buffer).
-\BLOCK{macro render_heading(text, level=1, textAlign="left", suppress_needspace=false)}
+%# spacing_before/spacing_after override the level-based defaults when set
+%# (block-engine spacing overrides, issue #29); recipe callers leave them unset.
+\BLOCK{macro render_heading(text, level=1, textAlign="left", suppress_needspace=false, spacing_before=none, spacing_after=none)}
 \BLOCK{set _size = "\\fontsize{24pt}{29pt}\\selectfont" if level == 1 else ("\\Large" if level == 2 else "\\large") }
 \BLOCK{set _needspace = "6\\baselineskip" if level == 1 else ("4\\baselineskip" if level == 2 else "3\\baselineskip") }
-\BLOCK{set _vspace_above = "2.0em" if level == 1 else ("1.4em" if level == 2 else "1.0em") }
-\BLOCK{set _vspace_below = "1.2em" if level == 1 else ("0.5em" if level == 2 else "0.15em") }
+\BLOCK{set _vspace_above = spacing_before if spacing_before else ("2.0em" if level == 1 else ("1.4em" if level == 2 else "1.0em")) }
+\BLOCK{set _vspace_below = spacing_after if spacing_after else ("1.2em" if level == 1 else ("0.5em" if level == 2 else "0.15em")) }
 \BLOCK{if not suppress_needspace}\kxneedspace{\VAR{_needspace}}\BLOCK{endif}
 \vspace{\VAR{_vspace_above}}
 \BLOCK{if textAlign == "center"}\begin{center}\BLOCK{elif textAlign == "right"}\begin{flushright}\BLOCK{endif}
@@ -24,15 +26,15 @@
 %# Render a label/value description list. `entries` is a list of {label, value}.
 %# Used by both the block-engine `description_list` block and recipes that map
 %# document metadata (date, location, attendees, …) to a label-value table.
-\BLOCK{macro render_description_list(entries)}
-\vspace{2em}
+\BLOCK{macro render_description_list(entries, spacing_before="2em", spacing_after="2em")}
+\vspace{\VAR{spacing_before or "2em"}}
 \noindent
 \begin{tabularx}{\linewidth}{@{}l >{\raggedright\arraybackslash}X@{}}
 \BLOCK{for entry in entries}
 \textbf{\VAR{entry.label}} & \VAR{entry.value} \\
 \BLOCK{endfor}
 \end{tabularx}
-\vspace{2em}
+\vspace{\VAR{spacing_after or "2em"}}
 \BLOCK{endmacro}
 
 %# Render the agenda block. `items` is a list of {title, discussion?, decision?, subItems?}.

@@ -73,6 +73,7 @@ def prepare_block_context(
     return {
         "body": data["body"],
         "lang": data.get("lang", "sv"),
+        "block_settings": data.get("block_settings") or {},
         "page_template_source": page_template_source,
         "page_template": page_tmpl,
         "external_page_template": external_page_template,

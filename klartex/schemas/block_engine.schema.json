@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://klartex.se/schemas/block-engine/v0.1",
+  "$id": "https://klartex.se/schemas/block-engine/v0.2",
   "title": "Block Engine Document",
   "description": "Universal block-based document format. The agent composes body[] freely from typed blocks.",
   "type": "object",
@@ -31,6 +31,24 @@
       "enum": ["sv", "en"],
       "default": "sv",
       "description": "Document language"
+    },
+    "block_settings": {
+      "type": "object",
+      "description": "Document-wide spacing overrides keyed by block type name (e.g. 'heading', 'table'). Applies to every instance of that block type in the document; a per-instance spacing_before/spacing_after field on a block wins over this. Supported types: heading, text, list, table, callout, quote, description_list.",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "spacing_before": {
+            "type": "string",
+            "description": "Vertical space above each instance. Any LaTeX dimension string ('1em', '0.5cm', '0em'). Not validated — an invalid dimension fails at compile time."
+          },
+          "spacing_after": {
+            "type": "string",
+            "description": "Vertical space below each instance. Same semantics as spacing_before."
+          }
+        }
+      }
     },
     "body": {
       "type": "array",

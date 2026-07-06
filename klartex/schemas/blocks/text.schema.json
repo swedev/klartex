@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://klartex.se/schemas/blocks/text/v0.1",
+  "$id": "https://klartex.se/schemas/blocks/text/v0.2",
   "title": "Text Block",
   "description": "Free-form text paragraph",
   "type": "object",
@@ -8,6 +8,14 @@
   "additionalProperties": false,
   "properties": {
     "type": { "type": "string", "const": "text" },
-    "text": { "type": "string", "description": "Paragraph text" }
+    "text": { "type": "string", "description": "Paragraph text" },
+    "spacing_before": {
+      "type": "string",
+      "description": "Override the vertical space above this block. Any LaTeX dimension string ('1em', '0.5cm', '0em'). Not validated — an invalid dimension fails at compile time. Wins over block_settings and the built-in default."
+    },
+    "spacing_after": {
+      "type": "string",
+      "description": "Override the vertical space below this block. Same semantics as spacing_before."
+    }
   }
 }

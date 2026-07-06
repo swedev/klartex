@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.12.0 — 2026-07-06
+
+### Breaking changes
+- **`signatures`: avtalsingressen är nu opt-in via `contract_intro: true`.** Tidigare renderades "Detta avtal har upprättats i två (2) likalydande exemplar, av vilka parterna tagit var sitt." automatiskt så fort `parties` hade exakt två poster — även i protokoll, berättelser och andra icke-avtal. Nu krävs `contract_intro: true` (schema v0.3, default false). Tvåparts-avtal som förlitade sig på heuristiken behöver lägga till flaggan.
+- **Valideringsfel refererar nu `body[i]`-paths i stället för `index i`.** Felmeddelanden som tidigare löd `Invalid 'text' block at index 2` lyder nu `Invalid 'text' block at body[2]`; nästlade block får full path, t.ex. `body[0].content[1]`. Konsumenter som parsar felsträngar behöver uppdateras.
+
+### New features
+- **Nästlade block valideras mot sina scheman.** Block i `clause.content[]`, `list.items[].content[]` och `columns.items[][]` validerades tidigare bara på `type`-nivå — ett nästlat block med saknade obligatoriska fält kraschade i Jinja eller renderade tyst tomt. Nu valideras hela trädet rekursivt med path i felmeddelandet. Nästlingsbärarna är utbrutna till en delad hjälpare (`_child_block_lists`) som även escape/restore-passet använder.
+- **`parties`: `signatory` renderas.** Fältet fanns i schemat men tappades tyst. Renderas som "Företräds av: …" under adressen; skippas när det är identiskt med partsnamnet (samma konvention som signaturpanelen).
+- **`table`: `align` fungerar nu tillsammans med fast `width`.** `{"width": "3cm", "align": "right"}` gav tidigare vänsterställd kolumn; nu emitteras `>{\raggedleft\arraybackslash}p{3cm}`.
+- **`title_page` hanterar utelämnade parter.** Med bara `title` renderades tidigare "Och" och tomma partsrader; nu renderas enbart titeln, och en ensam part visas utan "Och".
+
+### Fixes
+- **Radbrytningar (`\n`) i tabell- och formulärceller korrumperar inte längre tabellen.** `inline`-filtret gjorde `\n → \\` ovillkorligt; med `\arraybackslash` avslutar `\\` tabellraden, så en cell med radbrytning klippte raden och förskjöt resten av tabellen (i header-celler: kompileringsfel). Celler använder nu `\newline` (paragraph-kolumner) respektive mellanslag (LR-kolumner i formuläretiketter).
+- **Faktura utan `currency` skrev "None" i totalsummorna.** `extract_component_data` sätter `None` för saknade data_map-paths, så mallens dict-get-default triggades aldrig. Nu faller tomt värde tillbaka till "SEK".
+- **CLI: vänliga felmeddelanden i hela flödet.** Trasig JSON (stdin eller fil), katalog som `-d`-path och oskrivbar `-o`-path ger nu `Error: …` + exit 1 i stället för tracebacks; skrivfelet slog tidigare till efter en lyckad rendering så PDF-bytesen gick förlorade.
+- **xelatex-timeout ger `RuntimeError` och höjs 30 → 60 s.** `subprocess.TimeoutExpired` läckte tidigare rått genom `render()`-kontraktet; kall fontcache i en färsk container kunde ensam överskrida 30 s.
+- **`formal`-sidmallens footer skriver ingen ledande punkt när dokumentet saknar titel.**
+- **All fil-I/O använder `encoding="utf-8"`** oberoende av värdens locale.
+
 ## 0.11.2 — 2026-07-06
 
 ### Fixes

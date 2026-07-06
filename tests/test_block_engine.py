@@ -626,6 +626,28 @@ class TestColumnsBlock:
         assert pdf[:5] == b"%PDF-"
 
     @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+    def test_image_left_text_right_aligns_top(self):
+        """Image (zero-strut content) and text in side-by-side columns should
+        top-align, not baseline-align at image bottom. Uses \\rule as a
+        baseline-bottom stand-in for \\includegraphics — the rendering
+        mechanic is identical."""
+        from klartex.renderer import render
+
+        data = {
+            "body": [
+                {
+                    "type": "columns",
+                    "items": [
+                        [{"type": "latex", "source": r"\rule{3cm}{2cm}"}],
+                        [{"type": "text", "text": "Bildtext på höger sida."}],
+                    ],
+                }
+            ]
+        }
+        pdf = render(BLOCK_ENGINE_TEMPLATE, data)
+        assert pdf[:5] == b"%PDF-"
+
+    @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
     def test_four_columns_renders(self):
         from klartex.renderer import render
 

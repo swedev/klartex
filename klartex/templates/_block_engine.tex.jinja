@@ -28,25 +28,23 @@
 \begin{document}
 
 %# --- Macro for rendering a party fieldset ---
+%# Optional lines are collected and joined with \\ so no branch needs to know
+%# whether another line follows it. Signatory is skipped when it equals the
+%# party name (same convention as the signature pane).
 \BLOCK{macro render_party(party, label, group="")}
-\fieldset[\VAR{group}]{\VAR{label}}{%
-\textbf{\VAR{party.name}}\\[0.3em]
-\BLOCK{if party.get("org_number")}
-Org.nr: \VAR{party.org_number}\\
-\BLOCK{endif}
-\BLOCK{if party.get("id_number")}
-Personnr: \VAR{party.id_number}\\
-\BLOCK{endif}
+\BLOCK{set _lines = [] }
+\BLOCK{if party.get("org_number")}\BLOCK{set _ = _lines.append("Org.nr: " ~ party.org_number) }\BLOCK{endif}
+\BLOCK{if party.get("id_number")}\BLOCK{set _ = _lines.append("Personnr: " ~ party.id_number) }\BLOCK{endif}
 \BLOCK{if party.get("address")}
-\VAR{party.address}
+\BLOCK{set _ = _lines.append(party.address) }
 \BLOCK{else}
-\BLOCK{if party.get("address_line1")}
-\VAR{party.address_line1}\\
+\BLOCK{if party.get("address_line1")}\BLOCK{set _ = _lines.append(party.address_line1) }\BLOCK{endif}
+\BLOCK{if party.get("address_line2")}\BLOCK{set _ = _lines.append(party.address_line2) }\BLOCK{endif}
 \BLOCK{endif}
-\BLOCK{if party.get("address_line2")}
-\VAR{party.address_line2}
-\BLOCK{endif}
-\BLOCK{endif}
+\BLOCK{if party.get("signatory") and party.signatory != party.name}\BLOCK{set _ = _lines.append("Företräds av: " ~ party.signatory) }\BLOCK{endif}
+\fieldset[\VAR{group}]{\VAR{label}}{%
+\textbf{\VAR{party.name}}\BLOCK{if _lines}\\[0.3em]
+\VAR{_lines | join("\\\\\n")}\BLOCK{endif}
 }
 \BLOCK{endmacro}
 
@@ -59,12 +57,12 @@ Personnr: \VAR{party.id_number}\\
 \\VAR{size_macro}
 \renewcommand{\arraystretch}{1.3}
 \setlength{\tabcolsep}{4pt}
-\noindent\begin{tabularx}{\linewidth}{@{}\BLOCK{for i in range(ncols)}\BLOCK{set col = (columns[i] if columns and i < (columns|length) else {}) }\BLOCK{set align = col.get("align", "left") if col else "left" }\BLOCK{set align_prefix = {"left": ">{\\raggedright\\arraybackslash}", "right": ">{\\raggedleft\\arraybackslash}", "center": ">{\\centering\\arraybackslash}"}.get(align, ">{\\raggedright\\arraybackslash}") }\BLOCK{set width = col.get("width", "fill") if col else "fill" }\BLOCK{if width == "fill"}\VAR{align_prefix}X\BLOCK{else}p{\VAR{width}}\BLOCK{endif}\BLOCK{endfor}@{}}
+\noindent\begin{tabularx}{\linewidth}{@{}\BLOCK{for i in range(ncols)}\BLOCK{set col = (columns[i] if columns and i < (columns|length) else {}) }\BLOCK{set align = col.get("align", "left") if col else "left" }\BLOCK{set align_prefix = {"left": ">{\\raggedright\\arraybackslash}", "right": ">{\\raggedleft\\arraybackslash}", "center": ">{\\centering\\arraybackslash}"}.get(align, ">{\\raggedright\\arraybackslash}") }\BLOCK{set width = col.get("width", "fill") if col else "fill" }\BLOCK{if width == "fill"}\VAR{align_prefix}X\BLOCK{else}\VAR{align_prefix}p{\VAR{width}}\BLOCK{endif}\BLOCK{endfor}@{}}
 \toprule
-\BLOCK{for cell in header}\textbf{\VAR{cell | inline}}\BLOCK{if not loop.last} & \BLOCK{endif}\BLOCK{endfor} \\
+\BLOCK{for cell in header}\textbf{\VAR{cell | inline_cell}}\BLOCK{if not loop.last} & \BLOCK{endif}\BLOCK{endfor} \\
 \midrule
 \BLOCK{for row in rows}
-\BLOCK{for cell in row}\VAR{cell | inline}\BLOCK{if not loop.last} & \BLOCK{endif}\BLOCK{endfor} \\\BLOCK{if not loop.last}\cmidrule[0.2pt]{1-\VAR{ncols}}\BLOCK{endif}
+\BLOCK{for cell in row}\VAR{cell | inline_cell}\BLOCK{if not loop.last} & \BLOCK{endif}\BLOCK{endfor} \\\BLOCK{if not loop.last}\cmidrule[0.2pt]{1-\VAR{ncols}}\BLOCK{endif}
 \BLOCK{endfor}
 \bottomrule
 \end{tabularx}
@@ -239,7 +237,7 @@ Personnr: \VAR{party.id_number}\\
 \addcontentsline{toc}{section}{\VAR{block.header}}
 \vspace{0.5cm}
 \BLOCK{endif}
-\BLOCK{if block.parties | length == 2}
+\BLOCK{if block.get("contract_intro")}
 \kxsignaturesintro
 
 \vspace{0.5cm}
@@ -267,7 +265,7 @@ Personnr: \VAR{party.id_number}\\
 \renewcommand{\arraystretch}{1.6}
 \noindent\begin{tabularx}{\linewidth}{@{}l >{\raggedright\arraybackslash}X@{}}
 \BLOCK{for field in block.fields}
-\textbf{\VAR{field.label | inline}:} & \BLOCK{if field.get('value')}\VAR{field.value | inline}\BLOCK{else}\dotfill\BLOCK{endif} \\
+\textbf{\VAR{field.label | inline_flat}:} & \BLOCK{if field.get('value')}\VAR{field.value | inline_cell}\BLOCK{else}\dotfill\BLOCK{endif} \\
 \BLOCK{endfor}
 \end{tabularx}
 \endgroup

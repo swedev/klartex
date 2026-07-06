@@ -32,7 +32,7 @@
 \fancyfoot[C]{%
     \kx@setlang%
     \fontsize{6pt}{9pt}\selectfont\color{brandsecondary}%
-    \doctitle\ \textbullet\ \kx@page\ \thepage\ \kx@of\ \pageref{LastPage}%
+    \ifdefempty{\doctitle}{}{\doctitle\ \textbullet\ }\kx@page\ \thepage\ \kx@of\ \pageref{LastPage}%
 }
 \makeatother
 \ifdefempty{\orgname}{\ifdefempty{\brandlogo}{%

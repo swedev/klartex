@@ -34,8 +34,18 @@ _QUOTE_PAIRS = {
 _CODE_PLACEHOLDER = "\x00KX_CODE_{}\x00"
 
 
-def render_inline(text: str, lang: str = "sv") -> str:
-    """Convert inline markup to LaTeX. ``text`` is assumed pre-escaped."""
+def render_inline(text: str, lang: str = "sv", newlines: str = "break") -> str:
+    """Convert inline markup to LaTeX. ``text`` is assumed pre-escaped.
+
+    ``newlines`` selects how literal ``\\n`` characters render:
+
+    - ``"break"`` (default): ``\\\\`` — paragraph line break. NOT safe inside
+      tabular cells, where ``\\\\`` ends the table row instead.
+    - ``"cell"``: ``\\newline`` — in-cell line break for paragraph-mode
+      columns (``p{...}``/``X``).
+    - ``"space"``: collapse to a space — for LR-mode cells (``l`` columns)
+      where no in-cell line break exists.
+    """
     if not text:
         return text
 
@@ -57,7 +67,12 @@ def render_inline(text: str, lang: str = "sv") -> str:
     # breaks within the current paragraph. For separate paragraphs, use
     # separate text blocks. Done last so it doesn't interfere with the regex
     # passes above that operate within a single line.
-    text = text.replace("\n", " \\\\ ")
+    if newlines == "cell":
+        text = text.replace("\n", " \\newline ")
+    elif newlines == "space":
+        text = text.replace("\n", " ")
+    else:
+        text = text.replace("\n", " \\\\ ")
 
     return text
 

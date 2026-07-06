@@ -55,7 +55,27 @@ def _inline_filter(ctx, value):
     return render_inline(str(value), lang=ctx.get("lang", "sv"))
 
 
+@jinja2.pass_context
+def _inline_cell_filter(ctx, value):
+    """`inline` for paragraph-mode tabular cells (p/X columns): \\n becomes
+    \\newline, since \\\\ would end the table row instead of the line."""
+    if value is None:
+        return ""
+    return render_inline(str(value), lang=ctx.get("lang", "sv"), newlines="cell")
+
+
+@jinja2.pass_context
+def _inline_flat_filter(ctx, value):
+    """`inline` for LR-mode tabular cells (l columns), where no in-cell
+    line break exists: \\n collapses to a space."""
+    if value is None:
+        return ""
+    return render_inline(str(value), lang=ctx.get("lang", "sv"), newlines="space")
+
+
 _jinja_env.filters["inline"] = _inline_filter
+_jinja_env.filters["inline_cell"] = _inline_cell_filter
+_jinja_env.filters["inline_flat"] = _inline_flat_filter
 
 
 def render(
@@ -95,29 +115,7 @@ def render(
 
     # Validate block types and payloads before escaping (escaping mangles underscores)
     if template_info.is_block_engine:
-        from klartex.block_engine import KNOWN_BLOCK_TYPES
-        from klartex.components import get_component
-
-        for i, block in enumerate(data.get("body", [])):
-            block_type = block.get("type")
-            if not block_type:
-                raise ValueError(f"Block at index {i} is missing 'type'")
-            if block_type not in KNOWN_BLOCK_TYPES:
-                available = ", ".join(sorted(KNOWN_BLOCK_TYPES))
-                raise ValueError(
-                    f"Unknown block type '{block_type}' at index {i}. "
-                    f"Available: {available}"
-                )
-            # Validate block payload against its specific schema
-            spec = get_component(block_type)
-            block_schema = spec.get_block_schema()
-            if block_schema:
-                try:
-                    jsonschema.validate(block, block_schema)
-                except jsonschema.ValidationError as e:
-                    raise ValueError(
-                        f"Invalid '{block_type}' block at index {i}: {e.message}"
-                    ) from e
+        _validate_blocks(data.get("body", []), "body")
 
     # Escape user data for LaTeX safety
     escaped_data = escape_data(data)
@@ -136,12 +134,71 @@ def render(
     return _compile_tex(tex_source, asset_dir=asset_dir)
 
 
+def _child_block_lists(block: dict, path: str = "") -> list[tuple[str, list]]:
+    """Return the nested block carriers of `block` as (path, blocks) pairs.
+
+    Single source of truth for which block types nest other blocks. Both
+    recursive validation and `_restore_block_types` walk these carriers, so
+    any new nesting block only needs to be added here.
+    """
+    btype = block.get("type")
+    if btype == "list":
+        return [
+            (f"{path}.items[{i}].content", item.get("content", []))
+            for i, item in enumerate(block.get("items", []))
+            if isinstance(item, dict)
+        ]
+    if btype == "columns":
+        return [
+            (f"{path}.items[{i}]", col)
+            for i, col in enumerate(block.get("items", []))
+            if isinstance(col, list)
+        ]
+    if btype == "clause":
+        return [(f"{path}.content", block.get("content", []))]
+    return []
+
+
+def _validate_blocks(blocks: list, path: str) -> None:
+    """Validate every block against its schema, recursing into nested carriers.
+
+    `path` locates the current block list in error messages, e.g.
+    ``body[2].content[0]`` or ``body[1].items[0][3]``.
+    """
+    from klartex.block_engine import KNOWN_BLOCK_TYPES
+    from klartex.components import get_component
+
+    for i, block in enumerate(blocks):
+        where = f"{path}[{i}]"
+        if not isinstance(block, dict):
+            continue  # non-dict shapes are rejected by the carrier's schema
+        block_type = block.get("type")
+        if not block_type:
+            raise ValueError(f"Block at {where} is missing 'type'")
+        if block_type not in KNOWN_BLOCK_TYPES:
+            available = ", ".join(sorted(KNOWN_BLOCK_TYPES))
+            raise ValueError(
+                f"Unknown block type '{block_type}' at {where}. "
+                f"Available: {available}"
+            )
+        spec = get_component(block_type)
+        block_schema = spec.get_block_schema()
+        if block_schema:
+            try:
+                jsonschema.validate(block, block_schema)
+            except jsonschema.ValidationError as e:
+                raise ValueError(
+                    f"Invalid '{block_type}' block at {where}: {e.message}"
+                ) from e
+        for child_path, child_blocks in _child_block_lists(block, where):
+            _validate_blocks(child_blocks, child_path)
+
+
 def _restore_block_types(orig_blocks: list, esc_blocks: list) -> None:
     """Walk parallel block-arrays and copy unescaped `type` (and raw `latex.source`)
     from the original onto the escape-mangled copy.
 
-    Recurses into nested block carriers: ``list.items[].content[]`` and
-    ``columns.items[][]``.
+    Recurses into the nested block carriers listed by `_child_block_lists`.
     """
     for orig, esc in zip(orig_blocks, esc_blocks):
         if not isinstance(orig, dict) or not isinstance(esc, dict):
@@ -152,16 +209,10 @@ def _restore_block_types(orig_blocks: list, esc_blocks: list) -> None:
         esc["type"] = btype
         if btype == "latex" and "source" in orig:
             esc["source"] = orig["source"]
-        elif btype == "list":
-            for o_item, e_item in zip(orig.get("items", []), esc.get("items", [])):
-                if isinstance(o_item, dict) and isinstance(e_item, dict):
-                    _restore_block_types(o_item.get("content", []), e_item.get("content", []))
-        elif btype == "columns":
-            for o_col, e_col in zip(orig.get("items", []), esc.get("items", [])):
-                if isinstance(o_col, list) and isinstance(e_col, list):
-                    _restore_block_types(o_col, e_col)
-        elif btype == "clause":
-            _restore_block_types(orig.get("content", []), esc.get("content", []))
+        for (_, o_kids), (_, e_kids) in zip(
+            _child_block_lists(orig), _child_block_lists(esc)
+        ):
+            _restore_block_types(o_kids, e_kids)
 
 
 def _render_block_engine(
@@ -200,7 +251,7 @@ def _compile_tex(tex_source: str, asset_dir: Path | str | None = None) -> bytes:
 
         # Write .tex source
         tex_path = tmp / "document.tex"
-        tex_path.write_text(tex_source)
+        tex_path.write_text(tex_source, encoding="utf-8")
 
         # Symlink entire cls/ directory so xelatex can find .cls and .sty files
         (tmp / "cls").symlink_to(CLS_DIR)
@@ -224,19 +275,24 @@ def _compile_tex(tex_source: str, asset_dir: Path | str | None = None) -> bytes:
         # render user-supplied page templates that could otherwise execute
         # arbitrary shell commands during compilation.
         for _ in range(2):
-            result = subprocess.run(
-                [
-                    "xelatex",
-                    "-interaction=nonstopmode",
-                    "-halt-on-error",
-                    "-no-shell-escape",
-                    "document.tex",
-                ],
-                cwd=tmpdir,
-                capture_output=True,
-                timeout=30,
-                env=env,
-            )
+            try:
+                result = subprocess.run(
+                    [
+                        "xelatex",
+                        "-interaction=nonstopmode",
+                        "-halt-on-error",
+                        "-no-shell-escape",
+                        "document.tex",
+                    ],
+                    cwd=tmpdir,
+                    capture_output=True,
+                    timeout=60,
+                    env=env,
+                )
+            except subprocess.TimeoutExpired as e:
+                raise RuntimeError(
+                    f"xelatex timed out after {e.timeout:.0f}s"
+                ) from e
             if result.returncode != 0:
                 raise RuntimeError(
                     f"xelatex failed (exit {result.returncode}):\n"

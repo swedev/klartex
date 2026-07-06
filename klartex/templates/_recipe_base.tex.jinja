@@ -93,10 +93,10 @@ Org.nr: \VAR{comp.data.recipient.org_number}\\
 
 \begin{flushright}
 \begin{tabular}{lr}
-\textbf{Summa exkl. moms:} & \VAR{"{:,.2f}".format(subtotal.val)} \VAR{comp.data.get('currency', 'SEK')} \\
-\textbf{Moms:} & \VAR{"{:,.2f}".format(vat_total.val)} \VAR{comp.data.get('currency', 'SEK')} \\
+\textbf{Summa exkl. moms:} & \VAR{"{:,.2f}".format(subtotal.val)} \VAR{comp.data.get('currency') or 'SEK'} \\
+\textbf{Moms:} & \VAR{"{:,.2f}".format(vat_total.val)} \VAR{comp.data.get('currency') or 'SEK'} \\
 \midrule
-\textbf{Att betala:} & \textbf{\VAR{"{:,.2f}".format(subtotal.val + vat_total.val)} \VAR{comp.data.get('currency', 'SEK')}} \\
+\textbf{Att betala:} & \textbf{\VAR{"{:,.2f}".format(subtotal.val + vat_total.val)} \VAR{comp.data.get('currency') or 'SEK'}} \\
 \end{tabular}
 \end{flushright}
 

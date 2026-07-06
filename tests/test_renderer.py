@@ -92,3 +92,42 @@ class TestDiscovery:
         registry = get_registry()
         assert "_block" in registry
         assert registry["_block"].is_block_engine
+
+
+def _render_recipe_tex(template_name: str, data: dict) -> str:
+    """Helper: run the recipe pre-compile pipeline, return the LaTeX source."""
+    from klartex.renderer import _render_recipe
+    from klartex.tex_escape import escape_data
+
+    info = get_registry()[template_name]
+    return _render_recipe(info, escape_data(data))
+
+
+def test_faktura_missing_currency_defaults_to_sek():
+    """extract_component_data inserts None for missing data_map paths, so the
+    template must not rely on dict-get defaults (the key exists, value None)."""
+    import jsonschema
+
+    data = json.loads((FIXTURES / "faktura.json").read_text())
+    del data["currency"]
+    jsonschema.validate(data, get_registry()["faktura"].get_validation_schema())
+
+    tex = _render_recipe_tex("faktura", data)
+    assert " None" not in tex
+    assert "SEK" in tex
+
+
+def test_xelatex_timeout_raises_runtime_error(monkeypatch):
+    """TimeoutExpired must be translated to the pipeline's RuntimeError contract."""
+    import subprocess
+
+    from klartex import renderer as renderer_mod
+
+    monkeypatch.setattr(renderer_mod.shutil, "which", lambda _: "/usr/bin/xelatex")
+
+    def fake_run(*args, **kwargs):
+        raise subprocess.TimeoutExpired(cmd="xelatex", timeout=60)
+
+    monkeypatch.setattr(renderer_mod.subprocess, "run", fake_run)
+    with pytest.raises(RuntimeError, match="timed out"):
+        renderer_mod._compile_tex("\\documentclass{article}\\begin{document}x\\end{document}")

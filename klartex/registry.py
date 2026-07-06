@@ -41,7 +41,7 @@ def discover_templates(templates_dir: Path) -> dict[str, TemplateInfo]:
         name = schema_path.parent.name
         if name.startswith("_"):
             continue
-        schema = json.loads(schema_path.read_text())
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
 
         recipe_yaml = schema_path.parent / "recipe.yaml"
         if not recipe_yaml.exists():
@@ -57,7 +57,7 @@ def discover_templates(templates_dir: Path) -> dict[str, TemplateInfo]:
     # Register the block engine as a virtual template
     block_schema_path = _SCHEMAS_DIR / "block_engine.schema.json"
     if block_schema_path.exists():
-        block_schema = json.loads(block_schema_path.read_text())
+        block_schema = json.loads(block_schema_path.read_text(encoding="utf-8"))
 
         # Build discriminated union from per-block schemas for CLI/API display
         from klartex.components import _COMPONENTS

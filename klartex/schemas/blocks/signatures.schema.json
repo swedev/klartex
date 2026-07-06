@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://klartex.se/schemas/blocks/signatures/v0.2",
+  "$id": "https://klartex.se/schemas/blocks/signatures/v0.3",
   "title": "Signatures Block",
   "description": "Signature block for one or more parties, laid out in a configurable number of columns",
   "type": "object",
@@ -9,6 +9,7 @@
   "properties": {
     "type": { "type": "string", "const": "signatures" },
     "new_page": { "type": "boolean", "default": true, "description": "Start signatures on a new page" },
+    "contract_intro": { "type": "boolean", "default": false, "description": "Rendera standardingressen 'Detta avtal har upprättats i två (2) likalydande exemplar, av vilka parterna tagit var sitt.' ovanför signaturerna. Sätt true för avtal; utelämna för dokument som inte är avtal." },
     "header": {
       "type": "string",
       "description": "Optional section header text shown above the signatures (e.g. 'Underskrifter'). Omit for no header."

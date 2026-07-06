@@ -66,7 +66,10 @@ def main(
         if not data.exists():
             typer.echo(f"Error: data file not found: {data}", err=True)
             raise typer.Exit(1)
-        raw_text = data.read_text()
+        if not data.is_file():
+            typer.echo(f"Error: data path is not a file: {data}", err=True)
+            raise typer.Exit(1)
+        raw_text = data.read_text(encoding="utf-8")
     else:
         if sys.stdin.isatty():
             typer.echo("Error: no data provided. Use -d <file> or pipe JSON to stdin.", err=True)
@@ -79,28 +82,37 @@ def main(
     page_template_source = None
     if page_template is not None:
         pt_path = Path(page_template)
-        if not pt_path.exists():
+        if not pt_path.is_file():
             typer.echo(f"Error: page template file not found: {page_template}", err=True)
             raise typer.Exit(1)
-        page_template_source = pt_path.read_text()
+        page_template_source = pt_path.read_text(encoding="utf-8")
     else:
         auto = _autodetect_page_template(data)
         if auto is not None:
-            page_template_source = auto.read_text()
+            page_template_source = auto.read_text(encoding="utf-8")
             typer.echo(f"Using page template: {auto}", err=True)
 
     # Default output filename: same as input but with .pdf extension
     if output is None:
         output = Path(data.stem + ".pdf") if data is not None else Path("output.pdf")
 
-    raw = json.loads(raw_text)
+    try:
+        raw = json.loads(raw_text)
+    except json.JSONDecodeError as e:
+        typer.echo(f"Error: invalid JSON input: {e}", err=True)
+        raise typer.Exit(1)
+
     try:
         pdf_bytes = render(template, raw, page_template_source=page_template_source)
     except Exception as e:
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(1)
 
-    output.write_bytes(pdf_bytes)
+    try:
+        output.write_bytes(pdf_bytes)
+    except OSError as e:
+        typer.echo(f"Error: could not write output to {output}: {e}", err=True)
+        raise typer.Exit(1)
     typer.echo(f"Written {len(pdf_bytes)} bytes to {output}")
 
 
@@ -155,7 +167,7 @@ def show_example(
     if not example_path.exists():
         typer.echo(f"Error: no example available for '{template}'", err=True)
         raise typer.Exit(1)
-    typer.echo(example_path.read_text().rstrip())
+    typer.echo(example_path.read_text(encoding="utf-8").rstrip())
 
 
 if __name__ == "__main__":

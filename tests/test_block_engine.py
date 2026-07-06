@@ -1263,3 +1263,112 @@ class TestTitlePageOptionalParties:
         data = {"body": [{"type": "title_page", "title": "Bara titel"}]}
         tex = _render_tex(data)
         assert r"\makedoctitle{}{}{Bara titel}" in tex
+
+
+class TestSpacingOverrides:
+    """Issue #29: per-instance spacing_before/spacing_after and document-level
+    block_settings, resolution per-instance > block_settings > default."""
+
+    def test_table_default_spacing(self):
+        data = {"body": [{"type": "table", "header": ["A"], "rows": [["1"]]}]}
+        tex = _render_tex(data)
+        assert tex.count(r"\vspace{1em}") == 2
+
+    def test_block_settings_overrides_default(self):
+        data = {
+            "block_settings": {"table": {"spacing_after": "2.5em"}},
+            "body": [{"type": "table", "header": ["A"], "rows": [["1"]]}],
+        }
+        tex = _render_tex(data)
+        assert r"\vspace{2.5em}" in tex
+        assert tex.count(r"\vspace{1em}") == 1  # before behåller default
+
+    def test_per_instance_beats_block_settings(self):
+        data = {
+            "block_settings": {"table": {"spacing_after": "2.5em"}},
+            "body": [{"type": "table", "header": ["A"], "rows": [["1"]], "spacing_after": "3em"}],
+        }
+        tex = _render_tex(data)
+        assert r"\vspace{3em}" in tex
+        assert r"\vspace{2.5em}" not in tex
+
+    def test_heading_spacing_before_overrides_level_default(self):
+        base = {"body": [{"type": "heading", "text": "Rubrik"}]}
+        assert r"\vspace{2.0em}" in _render_tex(base)
+
+        overridden = {"body": [{"type": "heading", "text": "Rubrik", "spacing_before": "0em"}]}
+        tex = _render_tex(overridden)
+        assert r"\vspace{0em}" in tex
+        assert r"\vspace{2.0em}" not in tex
+
+    def test_heading_block_settings_applies_to_all_levels(self):
+        data = {
+            "block_settings": {"heading": {"spacing_before": "0.7em"}},
+            "body": [
+                {"type": "heading", "text": "Ett", "level": 1},
+                {"type": "heading", "text": "Två", "level": 2},
+            ],
+        }
+        tex = _render_tex(data)
+        assert tex.count(r"\vspace{0.7em}") == 2
+        assert r"\vspace{2.0em}" not in tex
+        assert r"\vspace{1.4em}" not in tex
+
+    def test_text_has_no_spacing_by_default_but_gains_override(self):
+        base = {"body": [{"type": "text", "text": "hej"}]}
+        assert r"\vspace{4em}" not in _render_tex(base)
+
+        overridden = {"body": [{"type": "text", "text": "hej", "spacing_after": "4em"}]}
+        assert r"\vspace{4em}" in _render_tex(overridden)
+
+    def test_quote_keeps_default_when_unset(self):
+        data = {"body": [{"type": "quote", "text": "citat"}]}
+        tex = _render_tex(data)
+        assert tex.count(r"\vspace{2em}") == 2
+
+    def test_description_list_block_settings(self):
+        data = {
+            "block_settings": {"description_list": {"spacing_before": "0.5em", "spacing_after": "0.5em"}},
+            "body": [{"type": "description_list", "entries": [{"label": "Datum", "value": "2026-07-06"}]}],
+        }
+        tex = _render_tex(data)
+        assert tex.count(r"\vspace{0.5em}") == 2
+        assert r"\vspace{2em}" not in tex
+
+    def test_spacing_field_rejected_on_unsupported_block(self):
+        from klartex.renderer import render
+
+        data = {"body": [{"type": "signatures", "parties": [{"name": "A"}], "spacing_before": "1em"}]}
+        with pytest.raises(ValueError, match="Invalid 'signatures' block"):
+            render(BLOCK_ENGINE_TEMPLATE, data)
+
+    def test_malformed_block_settings_rejected(self):
+        import jsonschema
+
+        from klartex.renderer import render
+
+        data = {
+            "block_settings": {"heading": {"spacing_before": 5}},
+            "body": [{"type": "heading", "text": "x"}],
+        }
+        with pytest.raises(jsonschema.ValidationError):
+            render(BLOCK_ENGINE_TEMPLATE, data)
+
+    @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+    def test_spacing_overrides_compile(self):
+        from klartex.renderer import render
+
+        data = {
+            "block_settings": {"heading": {"spacing_before": "1em"}, "table": {"spacing_after": "2em"}},
+            "body": [
+                {"type": "heading", "text": "Dokument"},
+                {"type": "text", "text": "Stycke.", "spacing_after": "2em"},
+                {"type": "table", "header": ["A", "B"], "rows": [["1", "2"]], "spacing_before": "0em"},
+                {"type": "list", "items": ["a", "b"], "spacing_before": "1.5em", "spacing_after": "1.5em"},
+                {"type": "callout", "text": "Obs", "spacing_before": "1em"},
+                {"type": "quote", "text": "Citat", "spacing_after": "0em"},
+                {"type": "description_list", "entries": [{"label": "Datum", "value": "Idag"}], "spacing_before": "1em"},
+            ],
+        }
+        pdf = render(BLOCK_ENGINE_TEMPLATE, data)
+        assert pdf[:5] == b"%PDF-"

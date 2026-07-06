@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://klartex.se/schemas/blocks/description-list/v0.2",
+  "$id": "https://klartex.se/schemas/blocks/description-list/v0.3",
   "title": "Description List Block",
   "description": "Label/value definition list (HTML <dl>). Used for meeting metadata, party info, key-value displays — anywhere a sequence of label-value pairs needs to be rendered. Compose with the columns block for side-by-side layouts.",
   "type": "object",
@@ -21,6 +21,14 @@
         }
       },
       "minItems": 1
+    },
+    "spacing_before": {
+      "type": "string",
+      "description": "Override the vertical space above this block. Plain-unit LaTeX dimension string ('1em', '0.5cm', '0em'). Macro-based dimensions ('\\baselineskip') are not supported — backslashes are escaped like in all other strings. Not validated beyond that — an invalid dimension fails at compile time. Wins over block_settings and the built-in default."
+    },
+    "spacing_after": {
+      "type": "string",
+      "description": "Override the vertical space below this block. Same semantics as spacing_before."
     }
   }
 }

@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://klartex.se/schemas/blocks/quote/v0.1",
+  "$id": "https://klartex.se/schemas/blocks/quote/v0.2",
   "title": "Quote Block",
   "description": "Typographic blockquote with optional attribution. Indented italic prose, attribution prefixed with em-dash.",
   "type": "object",
@@ -15,6 +15,14 @@
     "attribution": {
       "type": "string",
       "description": "Optional attribution line. Prefixed with em-dash on render."
+    },
+    "spacing_before": {
+      "type": "string",
+      "description": "Override the vertical space above this block. Plain-unit LaTeX dimension string ('1em', '0.5cm', '0em'). Macro-based dimensions ('\\baselineskip') are not supported — backslashes are escaped like in all other strings. Not validated beyond that — an invalid dimension fails at compile time. Wins over block_settings and the built-in default."
+    },
+    "spacing_after": {
+      "type": "string",
+      "description": "Override the vertical space below this block. Same semantics as spacing_before."
     }
   }
 }

@@ -49,10 +49,10 @@
 \BLOCK{endmacro}
 
 %# --- Macro for simple data table (#26) ---
-\BLOCK{macro render_table(header, rows, columns, size)}
+\BLOCK{macro render_table(header, rows, columns, size, spacing_before="1em", spacing_after="1em")}
 \BLOCK{set ncols = header | length }
 \BLOCK{set size_macro = {"normal": "normalsize", "small": "small", "footnotesize": "footnotesize"}.get(size, "small") }
-\vspace{1em}
+\vspace{\VAR{spacing_before or "1em"}}
 \begingroup
 \\VAR{size_macro}
 \renewcommand{\arraystretch}{1.3}
@@ -67,7 +67,7 @@
 \bottomrule
 \end{tabularx}
 \endgroup
-\vspace{1em}
+\vspace{\VAR{spacing_after or "1em"}}
 
 \BLOCK{endmacro}
 
@@ -177,12 +177,18 @@
 %# Called from the top-level body loop and recursively from render_list for
 %# items with content[].
 \BLOCK{macro render_block(block, lang, suppress_needspace=false)}
+%# Effective spacing overrides for this block: per-instance field >
+%# document-level block_settings[type] > built-in default (applied per arm).
+%# Only the blocks that consume _sp_before/_sp_after below support overrides.
+\BLOCK{set _bs = block_settings.get(block.type, {}) if block_settings else {} }
+\BLOCK{set _sp_before = block.get('spacing_before') or _bs.get('spacing_before') }
+\BLOCK{set _sp_after = block.get('spacing_after') or _bs.get('spacing_after') }
 
 \BLOCK{if block.type == 'title_page'}
 \makedoctitle{\VAR{block.get('party1', '')}}{\VAR{block.get('party2', '')}}{\VAR{block.get('title', '')}}
 
 \BLOCK{elif block.type == 'heading'}
-\VAR{render_heading(block.text, block.get('level', 1), block.get('textAlign', 'left'), suppress_needspace)}
+\VAR{render_heading(block.text, block.get('level', 1), block.get('textAlign', 'left'), suppress_needspace, _sp_before, _sp_after)}
 
 \BLOCK{elif block.type == 'parties'}
 \vspace{3em}
@@ -198,13 +204,25 @@
 
 \BLOCK{elif block.type == 'text'}
 
+\BLOCK{if _sp_before}
+\vspace{\VAR{_sp_before}}
+\BLOCK{endif}
 \noindent \VAR{block.text | inline}
 
+\BLOCK{if _sp_after}
+\vspace{\VAR{_sp_after}}
+\BLOCK{endif}
 \BLOCK{elif block.type == 'list'}
+\BLOCK{if _sp_before}
+\vspace{\VAR{_sp_before}}
+\BLOCK{endif}
 \VAR{render_list(block["items"], block.get("style", "bullet"), lang)}
+\BLOCK{if _sp_after}
+\vspace{\VAR{_sp_after}}
+\BLOCK{endif}
 
 \BLOCK{elif block.type == 'table'}
-\VAR{render_table(block.header, block.rows, block.get("columns"), block.get("size", "small"))}
+\VAR{render_table(block.header, block.rows, block.get("columns"), block.get("size", "small"), _sp_before or "1em", _sp_after or "1em")}
 
 \BLOCK{elif block.type == 'callout'}
 \BLOCK{set _variant = block.get("variant", "note") }
@@ -212,12 +230,18 @@
 \BLOCK{set _default_titles_en = {"info": "Info", "tip": "Tip", "warning": "Note", "danger": "Warning", "note": "Note"} }
 \BLOCK{set _defaults = _default_titles_en if lang == "en" else _default_titles_sv }
 \BLOCK{set _title = block.get("title") if "title" in block else _defaults.get(_variant, "") }
+\BLOCK{if _sp_before}
+\vspace{\VAR{_sp_before}}
+\BLOCK{endif}
 \begin{callout}{\VAR{_variant}}{\VAR{_title | inline}}
 \VAR{block.text | inline}
 \end{callout}
+\BLOCK{if _sp_after}
+\vspace{\VAR{_sp_after}}
+\BLOCK{endif}
 
 \BLOCK{elif block.type == 'quote'}
-\vspace{2em}
+\vspace{\VAR{_sp_before or "2em"}}
 \begin{quote}\itshape
 \makebox[0pt][r]{\fontsize{36pt}{0pt}\selectfont\raisebox{-0.25em}{“}\hspace{0.15em}}\VAR{block.text | inline}”
 \BLOCK{if block.get("attribution")}
@@ -225,7 +249,7 @@
 \upshape\normalsize\hspace*{0pt}\textemdash\ \VAR{block.attribution | inline}
 \BLOCK{endif}
 \end{quote}
-\vspace{2em}
+\vspace{\VAR{_sp_after or "2em"}}
 
 \BLOCK{elif block.type == 'page_break'}
 \clearpage
@@ -298,7 +322,7 @@
 \BLOCK{endif}
 
 \BLOCK{elif block.type == 'description_list'}
-\VAR{render_description_list(block.entries)}
+\VAR{render_description_list(block.entries, _sp_before or "2em", _sp_after or "2em")}
 
 \BLOCK{elif block.type == 'agenda'}
 \VAR{render_agenda(block["items"], block.get('numberingStyle', 'section'), block.get('decisionLabel', 'Beslut:'))}

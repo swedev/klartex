@@ -1,0 +1,13 @@
+{
+  "receipt_number": "2026-014",
+  "date": "2026-07-06",
+  "total_amount": 350,
+  "currency": "SEK",
+  "payment_method": "Swish",
+  "paid_by": "Anna Andersson",
+  "items": [
+    { "description": "Medlemsavgift 2026", "amount": 250 },
+    { "description": "Nyckeldeposition", "amount": 100 }
+  ],
+  "note": "Tack för din betalning!"
+}

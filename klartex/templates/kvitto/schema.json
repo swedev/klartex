@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Kvitto",
+  "description": "Kvitto / Receipt",
+  "type": "object",
+  "required": ["receipt_number", "date", "total_amount", "items"],
+  "properties": {
+    "page_template": { "type": "string", "enum": ["formal", "clean", "none"], "default": "formal", "description": "Page template" },
+    "receipt_number": { "type": "string" },
+    "date": { "type": "string", "description": "Receipt date (YYYY-MM-DD)" },
+    "total_amount": { "type": "number", "description": "Total amount paid. Authoritative — never computed from items." },
+    "currency": { "type": "string", "default": "SEK" },
+    "payment_method": { "type": "string", "description": "e.g. Kontant, Swish, Kort" },
+    "paid_by": { "type": "string", "description": "Name of the payer" },
+    "items": {
+      "type": "array",
+      "description": "What was paid for. Amounts are optional and informational — total_amount is the authoritative total.",
+      "items": {
+        "type": "object",
+        "required": ["description"],
+        "properties": {
+          "description": { "type": "string" },
+          "amount": { "type": "number" }
+        }
+      },
+      "minItems": 1
+    },
+    "note": { "type": "string", "description": "Footer note" }
+  }
+}

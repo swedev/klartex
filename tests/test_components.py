@@ -124,6 +124,13 @@ class TestComponentRegistry:
         spec = get_component("invoice_header")
         assert spec.block_schema_path is None or spec.get_block_schema() is not None
 
+    def test_receipt_components_registered(self):
+        """Recipe-only receipt components (issue #8): registered, no sty, no block schema."""
+        for name in ["receipt_header", "receipt_table"]:
+            spec = get_component(name)
+            assert spec.sty_package is None
+            assert spec.block_schema_path is None
+
 
 class TestResolveDataPath:
     """Tests for dot-notation data path resolution."""

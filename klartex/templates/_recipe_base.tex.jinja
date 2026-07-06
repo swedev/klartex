@@ -26,7 +26,11 @@
 \BLOCK{endif}
 
 \BLOCK{elif comp.type == 'description_list'}
+%# All optional metadata may have been skipped (recipe.py drops optional
+%# fields with missing values) — render nothing rather than an empty table.
+\BLOCK{if metadata}
 \VAR{render_description_list(metadata)}
+\BLOCK{endif}
 
 \BLOCK{elif comp.type == 'agenda'}
 \VAR{render_agenda(comp.data.get('items', []), comp.options.get('numberingStyle', 'section'), comp.options.get('decisionLabel', 'Beslut:'))}
@@ -124,6 +128,38 @@ Org.nr: \VAR{comp.data.recipient.org_number}\\
 \vspace{1em}
 \noindent\textit{\VAR{comp.data.note}}
 \BLOCK{endif}
+
+\BLOCK{elif comp.type == 'receipt_header'}
+\begin{flushright}
+{\Large\bfseries KVITTO}\\[0.5em]
+{\normalsize Nr: \VAR{comp.data.get('receipt_number', '')}}\\
+{\normalsize Datum: \VAR{comp.data.get('date', '')}}
+\end{flushright}
+
+\vspace{1em}
+
+\BLOCK{elif comp.type == 'receipt_table'}
+\begin{tabularx}{\textwidth}{Xr}
+\toprule
+\textbf{Beskrivning} & \textbf{Belopp} \\
+\midrule
+\BLOCK{for item in comp.data.get('items', [])}
+%# `is not none` (not truthiness): amount 0 must render as 0.00, only a
+%# truly absent amount gives an empty cell.
+\VAR{item.description} & \BLOCK{if item.get('amount') is not none}\VAR{"{:,.2f}".format(item.amount)}\BLOCK{endif} \\
+\BLOCK{endfor}
+\bottomrule
+\end{tabularx}
+
+\vspace{1em}
+
+\begin{flushright}
+\begin{tabular}{lr}
+\textbf{Summa:} & \textbf{\VAR{"{:,.2f}".format(comp.data.total_amount)} \VAR{comp.data.get('currency') or 'SEK'}} \\
+\end{tabular}
+\end{flushright}
+
+\vspace{1em}
 
 \BLOCK{elif comp.type == 'resultatrakning'}
 \VAR{render_resultatrakning(comp.data.rubrik_ar1, comp.data.rubrik_ar2, comp.data.grupper, comp.data.get('resultat'), comp.options.get('section_heading'))}

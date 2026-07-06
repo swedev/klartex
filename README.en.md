@@ -15,6 +15,7 @@ Klartex takes JSON data + template name and produces PDF via XeLaTeX. Can be use
 | `_block` | Universal block engine — the agent composes the document freely |
 | `protokoll` | Meeting minutes with agenda, decisions, and adjusters |
 | `faktura` | Invoice with line items, VAT, and payment information |
+| `kvitto` | Receipt with a simple items list, payment method, and total |
 | `resultatrakning` | Income statement with comparison years and notes |
 | `balansrakning` | Balance sheet with assets and liabilities/equity sections |
 | `budgetrapport` | Budget report with account codes, budget, and actuals |
@@ -106,7 +107,7 @@ Klartex uses a three-layer architecture:
 
 ### Rendering paths
 
-- **Recipe templates** (`protokoll`, `faktura`) — YAML recipes declaring components and data mappings
+- **Recipe templates** (`protokoll`, `faktura`, `kvitto`) — YAML recipes declaring components and data mappings
 - **Block engine** (`_block`) — The agent composes `body[]` freely from typed blocks
 
 ### Creating a YAML Recipe Template
@@ -137,7 +138,7 @@ components:
 schema: schema.json
 ```
 
-Available recipe components: `heading`, `description_list`, `agenda`, `text`, `resultatrakning`, `budgettabell`, `notapparat`, `invoice_header`, `invoice_recipient`, `invoice_table`, `payment_info`, `invoice_note`. The shared types (`agenda`, `description_list`, `heading`, `resultatrakning`, `budgettabell`, `notapparat`, `text`) render through the same macros as the block-engine path.
+Available recipe components: `heading`, `description_list`, `agenda`, `text`, `resultatrakning`, `budgettabell`, `notapparat`, `invoice_header`, `invoice_recipient`, `invoice_table`, `payment_info`, `invoice_note`, `receipt_header`, `receipt_table`. The shared types (`agenda`, `description_list`, `heading`, `resultatrakning`, `budgettabell`, `notapparat`, `text`) render through the same macros as the block-engine path.
 
 Block engine blocks: `heading`, `text`, `list`, `table`, `callout`, `quote`, `title_page`, `parties`, `clause`, `signatures`, `description_list`, `form`, `columns`, `agenda`, `name_roster`, `resultatrakning`, `budgettabell`, `notapparat`, `page_break`, `latex`.
 

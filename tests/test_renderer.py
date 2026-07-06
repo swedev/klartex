@@ -20,7 +20,7 @@ def test_unknown_template():
 
 @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
 @pytest.mark.parametrize("template_name", [
-    "protokoll", "faktura",
+    "protokoll", "faktura", "kvitto",
     "resultatrakning", "balansrakning", "budgetrapport", "sie-exportrapport",
 ])
 def test_render_pdf(template_name):
@@ -82,6 +82,12 @@ class TestDiscovery:
         info = registry["faktura"]
         assert info.recipe_path is not None
 
+    def test_kvitto_discovered(self):
+        registry = get_registry()
+        assert "kvitto" in registry
+        info = registry["kvitto"]
+        assert info.recipe_path is not None
+
     def test_financial_templates_discovered(self):
         registry = get_registry()
         for name in ["resultatrakning", "balansrakning", "budgetrapport", "sie-exportrapport"]:
@@ -115,6 +121,39 @@ def test_faktura_missing_currency_defaults_to_sek():
     tex = _render_recipe_tex("faktura", data)
     assert " None" not in tex
     assert "SEK" in tex
+
+
+def test_kvitto_zero_amount_renders_missing_amount_empty():
+    """amount: 0 must render as 0.00; a missing amount gives an empty cell.
+    total_amount is authoritative and always rendered."""
+    data = {
+        "receipt_number": "K-1",
+        "date": "2026-07-06",
+        "total_amount": 100,
+        "items": [
+            {"description": "Gratisrad", "amount": 0},
+            {"description": "Rad utan belopp"},
+        ],
+    }
+    tex = _render_recipe_tex("kvitto", data)
+    assert r"Gratisrad & 0.00 \\" in tex
+    assert r"Rad utan belopp &  \\" in tex
+    assert "100.00" in tex
+
+
+def test_kvitto_minimal_payload_skips_metadata_list():
+    """Without payment_method/paid_by all optional metadata is dropped and the
+    description_list component must render nothing (no empty tabularx)."""
+    data = {
+        "receipt_number": "K-2",
+        "date": "2026-07-06",
+        "total_amount": 50,
+        "items": [{"description": "Avgift"}],
+    }
+    tex = _render_recipe_tex("kvitto", data)
+    assert r"\begin{tabularx}{\linewidth}" not in tex  # description_list table
+    assert "Betalsätt" not in tex
+    assert " None" not in tex
 
 
 def test_xelatex_timeout_raises_runtime_error(monkeypatch):

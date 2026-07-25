@@ -95,7 +95,12 @@ Create a `.tex.jinja` file that defines `\fancyhead`/`\fancyfoot`:
 \makeatother
 ```
 
-Then use `--page-template myorg.tex.jinja` in CLI or `"page_template_source": "..."` in API calls. Logos and other files are resolved relative to the working directory.
+Then use `--page-template myorg.tex.jinja` in CLI or `"page_template_source": "..."` in API calls.
+
+Where logos and other files are resolved differs between the two surfaces:
+
+- **CLI with a file-based page template** (`--page-template <path>`, or an auto-detected `<data-stem>.tex.jinja` / `page_template.tex.jinja`): files are resolved relative to the template file's own directory, with the working directory as fallback. A template and its logos can therefore live together in e.g. a `Branding/` folder and be used from any working directory. For a symlinked template, the target's directory applies.
+- **API with `page_template_source`**: the parameter takes raw text with no path, so there is no template directory to work from. Callers who need files outside the working directory pass `asset_dir=<directory>` to `render()`; otherwise the working directory applies.
 
 ## Architecture
 

@@ -95,7 +95,12 @@ Skapa en `.tex.jinja`-fil som definierar `\fancyhead`/`\fancyfoot`:
 \makeatother
 ```
 
-Använd sedan `--page-template minforening.tex.jinja` i CLI eller `"page_template_source": "..."` i API-anrop. Logotyper och andra filer hittas relativt till arbetsmappen.
+Använd sedan `--page-template minforening.tex.jinja` i CLI eller `"page_template_source": "..."` i API-anrop.
+
+Var logotyper och andra filer hittas skiljer sig mellan de två ytorna:
+
+- **CLI med filbaserad sidmall** (`--page-template <sökväg>`, eller autodetekterad `<data-stem>.tex.jinja` / `page_template.tex.jinja`): filer hittas relativt till sidmallens egen katalog, med arbetsmappen som fallback. En mall och dess logotyper kan därmed ligga samlade i t.ex. en `Branding/`-mapp och användas från vilken arbetsmapp som helst. För en symlänkad mall gäller målets katalog.
+- **API med `page_template_source`**: parametern tar rå text utan sökväg, så det finns ingen mallkatalog att utgå från. Anropare som vill hitta filer utanför arbetsmappen skickar `asset_dir=<katalog>` till `render()`; annars gäller arbetsmappen.
 
 ## Arkitektur
 

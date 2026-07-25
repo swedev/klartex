@@ -67,6 +67,35 @@ def test_render_resolves_asset_dir(tmp_path):
         render("_block", data, page_template_source=page_template)
 
 
+@pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+def test_render_resolves_relative_asset_dir(tmp_path, monkeypatch):
+    """A relative asset_dir must be resolved against the caller's cwd.
+
+    xelatex runs with cwd=tmpdir, so an unresolved relative TEXINPUTS entry
+    would point into the tempdir and silently never match.
+    """
+    branding = tmp_path / "branding"
+    branding.mkdir()
+    (branding / "brand-colors.tex").write_text(
+        r"\definecolor{brandprimary}{HTML}{2E5A1C}"
+    )
+    page_template = (
+        r"\input{brand-colors}"
+        "\n"
+        r"\fancyhead[L]{\color{brandprimary}Test}"
+        "\n"
+        r"\fancyfoot[C]{\thepage}"
+        "\n"
+    )
+    data = {"body": [{"type": "heading", "text": "Relative asset dir"}]}
+
+    monkeypatch.chdir(tmp_path)
+    pdf = render(
+        "_block", data, page_template_source=page_template, asset_dir=Path("branding")
+    )
+    assert pdf[:5] == b"%PDF-"
+
+
 class TestDiscovery:
     """Tests for template discovery."""
 

@@ -97,6 +97,10 @@ def render(
             against it. Searched between the bundled `cls/` and the caller's
             cwd. Useful when callers (e.g. a server) keep page-template
             bundles in a known location separate from the working directory.
+            A relative path is resolved against the caller's cwd. Note that
+            `page_template_source` is raw text with no path of its own, so
+            API callers must pass `asset_dir` explicitly to get assets
+            resolved outside cwd.
 
     Returns:
         PDF file contents as bytes
@@ -266,7 +270,12 @@ def _compile_tex(tex_source: str, asset_dir: Path | str | None = None) -> bytes:
         env = os.environ.copy()
         existing_texinputs = env.get("TEXINPUTS", "")
         cwd = os.getcwd()
-        asset_part = f"{asset_dir}:" if asset_dir is not None else ""
+        # xelatex runs with cwd=tmpdir, so a relative TEXINPUTS entry would be
+        # interpreted relative to the tempdir and silently never match.
+        # Absolutize against the caller's cwd before it goes on the path.
+        asset_part = (
+            f"{Path(asset_dir).resolve()}:" if asset_dir is not None else ""
+        )
         env["TEXINPUTS"] = f".:{CLS_DIR}:{asset_part}{cwd}:{existing_texinputs}"
 
         # Run xelatex twice (for page references).

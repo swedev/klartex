@@ -67,6 +67,78 @@ def test_render_resolves_asset_dir(tmp_path):
         render("_block", data, page_template_source=page_template)
 
 
+@pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+def test_render_resolves_relative_asset_dir(tmp_path, monkeypatch):
+    """A relative asset_dir must be resolved against the caller's cwd.
+
+    xelatex runs with cwd=tmpdir, so an unresolved relative TEXINPUTS entry
+    would point into the tempdir and silently never match.
+    """
+    branding = tmp_path / "branding"
+    branding.mkdir()
+    (branding / "brand-colors.tex").write_text(
+        r"\definecolor{brandprimary}{HTML}{2E5A1C}"
+    )
+    page_template = (
+        r"\input{brand-colors}"
+        "\n"
+        r"\fancyhead[L]{\color{brandprimary}Test}"
+        "\n"
+        r"\fancyfoot[C]{\thepage}"
+        "\n"
+    )
+    data = {"body": [{"type": "heading", "text": "Relative asset dir"}]}
+
+    monkeypatch.chdir(tmp_path)
+    pdf = render(
+        "_block", data, page_template_source=page_template, asset_dir=Path("branding")
+    )
+    assert pdf[:5] == b"%PDF-"
+
+
+@pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+def test_explicitly_relative_asset_path_is_not_searched(tmp_path):
+    r"""Document the boundary of the TEXINPUTS mechanism.
+
+    Kpathsea does not search TEXINPUTS for explicitly relative names: a name
+    starting with ``./`` or ``../`` is checked as-is against xelatex's cwd,
+    which is the private tempdir we compile in. So ``\input{./brand-colors}``
+    fails even though ``brand-colors.tex`` sits in asset_dir, while the plain
+    name resolves. Templates must reference assets by plain name; see the
+    "Known limitation" note in CLAUDE.md.
+    """
+    (tmp_path / "brand-colors.tex").write_text(
+        r"\definecolor{brandprimary}{HTML}{2E5A1C}"
+    )
+    data = {"body": [{"type": "heading", "text": "Explicitly relative"}]}
+
+    def page_template(input_arg: str) -> str:
+        return (
+            f"\\input{{{input_arg}}}"
+            "\n"
+            r"\fancyhead[L]{\color{brandprimary}Test}"
+            "\n"
+        )
+
+    # Plain name: found via asset_dir on TEXINPUTS.
+    pdf = render(
+        "_block",
+        data,
+        page_template_source=page_template("brand-colors"),
+        asset_dir=tmp_path,
+    )
+    assert pdf[:5] == b"%PDF-"
+
+    # Explicitly relative name: never searched, so it fails despite asset_dir.
+    with pytest.raises(RuntimeError, match="xelatex failed"):
+        render(
+            "_block",
+            data,
+            page_template_source=page_template("./brand-colors"),
+            asset_dir=tmp_path,
+        )
+
+
 class TestDiscovery:
     """Tests for template discovery."""
 

@@ -52,7 +52,12 @@ def main(
         help=(
             "Page template file path. Overrides data.page_template. "
             "If omitted, klartex auto-detects <data-stem>.tex.jinja next to "
-            "the data file, then ./page_template.tex.jinja in cwd."
+            "the data file, then ./page_template.tex.jinja in cwd. "
+            "Assets referenced from the template (logos etc.) are found "
+            "relative to the template file's own directory, with the working "
+            "directory as fallback. Reference them by plain name "
+            "(logo.pdf) — a ./ or ../ prefix is not searched for. "
+            "For a symlinked template the target's directory applies."
         ),
     ),
     version: Optional[bool] = typer.Option(None, "--version", "-V", help="Show version and exit.", callback=_version_callback, is_eager=True),
@@ -79,17 +84,22 @@ def main(
     # Resolve page template source. Explicit --page-template wins; otherwise
     # try <data-stem>.tex.jinja next to the data file, then
     # ./page_template.tex.jinja in cwd.
+    # Assets referenced from a file-based page template resolve against the
+    # template's own directory (asset_dir), with cwd kept as fallback.
     page_template_source = None
+    asset_dir: Optional[Path] = None
     if page_template is not None:
         pt_path = Path(page_template)
         if not pt_path.is_file():
             typer.echo(f"Error: page template file not found: {page_template}", err=True)
             raise typer.Exit(1)
         page_template_source = pt_path.read_text(encoding="utf-8")
+        asset_dir = pt_path.resolve().parent
     else:
         auto = _autodetect_page_template(data)
         if auto is not None:
             page_template_source = auto.read_text(encoding="utf-8")
+            asset_dir = auto.resolve().parent
             typer.echo(f"Using page template: {auto}", err=True)
 
     # Default output filename: same as input but with .pdf extension
@@ -103,7 +113,9 @@ def main(
         raise typer.Exit(1)
 
     try:
-        pdf_bytes = render(template, raw, page_template_source=page_template_source)
+        pdf_bytes = render(
+            template, raw, page_template_source=page_template_source, asset_dir=asset_dir
+        )
     except Exception as e:
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(1)

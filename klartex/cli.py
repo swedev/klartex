@@ -55,8 +55,9 @@ def main(
             "the data file, then ./page_template.tex.jinja in cwd. "
             "Assets referenced from the template (logos etc.) are found "
             "relative to the template file's own directory, with the working "
-            "directory as fallback. For a symlinked template the target's "
-            "directory applies."
+            "directory as fallback. Reference them by plain name "
+            "(logo.pdf) — a ./ or ../ prefix is not searched for. "
+            "For a symlinked template the target's directory applies."
         ),
     ),
     version: Optional[bool] = typer.Option(None, "--version", "-V", help="Show version and exit.", callback=_version_callback, is_eager=True),

@@ -102,6 +102,13 @@ def render(
             API callers must pass `asset_dir` explicitly to get assets
             resolved outside cwd.
 
+            Assets must be referenced by plain name (`\\input{brand}`,
+            `\\includegraphics{logo.pdf}`). Kpathsea does not search
+            TEXINPUTS for *explicitly relative* names — anything starting
+            with `./` or `../` is checked as-is against xelatex's working
+            directory, which is the private tempdir this function compiles
+            in, so such references never resolve via `asset_dir`.
+
     Returns:
         PDF file contents as bytes
     """

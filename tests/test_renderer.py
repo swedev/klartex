@@ -1,6 +1,7 @@
 """Tests for the rendering pipeline."""
 
 import json
+import os
 import shutil
 from pathlib import Path
 
@@ -71,8 +72,8 @@ def test_render_resolves_asset_dir(tmp_path):
 def test_render_resolves_relative_asset_dir(tmp_path, monkeypatch):
     """A relative asset_dir must be resolved against the caller's cwd.
 
-    xelatex runs with cwd=tmpdir, so an unresolved relative TEXINPUTS entry
-    would point into the tempdir and silently never match.
+    The resolved path is used both as a TEXINPUTS entry and as xelatex's cwd,
+    so leaving it relative would resolve against the wrong base entirely.
     """
     branding = tmp_path / "branding"
     branding.mkdir()
@@ -96,47 +97,270 @@ def test_render_resolves_relative_asset_dir(tmp_path, monkeypatch):
     assert pdf[:5] == b"%PDF-"
 
 
-@pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
-def test_explicitly_relative_asset_path_is_not_searched(tmp_path):
-    r"""Document the boundary of the TEXINPUTS mechanism.
-
-    Kpathsea does not search TEXINPUTS for explicitly relative names: a name
-    starting with ``./`` or ``../`` is checked as-is against xelatex's cwd,
-    which is the private tempdir we compile in. So ``\input{./brand-colors}``
-    fails even though ``brand-colors.tex`` sits in asset_dir, while the plain
-    name resolves. Templates must reference assets by plain name; see the
-    "Known limitation" note in CLAUDE.md.
-    """
-    (tmp_path / "brand-colors.tex").write_text(
-        r"\definecolor{brandprimary}{HTML}{2E5A1C}"
+def _color_page_template(input_arg: str) -> str:
+    """A page template whose only job is to \\input the given argument."""
+    return (
+        f"\\input{{{input_arg}}}"
+        "\n"
+        r"\fancyhead[L]{\color{brandprimary}Test}"
+        "\n"
     )
+
+
+_BRAND_COLORS = r"\definecolor{brandprimary}{HTML}{2E5A1C}"
+
+
+def _dir_snapshot(root: Path) -> dict[str, bytes]:
+    """Map every file under `root` to its bytes, keyed by relative path.
+
+    Byte-level rather than a name listing, so a *modified* file is caught too.
+    """
+    return {
+        str(p.relative_to(root)): p.read_bytes()
+        for p in sorted(root.rglob("*"))
+        if p.is_file()
+    }
+
+
+@pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+def test_explicitly_relative_asset_path_resolves_via_asset_dir(tmp_path):
+    r"""``\input{./brand-colors}`` must resolve against asset_dir.
+
+    Kpathsea never searches TEXINPUTS for names starting with ``./`` or
+    ``../`` — they are tried as-is against xelatex's working directory. The
+    renderer therefore compiles with cwd set to the asset root, which is what
+    makes this work. Discriminating test for issue #37 round 2.
+    """
+    (tmp_path / "brand-colors.tex").write_text(_BRAND_COLORS)
     data = {"body": [{"type": "heading", "text": "Explicitly relative"}]}
 
-    def page_template(input_arg: str) -> str:
-        return (
-            f"\\input{{{input_arg}}}"
-            "\n"
-            r"\fancyhead[L]{\color{brandprimary}Test}"
-            "\n"
-        )
-
-    # Plain name: found via asset_dir on TEXINPUTS.
+    # Plain name: found via asset_dir on TEXINPUTS (unchanged behavior).
     pdf = render(
         "_block",
         data,
-        page_template_source=page_template("brand-colors"),
+        page_template_source=_color_page_template("brand-colors"),
         asset_dir=tmp_path,
     )
     assert pdf[:5] == b"%PDF-"
 
-    # Explicitly relative name: never searched, so it fails despite asset_dir.
-    with pytest.raises(RuntimeError, match="xelatex failed"):
-        render(
-            "_block",
-            data,
-            page_template_source=page_template("./brand-colors"),
-            asset_dir=tmp_path,
-        )
+    # Explicitly relative name: resolves against asset_dir as xelatex's cwd.
+    pdf = render(
+        "_block",
+        data,
+        page_template_source=_color_page_template("./brand-colors"),
+        asset_dir=tmp_path,
+    )
+    assert pdf[:5] == b"%PDF-"
+
+
+@pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+def test_parent_relative_asset_path_resolves_above_asset_dir(tmp_path):
+    r"""``\input{../shared/…}`` must reach outside the template's own directory.
+
+    Models the real layout from the issue: a per-brand template directory next
+    to a shared assets directory.
+    """
+    branding = tmp_path / "branding"
+    branding.mkdir()
+    shared = tmp_path / "shared"
+    shared.mkdir()
+    (shared / "brand-colors.tex").write_text(_BRAND_COLORS)
+
+    data = {"body": [{"type": "heading", "text": "Parent relative"}]}
+    pdf = render(
+        "_block",
+        data,
+        page_template_source=_color_page_template("../shared/brand-colors"),
+        asset_dir=branding,
+    )
+    assert pdf[:5] == b"%PDF-"
+
+
+@pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+def test_explicitly_relative_path_falls_back_to_cwd_without_asset_dir(
+    tmp_path, monkeypatch
+):
+    r"""Without asset_dir, xelatex's cwd is the caller's cwd.
+
+    Locks the deliberate default-case change: ``./x`` resolves against the
+    working directory rather than failing against a private tempdir.
+    """
+    (tmp_path / "brand-colors.tex").write_text(_BRAND_COLORS)
+    data = {"body": [{"type": "heading", "text": "Cwd relative"}]}
+
+    monkeypatch.chdir(tmp_path)
+    pdf = render(
+        "_block", data, page_template_source=_color_page_template("./brand-colors")
+    )
+    assert pdf[:5] == b"%PDF-"
+
+
+@pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+def test_render_writes_no_artifacts_into_asset_dir(tmp_path):
+    """Compiling with cwd=asset_dir must not leave .aux/.log/.pdf behind."""
+    (tmp_path / "brand-colors.tex").write_text(_BRAND_COLORS)
+    data = {"body": [{"type": "heading", "text": "No artifacts"}]}
+
+    before = _dir_snapshot(tmp_path)
+    pdf = render(
+        "_block",
+        data,
+        page_template_source=_color_page_template("./brand-colors"),
+        asset_dir=tmp_path,
+    )
+    assert pdf[:5] == b"%PDF-"
+    assert _dir_snapshot(tmp_path) == before
+
+
+@pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+def test_render_writes_no_artifacts_into_cwd(tmp_path, monkeypatch):
+    """The caller's cwd is xelatex's cwd when asset_dir is unset — guard it too."""
+    (tmp_path / "brand-colors.tex").write_text(_BRAND_COLORS)
+    data = {"body": [{"type": "heading", "text": "No artifacts in cwd"}]}
+
+    monkeypatch.chdir(tmp_path)
+    before = _dir_snapshot(tmp_path)
+    pdf = render(
+        "_block", data, page_template_source=_color_page_template("./brand-colors")
+    )
+    assert pdf[:5] == b"%PDF-"
+    assert _dir_snapshot(tmp_path) == before
+
+
+@pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+def test_asset_dir_cannot_shadow_bundled_sty(tmp_path):
+    """The bundled cls/ must still be searched before asset_dir.
+
+    Guards the TEXINPUTS reorder: xelatex's cwd is now the asset root, so a
+    leading "." entry would put the asset root ahead of cls/ and let a
+    template-dir file hijack a klartex .sty. Spelling the tempdir out instead
+    keeps the old order. The decoy here \\inputs a missing file, which is fatal
+    even under -interaction=nonstopmode, so a successful render proves the
+    bundled package won.
+    """
+    (tmp_path / "klartex-callout.sty").write_text(
+        r"\ProvidesPackage{klartex-callout}"
+        "\n"
+        r"\input{this-file-does-not-exist-shadow-37}"
+        "\n"
+    )
+    data = {"body": [{"type": "callout", "variant": "info", "text": "Skuggning"}]}
+
+    pdf = render(
+        "_block",
+        data,
+        page_template_source="\\fancyfoot[C]{\\thepage}\n",
+        asset_dir=tmp_path,
+    )
+    assert pdf[:5] == b"%PDF-"
+
+
+@pytest.mark.parametrize("kind", ["missing", "plain_file"])
+def test_invalid_asset_dir_raises_value_error(tmp_path, kind):
+    """A non-directory asset_dir must fail fast with a clear message.
+
+    Validation runs before the xelatex-presence check, so this holds even
+    without TeX installed.
+    """
+    if kind == "missing":
+        bogus = tmp_path / "does-not-exist"
+    else:
+        bogus = tmp_path / "a-file.txt"
+        bogus.write_text("not a directory")
+
+    data = {"body": [{"type": "heading", "text": "Invalid asset dir"}]}
+    with pytest.raises(ValueError, match="not a directory"):
+        render("_block", data, asset_dir=bogus)
+
+
+def test_xelatex_invocation_shape(tmp_path, monkeypatch):
+    """Both runs use an absolute .tex path, cwd=asset_root and -output-directory.
+
+    Fast test: subprocess.run is faked, so no xelatex is needed.
+    """
+    from klartex import renderer as renderer_mod
+
+    monkeypatch.setattr(renderer_mod.shutil, "which", lambda _: "/usr/bin/xelatex")
+
+    calls = []
+
+    class FakeResult:
+        returncode = 0
+        stdout = b""
+
+    def fake_run(cmd, **kwargs):
+        calls.append((cmd, kwargs))
+        # Satisfy the "did xelatex produce a PDF?" check.
+        out_dir = Path(cmd[cmd.index("-output-directory") + 1])
+        (out_dir / "document.pdf").write_bytes(b"%PDF-fake")
+        return FakeResult()
+
+    monkeypatch.setattr(renderer_mod.subprocess, "run", fake_run)
+
+    pdf = renderer_mod._compile_tex("x", asset_dir=tmp_path)
+    assert pdf == b"%PDF-fake"
+    assert len(calls) == 2
+
+    tex_paths = set()
+    for cmd, kwargs in calls:
+        out_dir = Path(cmd[cmd.index("-output-directory") + 1])
+        tex_path = Path(cmd[-1])
+        tex_paths.add(tex_path)
+
+        assert tex_path.is_absolute()
+        assert tex_path.name == "document.tex"
+        assert tex_path.parent == out_dir
+        assert Path(kwargs["cwd"]) == tmp_path.resolve()
+
+        texinputs = kwargs["env"]["TEXINPUTS"].split(":")
+        assert texinputs[0] == str(out_dir)
+        assert texinputs[1] == str(renderer_mod.CLS_DIR)
+        assert texinputs[2] == str(tmp_path.resolve())
+        assert texinputs[3] == os.getcwd()
+
+    # Same jobname/source across both runs, so the second reuses the first .aux.
+    assert len(tex_paths) == 1
+
+
+@pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+def test_second_run_finds_aux_from_first_run(monkeypatch):
+    r"""-output-directory must receive the .aux so two-pass references resolve.
+
+    Uses a genuinely two-run-sensitive document (\label + \pageref) and spies
+    on the real subprocess.run to assert document.aux exists in the output
+    directory after the first run. The %PDF- assertions used elsewhere would
+    not catch unresolved "??" references.
+    """
+    import subprocess as real_subprocess
+
+    from klartex import renderer as renderer_mod
+
+    aux_after_first_run = []
+    real_run = real_subprocess.run
+
+    def spy_run(cmd, **kwargs):
+        result = real_run(cmd, **kwargs)
+        out_dir = Path(cmd[cmd.index("-output-directory") + 1])
+        aux_after_first_run.append((out_dir / "document.aux").exists())
+        return result
+
+    data = {
+        "body": [
+            {
+                "type": "latex",
+                "source": r"Se sida~\pageref{kx:testmark}.\label{kx:testmark}",
+            }
+        ]
+    }
+
+    monkeypatch.setattr(renderer_mod.subprocess, "run", spy_run)
+    pdf = render("_block", data)
+
+    assert pdf[:5] == b"%PDF-"
+    assert len(aux_after_first_run) == 2
+    assert aux_after_first_run[0], (
+        "first run did not write document.aux to -output-directory"
+    )
 
 
 class TestDiscovery:

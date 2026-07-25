@@ -4,18 +4,18 @@
 
 ## Summary
 
-External page templates referenced via `--page-template` (or auto-detected next to the data file) fail to find their own assets (`\includegraphics{logo.pdf}` etc.) unless the assets are copied into the build cwd. Fix: the CLI passes the template file's directory as `asset_dir` to `render()` — a renderer mechanism that already exists and injects the directory into `TEXINPUTS` before cwd — so assets resolve next to the template, with cwd kept as fallback.
+Round 2 (issue reopened after PR #38). Round 1 made plain-name assets (`\includegraphics{logo.pdf}`) resolve next to the template via `TEXINPUTS`, but explicitly relative names (`./logo.pdf`, `../shared.tex`) still fail — Kpathsea never searches `TEXINPUTS` for them, only xelatex's cwd (our private tempdir). Fix: `_compile_tex` runs xelatex with `cwd=<asset root>` (template dir, else caller cwd) plus `-output-directory=<tempdir>`, with `TEXINPUTS` reordered (tmpdir replaces `.`) so plain-name precedence is unchanged.
 
 ## Triage Status
 
 | Field | Value |
 |-------|-------|
 | **Ready to work** | Yes |
-| **Risk** | Low |
-| **Issue state** | Open, unassigned, no labels or milestone |
-| **Blockers** | None |
+| **Risk** | Medium |
+| **Issue state** | Reopened, label `plan exists` |
+| **Blockers** | None (PR #38 merged; unresolved review thread there defines this round's scope) |
 | **Test dependency** | XeLaTeX (already required by CI) |
-| **Prerequisite in place** | `render(asset_dir=...)` landed in v0.11.1 |
+| **Behavior change** | xelatex invocation shape changes for every render (cwd + `-output-directory`); `asset_dir=None` gives `./…` caller-cwd semantics; invalid `asset_dir` now raises `ValueError`; explicitly relative paths have no cwd fallback when `asset_dir` is set |
 
 ## Plan Review
 
@@ -23,9 +23,9 @@ External page templates referenced via `--page-template` (or auto-detected next 
 
 **Reviewed:** 2026-07-25
 
-**Feedback:** Codex confirmed the diagnosis and approach; applied amendments: doc wording must not imply API `page_template_source` resolves paths (CLI-only fix), added missing cwd-default test branch, fallback/precedence and relative-`asset_dir` hardening tests, and documented the symlink-target resolution as a deliberate contract.
+**Feedback:** Codex (round 2) confirmed the cwd + `-output-directory` architecture and step order; applied its revisions: two-pass aux-discovery and invocation-shape tests, recursive byte-level no-artifacts guard for both template dir and caller cwd, `asset_dir` validation before the xelatex-presence check with "not a directory" semantics (missing path + plain file), an `\includegraphics{./logo.pdf}` CLI repro matching the issue's primitive, fully precise search-order documentation, and expanded behavior-change triage.
 
 ## Related Files
 
-- [plan.md](plan.md) - Full implementation plan
-- [progress.md](progress.md) - Implementation progress log (created during implementation)
+- [plan.md](plan.md) - Full implementation plan (round 2)
+- [progress.md](progress.md) - Implementation progress log (round 1 completed; round 2 pending)

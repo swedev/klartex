@@ -50,8 +50,9 @@ JSON data
   → _restore_block_types() re-injects unescaped `type` discriminators and raw `latex.source`
        (escaping turns "description_list" → "description\_list", which would break dispatch)
   → Jinja render → .tex source
-  → tempdir + symlinked klartex/cls/ + TEXINPUTS=.:cls:[asset_dir:]cwd
-  → xelatex run twice (page references) → PDF bytes
+  → tempdir + symlinked klartex/cls/ + TEXINPUTS=<tmpdir>:cls:[asset_dir:]cwd
+  → xelatex run twice (page references), cwd=asset_dir-or-cwd,
+       -output-directory=<tmpdir> → PDF bytes
 ```
 
 Two consequences of the escape→restore pattern matter when adding blocks:
@@ -92,9 +93,17 @@ A page template is a `.tex.jinja` fragment that defines `\fancyhead`/`\fancyfoot
 
 When a caller supplies raw page-template source (CLI flag, auto-detect, or `page_template_source` API field) the loader uses `"none"` defaults so the caller owns header/footer entirely.
 
-Assets referenced from a page template (`\includegraphics{logo.pdf}`, `\input{…}`, fonts) resolve via `TEXINPUTS=.:cls:[asset_dir:]cwd`, where `asset_dir` is the optional `render(asset_dir=…)` directory injected ahead of cwd. For the CLI's three file-based branches, `cli.py::main` sets `asset_dir` to the resolved page-template file's parent, so a template and its assets can live together in one directory and be used from any cwd; cwd remains the fallback. `.resolve()` is deliberate — assets follow a symlinked template to its target's directory (canonical template bundles), and the absolute path matters because xelatex runs with `cwd=tmpdir`. The API's `page_template_source` is raw text with no path, so API callers must pass `asset_dir` themselves.
+Assets referenced from a page template (`\includegraphics{logo.pdf}`, `\input{…}`, fonts) resolve through **two** mechanisms, because Kpathsea treats the two name shapes differently:
 
-**Known limitation:** this is a `TEXINPUTS` search-path mechanism, so it only covers *searchable* names. Kpathsea does not search the path for explicitly relative names — anything starting with `./` or `../` is tried as-is against xelatex's cwd, i.e. the private tempdir — so `\includegraphics{./logo.pdf}` fails even when `logo.pdf` sits beside the template. Templates must use plain names. Lifting this would mean compiling with `cwd=asset_dir` plus `-output-directory`, which is deliberately out of scope for the search-path approach; `tests/test_renderer.py::test_explicitly_relative_asset_path_is_not_searched` locks the current behavior.
+- **Plain names** (`logo.pdf`) go through `TEXINPUTS=<tmpdir>:cls:[asset_dir:]cwd:<inherited>` — a real search chain, so a plain name found in neither `asset_dir` nor cwd still falls back.
+- **Explicitly relative names** (`./logo.pdf`, `../shared/x.tex`) are never looked up on `TEXINPUTS`; Kpathsea tries them as-is against xelatex's process cwd. `_compile_tex` therefore runs xelatex with `cwd=<asset root>` — the resolved `asset_dir`, else the caller's cwd — and redirects every build artifact to the tempdir with `-output-directory`. There is no fallback chain here (a process has one cwd), so a `./` reference missing from `asset_dir` fails even if the file exists in cwd. A `./` inside a *nested* included file also resolves against that same single root, not the including file's directory.
+
+`asset_dir` is the optional `render(asset_dir=…)` directory. For the CLI's three file-based branches, `cli.py::main` sets it to the resolved page-template file's parent, so a template and its assets can live together in one directory and be used from any cwd. `.resolve()` is deliberate — assets follow a symlinked template to its target's directory (canonical template bundles), and the path must be absolute since it is both a `TEXINPUTS` entry and the subprocess cwd. A non-directory `asset_dir` raises `ValueError` (validated before the `shutil.which("xelatex")` check, so it is testable without TeX). The API's `page_template_source` is raw text with no path, so API callers must pass `asset_dir` themselves.
+
+Two invariants worth not breaking:
+
+- The leading `TEXINPUTS` entry is the **absolute tempdir**, not `.`. Since cwd is now the asset root, a bare `.` would place the asset root ahead of the bundled `cls/` and let a template-dir file hijack a klartex `.sty`. Locked by `tests/test_renderer.py::test_asset_dir_cannot_shadow_bundled_sty`.
+- `-output-directory` means a render never writes into the template dir or cwd, and the second xelatex run finds the first run's `.aux` there. Locked by the two no-artifacts tests and `test_second_run_finds_aux_from_first_run`.
 
 ### LaTeX layer (`klartex/cls/`)
 

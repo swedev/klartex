@@ -219,6 +219,43 @@ class TestAssetDirEndToEnd:
         assert result.exit_code == 0, result.output
         assert out.read_bytes()[:5] == b"%PDF-"
 
+    def test_explicitly_relative_logo_resolves_from_other_cwd(self, cwd, monkeypatch):
+        r"""Issue #37 round 2: the reported primitive, \includegraphics{./logo.pdf}.
+
+        Same layout as the repro above, but the template addresses its sibling
+        asset with an explicit ./ prefix — which Kpathsea never searches for on
+        TEXINPUTS. It resolves because xelatex now runs with cwd=template dir.
+        """
+        from klartex.renderer import render
+
+        branding = cwd / "branding"
+        branding.mkdir()
+        # A real (if tiny) PDF to include, produced by klartex itself.
+        (branding / "logo.pdf").write_bytes(
+            render("_block", {"body": [{"type": "heading", "text": "LOGO"}]})
+        )
+        (branding / "mall.tex.jinja").write_text(
+            r"\fancyhead[L]{\includegraphics[width=2cm]{./logo.pdf}}"
+            "\n"
+            r"\fancyfoot[C]{\thepage}"
+            "\n"
+        )
+
+        build = cwd / "build"
+        build.mkdir()
+        data = build / "report.json"
+        data.write_text(json.dumps(BLOCK_DATA))
+
+        monkeypatch.chdir(build)
+        out = build / "report.pdf"
+        result = runner.invoke(
+            app,
+            ["-d", str(data), "--page-template", str(branding / "mall.tex.jinja"),
+             "-o", str(out)],
+        )
+        assert result.exit_code == 0, result.output
+        assert out.read_bytes()[:5] == b"%PDF-"
+
     def test_template_dir_takes_precedence_over_cwd(self, cwd, monkeypatch):
         """Same asset filename in both places: the template's copy wins."""
         branding = cwd / "branding"

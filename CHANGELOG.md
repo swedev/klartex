@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.13.0 — 2026-07-25
+
+### New features
+- **Ny recipe-template: `kvitto`.** Betalningsbekräftelse, medvetet lättare än faktura: kvittonummer, datum, enkel artikellista, en explicit totalsumma (`total_amount`, beräknas aldrig från raderna) och betalsätt. Ingen momsspecifikation, inget förfallodatum. Två nya recipe-only-komponenter (`receipt_header`, `receipt_table`); Betalsätt/Betalt av via `description_list` + valfri metadata. Säljaridentitet kommer från sidmallen (`\orgname`). `klartex example kvitto` fungerar via auto-discovery. (#8)
+- **Block spacing-overrides: per-instans-fält + dokumentnivåns `block_settings`.** Sju block (`heading`, `text`, `list`, `table`, `callout`, `quote`, `description_list`) accepterar nu `spacing_before`/`spacing_after` (råa LaTeX-dimensioner, t.ex. `"2em"`; `"0em"` tar bort default-spacing). Upplösningsordning: per-instans > `block_settings[type]` > inbyggd default. Rent additivt — befintliga dokument renderas oförändrat. (#29)
+
+### Fixes
+- **Sidmallars assets löses nu mot mallens katalog i stället för cwd.** `\includegraphics{logo.pdf}` m.m. i en extern sidmall (`--page-template` eller auto-detekterad) krävde tidigare att asseten kopierades till build-cwd. CLI:t skickar nu mallfilens katalog som `asset_dir`, och `_compile_tex` kör xelatex med `cwd=asset_root` + `-output-directory`, så både bara filnamn (via `TEXINPUTS`) och explicit relativa sökvägar (`./logo.pdf`, `../shared.tex` — som Kpathsea aldrig söker `TEXINPUTS` för) hittas bredvid mallen; cwd är fallback. Beteendeförändringar: en asset som finns både bredvid mallen och i cwd löses nu till mallens kopia; ogiltig `asset_dir` ger `ValueError` i stället för tyst no-op; utan `asset_dir` löses `./`-namn mot processens cwd (tidigare alltid fel, mot en privat tempdir). (#37)
+- **`_recipe_base`: `description_list`-armen är nu guardad med `if metadata`** — ett recept utan metadata renderar ingenting i stället för ~4em spacing runt en tom tabell. No-op för protokoll som alltid har metadata. (del av #8)
+
 ## 0.12.0 — 2026-07-06
 
 ### Breaking changes

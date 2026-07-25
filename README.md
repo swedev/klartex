@@ -102,7 +102,7 @@ Var logotyper och andra filer hittas skiljer sig mellan de två ytorna:
 - **CLI med filbaserad sidmall** (`--page-template <sökväg>`, eller autodetekterad `<data-stem>.tex.jinja` / `page_template.tex.jinja`): filer hittas relativt till sidmallens egen katalog, med arbetsmappen som fallback. En mall och dess logotyper kan därmed ligga samlade i t.ex. en `Branding/`-mapp och användas från vilken arbetsmapp som helst. För en symlänkad mall gäller målets katalog.
 - **API med `page_template_source`**: parametern tar rå text utan sökväg, så det finns ingen mallkatalog att utgå från. Anropare som vill hitta filer utanför arbetsmappen skickar `asset_dir=<katalog>` till `render()`; annars gäller arbetsmappen.
 
-> **Referera alltid filer med enbart namnet** — `\includegraphics{logo.pdf}`, inte `\includegraphics{./logo.pdf}`. TeX:s filsökning (Kpathsea) söker inte upp namn som inleds med `./` eller `../`, utan provar dem rakt av mot xelatex arbetskatalog, som är en tillfällig byggkatalog. Sådana referenser hittas därför aldrig, varken i mallens katalog eller i arbetsmappen.
+> **Både `\includegraphics{logo.pdf}` och `\includegraphics{./logo.pdf}` fungerar**, liksom `\input{../delat/farger.tex}` — relativa referenser utgår från mallens katalog (eller `asset_dir`, i annat fall arbetsmappen). En skillnad finns dock: namn med `./` eller `../` faller **inte** tillbaka på arbetsmappen. TeX:s filsökning (Kpathsea) söker aldrig upp sådana namn, utan provar dem rakt av mot xelatex arbetskatalog — och den katalogen är just mallens katalog. Namn utan prefix söks däremot i hela kedjan och hittas även om filen bara ligger i arbetsmappen.
 
 ## Arkitektur
 

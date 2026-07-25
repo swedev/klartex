@@ -54,9 +54,9 @@ def main(
             "If omitted, klartex auto-detects <data-stem>.tex.jinja next to "
             "the data file, then ./page_template.tex.jinja in cwd. "
             "Assets referenced from the template (logos etc.) are found "
-            "relative to the template file's own directory, with the working "
-            "directory as fallback. Reference them by plain name "
-            "(logo.pdf) — a ./ or ../ prefix is not searched for. "
+            "relative to the template file's own directory, both by plain "
+            "name (logo.pdf) and with a ./ or ../ prefix. Plain names fall "
+            "back to the working directory; ./ and ../ references do not. "
             "For a symlinked template the target's directory applies."
         ),
     ),

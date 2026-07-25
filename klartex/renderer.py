@@ -1,6 +1,7 @@
 """Core rendering pipeline: JSON data -> .tex -> PDF."""
 
 import json
+import os
 import shutil
 import subprocess
 import tempfile
@@ -92,22 +93,36 @@ def render(
         page_template_source: Optional raw .tex.jinja content for the page
             template. When set, this is used directly instead of looking up
             the built-in page template from data["page_template"].
-        asset_dir: Optional directory injected into TEXINPUTS so xelatex
-            resolves `\\includegraphics`, `\\input`, custom fonts, etc.
-            against it. Searched between the bundled `cls/` and the caller's
-            cwd. Useful when callers (e.g. a server) keep page-template
-            bundles in a known location separate from the working directory.
-            A relative path is resolved against the caller's cwd. Note that
-            `page_template_source` is raw text with no path of its own, so
-            API callers must pass `asset_dir` explicitly to get assets
-            resolved outside cwd.
+        asset_dir: Optional directory that assets (`\\includegraphics`,
+            `\\input`, custom fonts, …) resolve against. Useful when callers
+            (e.g. a server) keep page-template bundles in a known location
+            separate from the working directory. A relative path is resolved
+            against the caller's cwd; a path that is not an existing
+            directory raises `ValueError`. Note that `page_template_source`
+            is raw text with no path of its own, so API callers must pass
+            `asset_dir` explicitly to get assets resolved outside cwd.
 
-            Assets must be referenced by plain name (`\\input{brand}`,
-            `\\includegraphics{logo.pdf}`). Kpathsea does not search
-            TEXINPUTS for *explicitly relative* names — anything starting
-            with `./` or `../` is checked as-is against xelatex's working
-            directory, which is the private tempdir this function compiles
-            in, so such references never resolve via `asset_dir`.
+            Both reference styles work, via two different mechanisms:
+
+            * *Plain names* (`\\input{brand}`, `\\includegraphics{logo.pdf}`)
+              go through TEXINPUTS and get a full search chain: the internal
+              tempdir, the bundled `cls/`, `asset_dir`, the caller's cwd, and
+              finally any inherited TEXINPUTS. Of the caller-controlled roots
+              that means `asset_dir` wins, with cwd as fallback.
+            * *Explicitly relative names* (`./logo.pdf`, `../shared/x.tex`)
+              are never looked up in TEXINPUTS by Kpathsea; they resolve
+              against xelatex's working directory, which this function sets
+              to `asset_dir` (or the caller's cwd when `asset_dir` is unset).
+              There is no fallback chain — a process has exactly one cwd — so
+              a `./` reference that is missing from `asset_dir` fails even if
+              the file exists in the caller's cwd.
+
+            A `./` reference inside a *nested* included file also resolves
+            against that single asset root, not against the including file's
+            own directory.
+
+            Build artifacts stay in an internal tempdir (`-output-directory`);
+            rendering never writes into `asset_dir` or the caller's cwd.
 
     Returns:
         PDF file contents as bytes
@@ -250,7 +265,28 @@ def _render_recipe(
 
 
 def _compile_tex(tex_source: str, asset_dir: Path | str | None = None) -> bytes:
-    """Compile LaTeX source to PDF bytes."""
+    """Compile LaTeX source to PDF bytes.
+
+    xelatex runs with its working directory set to the *asset root* — the
+    resolved `asset_dir` when given, else the caller's cwd — and writes all
+    build artifacts to a private tempdir via `-output-directory`. The cwd is
+    what makes explicitly relative asset names (`./logo.pdf`, `../shared.tex`)
+    resolve: Kpathsea never consults TEXINPUTS for those, it only tries them
+    as-is against the process cwd. Plain names are carried by TEXINPUTS
+    instead, whose order (tempdir, bundled cls/, asset_dir, caller cwd,
+    inherited) is unchanged by the cwd switch because the leading `.` entry
+    is replaced with the absolute tempdir path.
+    """
+    # Validate before the xelatex-presence check so a caller bug surfaces as a
+    # clear error even where TeX is not installed. With cwd=asset_root a bogus
+    # directory would otherwise die as a raw FileNotFoundError from subprocess.
+    if asset_dir is not None:
+        asset_root = Path(asset_dir).resolve()
+        if not asset_root.is_dir():
+            raise ValueError(f"asset_dir is not a directory: {asset_dir}")
+    else:
+        asset_root = Path(os.getcwd())
+
     if not shutil.which("xelatex"):
         raise RuntimeError(
             "xelatex not found. Install TeX Live:\n"
@@ -269,23 +305,29 @@ def _compile_tex(tex_source: str, asset_dir: Path | str | None = None) -> bytes:
         # Also symlink klartex-base.cls at top level for \documentclass{klartex-base}
         (tmp / "klartex-base.cls").symlink_to(CLS_DIR / "klartex-base.cls")
 
-        # Build environment with cls/, optional asset_dir, and caller's cwd
-        # on TEXINPUTS. asset_dir slots in after the bundled cls/ so server
-        # callers can resolve page-template bundles without chdir.
-        import os
-
+        # Build environment with the tempdir, cls/, optional asset_dir, and the
+        # caller's cwd on TEXINPUTS. asset_dir slots in after the bundled cls/
+        # so server callers can resolve page-template bundles without chdir.
+        #
+        # The first entry is the absolute tempdir rather than the usual `.`:
+        # xelatex now runs with cwd=asset_root, so a bare `.` would mean the
+        # asset root and place it *ahead* of the bundled cls/, letting a
+        # template-dir file shadow a .sty/.cls. Spelling the tempdir out keeps
+        # the plain-name search order identical to before the cwd change.
+        # All entries are absolute for the same reason: a relative entry would
+        # now be interpreted against the asset root.
         env = os.environ.copy()
         existing_texinputs = env.get("TEXINPUTS", "")
         cwd = os.getcwd()
-        # xelatex runs with cwd=tmpdir, so a relative TEXINPUTS entry would be
-        # interpreted relative to the tempdir and silently never match.
-        # Absolutize against the caller's cwd before it goes on the path.
-        asset_part = (
-            f"{Path(asset_dir).resolve()}:" if asset_dir is not None else ""
-        )
-        env["TEXINPUTS"] = f".:{CLS_DIR}:{asset_part}{cwd}:{existing_texinputs}"
+        asset_part = f"{asset_root}:" if asset_dir is not None else ""
+        env["TEXINPUTS"] = f"{tmp}:{CLS_DIR}:{asset_part}{cwd}:{existing_texinputs}"
 
         # Run xelatex twice (for page references).
+        # -output-directory keeps every build artifact (.aux, .log, .pdf) in
+        # the tempdir even though cwd is the user's asset root, so a render
+        # never writes into the template directory or the caller's cwd. TeX
+        # Live also searches the output directory for inputs, so the second
+        # run finds the first run's .aux there (tmp is on TEXINPUTS too).
         # -no-shell-escape disables \write18 and shell command execution from
         # within the .tex source — important when callers (e.g. klartex.se)
         # render user-supplied page templates that could otherwise execute
@@ -298,9 +340,11 @@ def _compile_tex(tex_source: str, asset_dir: Path | str | None = None) -> bytes:
                         "-interaction=nonstopmode",
                         "-halt-on-error",
                         "-no-shell-escape",
-                        "document.tex",
+                        "-output-directory",
+                        tmpdir,
+                        str(tex_path),
                     ],
-                    cwd=tmpdir,
+                    cwd=asset_root,
                     capture_output=True,
                     timeout=60,
                     env=env,

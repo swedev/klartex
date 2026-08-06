@@ -420,7 +420,7 @@ def test_faktura_missing_currency_defaults_to_sek():
 
 
 def test_kvitto_zero_amount_renders_missing_amount_empty():
-    """amount: 0 must render as 0.00; a missing amount gives an empty cell.
+    """amount: 0 must render as 0,00; a missing amount gives an empty cell.
     total_amount is authoritative and always rendered."""
     data = {
         "receipt_number": "K-1",
@@ -432,9 +432,9 @@ def test_kvitto_zero_amount_renders_missing_amount_empty():
         ],
     }
     tex = _render_recipe_tex("kvitto", data)
-    assert r"Gratisrad & 0.00 \\" in tex
+    assert r"Gratisrad & 0,00 \\" in tex
     assert r"Rad utan belopp &  \\" in tex
-    assert "100.00" in tex
+    assert "100,00" in tex
 
 
 def test_kvitto_minimal_payload_skips_metadata_list():
@@ -466,3 +466,169 @@ def test_xelatex_timeout_raises_runtime_error(monkeypatch):
     monkeypatch.setattr(renderer_mod.subprocess, "run", fake_run)
     with pytest.raises(RuntimeError, match="timed out"):
         renderer_mod._compile_tex("\\documentclass{article}\\begin{document}x\\end{document}")
+
+
+def _minimal_faktura(**extra) -> dict:
+    data = {
+        "invoice_number": "F-1",
+        "date": "2026-08-06",
+        "due_date": "2026-09-05",
+        "recipient": {"name": "Kund AB"},
+        "lines": [
+            {"description": "Tjänst", "quantity": 9, "unit_price": 3600.0, "vat_percent": 0}
+        ],
+    }
+    data.update(extra)
+    return data
+
+
+def test_faktura_amounts_use_swedish_number_format():
+    """Amounts default to Swedish format: thin-space groups, decimal comma."""
+    tex = _render_recipe_tex("faktura", _minimal_faktura())
+    assert r"32\,400,00" in tex
+    assert "32,400.00" not in tex
+
+
+def test_faktura_number_format_en_override():
+    """number_format: 'en' switches amounts to English convention."""
+    tex = _render_recipe_tex("faktura", _minimal_faktura(number_format="en"))
+    assert "32,400.00" in tex
+    assert r"32\,400,00" not in tex
+
+
+def test_faktura_fractional_quantity_uses_decimal_comma():
+    data = _minimal_faktura()
+    data["lines"][0]["quantity"] = 1.5
+    tex = _render_recipe_tex("faktura", data)
+    assert r"1,5 " in tex or "1,5 &" in tex
+
+
+def test_faktura_large_quantity_not_exponent_notation():
+    data = _minimal_faktura()
+    data["lines"][0]["quantity"] = 1234567
+    tex = _render_recipe_tex("faktura", data)
+    assert "1234567" in tex
+    assert "e+06" not in tex
+
+
+def test_faktura_page_template_dict_emits_footer():
+    """A page_template object with footer renders \\kxfooter with keyvals and
+    suppresses the in-body payment_info block."""
+    data = _minimal_faktura(
+        bankgiro="9999-9999",
+        page_template={
+            "name": "formal",
+            "footer": {
+                "company": "Bolaget AB",
+                "address": "Storgatan 1, 123 45 Stad",
+                "bankgiro": "1234-5678",
+                "f_tax": True,
+            },
+        },
+    )
+    tex = _render_recipe_tex("faktura", data)
+    assert r"\usepackage{klartex-footer}" in tex
+    assert "company={Bolaget AB}" in tex
+    assert "address={Storgatan 1, 123 45 Stad}" in tex
+    assert "bankgiro={1234-5678}" in tex
+    assert "ftax=true" in tex
+    # in-body payment_info suppressed: the data's own bankgiro must not render
+    assert "Betalningsinformation" not in tex
+    assert "9999-9999" not in tex
+
+
+def test_faktura_footer_address_lines_joined_with_newlines():
+    """An address given as a list of lines renders as a line-broken postal
+    address in the footer."""
+    data = _minimal_faktura(
+        page_template={
+            "name": "formal",
+            "footer": {"address": ["Storgatan 1", "123 45 Stad"]},
+        }
+    )
+    tex = _render_recipe_tex("faktura", data)
+    assert r"address={Storgatan 1\\123 45 Stad}" in tex
+
+
+def test_faktura_logo_rendered_in_header_block():
+    """An optional logo renders left of the FAKTURA block at the given height,
+    nudged by logo_offset fractions of its own height."""
+    data = _minimal_faktura(
+        logo="logo.pdf", logo_height="1.2cm", logo_offset={"x": -0.1, "y": 0.25}
+    )
+    tex = _render_recipe_tex("faktura", data)
+    assert r"\includegraphics[height=1.2cm]{logo.pdf}" in tex
+    assert r"\hspace*{-0.1\dimexpr1.2cm\relax}" in tex
+    assert r"+0.25\height" in tex
+
+    tex_without = _render_recipe_tex("faktura", _minimal_faktura())
+    assert "logo.pdf" not in tex_without
+
+
+def test_faktura_sender_block_rendered():
+    """An optional sender renders as an Avsändare block; without it the
+    layout stays recipient + references only."""
+    data = _minimal_faktura(
+        sender={
+            "name": "Säljbolaget AB",
+            "org_number": "556111-2222",
+            "address_line1": "Storgatan 1",
+        }
+    )
+    tex = _render_recipe_tex("faktura", data)
+    assert "Avsändare" in tex
+    assert "Säljbolaget AB" in tex
+    assert "556111-2222" in tex
+
+    tex_without = _render_recipe_tex("faktura", _minimal_faktura())
+    assert "Avsändare" not in tex_without
+
+
+def test_faktura_top_level_footer_emitted_and_suppresses_payment_info():
+    """faktura's own footer field emits \\kxfooter (works with any page
+    template) and suppresses the in-body payment_info block."""
+    data = _minimal_faktura(
+        bankgiro="9999-9999",
+        footer={
+            "company": "Bolaget AB",
+            "address": ["Storgatan 1", "123 45 Stad"],
+            "bankgiro": "1234-5678",
+        },
+    )
+    tex = _render_recipe_tex("faktura", data)
+    assert r"\usepackage{klartex-footer}" in tex
+    assert "company={Bolaget AB}" in tex
+    assert r"address={Storgatan 1\\123 45 Stad}" in tex
+    assert "Betalningsinformation" not in tex
+    assert "9999-9999" not in tex
+
+
+def test_faktura_data_footer_wins_over_page_template_footer():
+    data = _minimal_faktura(
+        footer={"bankgiro": "1111-1111"},
+        page_template={"name": "formal", "footer": {"bankgiro": "2222-2222"}},
+    )
+    tex = _render_recipe_tex("faktura", data)
+    assert "bankgiro={1111-1111}" in tex
+    assert "2222-2222" not in tex
+
+
+def test_faktura_payment_info_renders_without_footer():
+    tex = _render_recipe_tex("faktura", _minimal_faktura(bankgiro="9999-9999"))
+    assert "Betalningsinformation" in tex
+    assert "9999-9999" in tex
+
+
+def test_faktura_payment_info_skipped_when_no_payment_fields():
+    """No payment fields in data → no empty Betalningsinformation block."""
+    tex = _render_recipe_tex("faktura", _minimal_faktura())
+    assert "Betalningsinformation" not in tex
+
+
+def test_faktura_font_options_emitted():
+    data = _minimal_faktura(
+        page_template={"name": "formal", "font": "Futura", "header_font": "Georgia"}
+    )
+    tex = _render_recipe_tex("faktura", data)
+    assert r"\setmainfont{Futura}" in tex
+    assert r"\newfontfamily\kxheaderfontfamily{Georgia}" in tex

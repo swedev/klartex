@@ -1,0 +1,153 @@
+% klartex-footer.sty - Standardized page footer with company, contact and
+% payment details, rendered on every page.
+%
+% Usage (preamble, after the page template):
+%   \usepackage{klartex-footer}
+%   \kxfooter{company={Bolaget AB}, address={Storgatan 1\\123 45 Stad},
+%             orgnr={556123-4567}, ftax=true, bankgiro={1234-5678},
+%             pagenumbers=true}
+%
+% All keys are optional: company, address, seat, phone, email, web,
+% bankgiro, plusgiro, iban, bic, orgnr, vatnr, ftax (bool), pagenumbers (bool).
+% Columns: Adress (company, address), Företag (orgnr, vatnr, seat, F-skatt,
+% phone/email/web), Betalning (bankgiro/plusgiro/iban/bic).
+% Break the address into lines with \\ as in a postal address. Page numbers
+% render only when the document has more than one page. Labels follow the
+% document language (\kx@lang from klartex-base).
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{klartex-footer}[2026/08/06 Klartex footer block]
+
+\RequirePackage{keyval}
+\RequirePackage{etoolbox}
+\RequirePackage{refcount}
+
+\makeatletter
+
+\def\kxf@company{}
+\def\kxf@address{}
+\def\kxf@seat{}
+\def\kxf@phone{}
+\def\kxf@email{}
+\def\kxf@web{}
+\def\kxf@bankgiro{}
+\def\kxf@plusgiro{}
+\def\kxf@iban{}
+\def\kxf@bic{}
+\def\kxf@orgnr{}
+\def\kxf@vatnr{}
+\newif\ifkxf@ftax
+\newif\ifkxf@pagenumbers
+
+\define@key{kxfooter}{company}{\def\kxf@company{#1}}
+\define@key{kxfooter}{address}{\def\kxf@address{#1}}
+\define@key{kxfooter}{seat}{\def\kxf@seat{#1}}
+\define@key{kxfooter}{phone}{\def\kxf@phone{#1}}
+\define@key{kxfooter}{email}{\def\kxf@email{#1}}
+\define@key{kxfooter}{web}{\def\kxf@web{#1}}
+\define@key{kxfooter}{bankgiro}{\def\kxf@bankgiro{#1}}
+\define@key{kxfooter}{plusgiro}{\def\kxf@plusgiro{#1}}
+\define@key{kxfooter}{iban}{\def\kxf@iban{#1}}
+\define@key{kxfooter}{bic}{\def\kxf@bic{#1}}
+\define@key{kxfooter}{orgnr}{\def\kxf@orgnr{#1}}
+\define@key{kxfooter}{vatnr}{\def\kxf@vatnr{#1}}
+\define@key{kxfooter}{ftax}[true]{\csname kxf@ftax#1\endcsname}
+\define@key{kxfooter}{pagenumbers}[true]{\csname kxf@pagenumbers#1\endcsname}
+
+% \kxf@T{<sv>}{<en>} - pick text by document language
+\newcommand{\kxf@T}[2]{\ifdefstring{\kx@lang}{en}{#2}{#1}}
+
+% \kxf@line{<label>}{<value macro>} - "label value" line, skipped when empty.
+% The label may be empty for bare value lines.
+\newcommand{\kxf@line}[2]{\ifdefempty{#2}{}{#1#2\\}}
+
+% \kxf@row{<label>}{<value macro>} - aligned "label & value" tabular row,
+% skipped when empty. Use inside a kxf@col tabular.
+\newcommand{\kxf@row}[2]{\ifdefempty{#2}{}{#1 & #2\\}}
+
+% \kxf@col{<title>}{<width>}{<content>} - one footer column
+\newcommand{\kxf@col}[3]{%
+    \begin{minipage}[t]{#2\linewidth}%
+        \raggedright
+        \textbf{#1}\\[1pt]
+        #3%
+    \end{minipage}%
+}
+
+% \kxf@coltab{<title>}{<width>}{<rows>} - footer column whose content is a
+% two-column tabular (label/value pairs stay aligned).
+\newcommand{\kxf@coltab}[3]{%
+    \begin{minipage}[t]{#2\linewidth}%
+        \raggedright
+        \textbf{#1}\\[1pt]
+        \begin{tabular}[t]{@{}l@{\hspace{0.6em}}l@{}}%
+        #3%
+        \end{tabular}%
+    \end{minipage}%
+}
+
+% The footer is typeset into a box and raised by its own depth, so its
+% bottom always lands exactly on the foot baseline — top-aligned columns
+% would otherwise hang their full depth below it, off the page.
+\newsavebox{\kxf@footbox}
+
+\newcommand{\kxfooter}[1]{%
+    \setkeys{kxfooter}{#1}%
+    \geometry{bottom=3.6cm, footskip=2.6cm}%
+    \fancyfoot[L]{}%
+    \fancyfoot[R]{}%
+    \fancyfoot[C]{%
+        \kx@setlang
+        \sbox{\kxf@footbox}{\parbox{\linewidth}{%
+        \fontsize{8pt}{11pt}\selectfont\color{brandsecondary}\kxheaderfont
+        {\color{brandsecondary}\hrule height 0.4pt}%
+        \vspace{15pt}%
+        \ifboolexpr{ test {\ifdefempty{\kxf@company}} and test {\ifdefempty{\kxf@address}} }{%
+            \begin{minipage}[t]{0.34\linewidth}~\end{minipage}%
+        }{%
+            \kxf@col{\kxf@T{Adress}{Address}}{0.34}{%
+                \kxf@line{}{\kxf@company}%
+                \kxf@line{}{\kxf@address}%
+            }%
+        }%
+        \ifboolexpr{ test {\ifdefempty{\kxf@orgnr}} and test {\ifdefempty{\kxf@vatnr}} and test {\ifdefempty{\kxf@seat}} and test {\ifdefempty{\kxf@phone}} and test {\ifdefempty{\kxf@email}} and test {\ifdefempty{\kxf@web}} and not bool {kxf@ftax} }{%
+            \begin{minipage}[t]{0.30\linewidth}~\end{minipage}%
+        }{%
+            \kxf@coltab{\kxf@T{Företag}{Company}}{0.30}{%
+                \kxf@row{Org.nr}{\kxf@orgnr}%
+                \kxf@row{\kxf@T{Momsreg.nr}{VAT no}}{\kxf@vatnr}%
+                \kxf@row{\kxf@T{Säte}{Reg.\ office}}{\kxf@seat}%
+                \ifkxf@ftax\multicolumn{2}{@{}l@{}}{\kxf@T{Godkänd för F-skatt}{Approved for F-tax}}\\\fi
+                \ifdefempty{\kxf@phone}{}{\multicolumn{2}{@{}l@{}}{\kxf@phone}\\}%
+                \ifdefempty{\kxf@email}{}{\multicolumn{2}{@{}l@{}}{\kxf@email}\\}%
+                \ifdefempty{\kxf@web}{}{\multicolumn{2}{@{}l@{}}{\kxf@web}\\}%
+            }%
+        }%
+        \ifboolexpr{ test {\ifdefempty{\kxf@bankgiro}} and test {\ifdefempty{\kxf@plusgiro}} and test {\ifdefempty{\kxf@iban}} and test {\ifdefempty{\kxf@bic}} }{%
+            \begin{minipage}[t]{0.36\linewidth}~\end{minipage}%
+        }{%
+            \kxf@coltab{\kxf@T{Betalning}{Payment}}{0.36}{%
+                \kxf@row{Bankgiro}{\kxf@bankgiro}%
+                \kxf@row{Plusgiro}{\kxf@plusgiro}%
+                \kxf@row{IBAN}{\kxf@iban}%
+                \kxf@row{BIC}{\kxf@bic}%
+            }%
+        }%
+        % Page number: only when the document actually has more than one page
+        % (rare for invoices), right-aligned under the columns.
+        \ifkxf@pagenumbers
+            \ifnum\getpagerefnumber{LastPage}>1
+                \par\vspace{4pt}%
+                % \pageref* (no hyperlink) — a link would tint the number in
+                % the profile's link color.
+                \makebox[\linewidth][r]{\kx@page\ \thepage\ \kx@of\ \pageref*{LastPage}}%
+            \fi
+        \fi
+        }}%
+        \raisebox{\dp\kxf@footbox}[0pt][0pt]{\usebox{\kxf@footbox}}%
+    }%
+}
+
+\makeatother
+
+\endinput

@@ -1,9 +1,20 @@
 \BLOCK{from '_financial_macros.tex.jinja' import render_resultatrakning, render_budgettabell, render_notapparat}
 \BLOCK{from '_block_macros.tex.jinja' import render_agenda, render_heading, render_description_list}
+\BLOCK{from '_footer_macros.tex.jinja' import emit_kxfooter}
 \documentclass{klartex-base}
 \providecommand{\orgname}{}
 
 \VAR{page_template_source}
+
+%# --- Apply page template overrides (skipped when external template is self-contained) ---
+\BLOCK{include '_page_template_overrides.tex.jinja'}
+
+%# --- Template-level footer from the data (e.g. faktura's footer field). ---
+%# Emitted after the overrides so it wins over any page-template footer, and
+%# works with external page templates too.
+\BLOCK{if data.get('footer')}
+\VAR{emit_kxfooter(data.footer, page_template.page_numbers)}
+\BLOCK{endif}
 
 \BLOCK{if lang == 'en'}
 \setdoclang{en}
@@ -36,29 +47,78 @@
 \VAR{render_agenda(comp.data.get('items', []), comp.options.get('numberingStyle', 'section'), comp.options.get('decisionLabel', 'Beslut:'))}
 
 \BLOCK{elif comp.type == 'invoice_header'}
-\begin{flushright}
-{\Large\bfseries FAKTURA}\\[0.5em]
+%# Two columns matching the sender/recipient blocks below: optional logo on
+%# the left (in line with "Avsändare"), FAKTURA block on the right with
+%# left-aligned content whose left edge lines up with "Mottagare".
+\noindent
+\begin{minipage}[t]{0.45\textwidth}
+\BLOCK{if comp.data.get('logo')}
+%# Top-align the logo with the FAKTURA heading: lower it so its top edge
+%# sits at the cap height of \LARGE\bfseries "F" — a larger logo then grows
+%# downward instead of up past the heading. logo_offset nudges it by
+%# fractions of its own height (x: positive = right, y: positive = up) for
+%# artwork with built-in air.
+\BLOCK{set logo_offset = comp.data.get('logo_offset') or {} }
+{\LARGE\bfseries%
+\BLOCK{if logo_offset.get('x')}
+\hspace*{\VAR{logo_offset.x}\dimexpr\VAR{comp.data.get('logo_height') or '0.8cm'}\relax}%
+\BLOCK{endif}
+\raisebox{\dimexpr\fontcharht\font`F-\height+\VAR{logo_offset.get('y') or 0}\height\relax}{\includegraphics[height=\VAR{comp.data.get('logo_height') or '0.8cm'}]{\VAR{comp.data.logo}}}}%
+\BLOCK{endif}
+~
+\end{minipage}%
+\hfill
+\begin{minipage}[t]{0.45\textwidth}
+{\LARGE\bfseries FAKTURA}\\[0.5em]
 {\normalsize Nr: \VAR{comp.data.get('invoice_number', '')}}\\
 {\normalsize Datum: \VAR{comp.data.get('date', '')}}\\
 {\normalsize Förfallodatum: \VAR{comp.data.get('due_date', '')}}
-\end{flushright}
+\end{minipage}
 
 \vspace{1em}
 
 \BLOCK{elif comp.type == 'invoice_recipient'}
+%# Party block: "label\n name / org.nr / address lines". Used for sender
+%# and recipient alike.
+\BLOCK{macro invoice_party(label, party)}
+\textbf{\VAR{label}}\\[0.3em]
+\VAR{party.get('name', '')}\\
+\BLOCK{if party.get('org_number')}
+Org.nr: \VAR{party.org_number}\\
+\BLOCK{endif}
+\BLOCK{if party.get('address_line1')}
+\VAR{party.address_line1}\\
+\BLOCK{endif}
+\BLOCK{if party.get('address_line2')}
+\VAR{party.address_line2}
+\BLOCK{endif}
+\BLOCK{endmacro}
 \noindent
+\BLOCK{if comp.data.get('sender')}
+%# With a sender: Avsändare | Mottagare side by side, references below.
 \begin{minipage}[t]{0.45\textwidth}
-\textbf{Mottagare}\\[0.3em]
-\VAR{comp.data.get('recipient', {}).get('name', '')}\\
-\BLOCK{if comp.data.get('recipient', {}).get('org_number')}
-Org.nr: \VAR{comp.data.recipient.org_number}\\
+\VAR{invoice_party('Avsändare', comp.data.sender)}
+\end{minipage}%
+\hfill
+\begin{minipage}[t]{0.45\textwidth}
+\VAR{invoice_party('Mottagare', comp.data.recipient or {})}
+\end{minipage}
+
+\vspace{1.5em}
+
+\noindent
+\BLOCK{if comp.data.get('reference')}
+\textbf{Er referens:} \VAR{comp.data.reference}\\
 \BLOCK{endif}
-\BLOCK{if comp.data.get('recipient', {}).get('address_line1')}
-\VAR{comp.data.recipient.address_line1}\\
+\BLOCK{if comp.data.get('our_reference')}
+\textbf{Vår referens:} \VAR{comp.data.our_reference}\\
 \BLOCK{endif}
-\BLOCK{if comp.data.get('recipient', {}).get('address_line2')}
-\VAR{comp.data.recipient.address_line2}
+\BLOCK{if comp.data.get('payment_terms')}
+\textbf{Betalningsvillkor:} \VAR{comp.data.payment_terms}
 \BLOCK{endif}
+\BLOCK{else}
+\begin{minipage}[t]{0.45\textwidth}
+\VAR{invoice_party('Mottagare', comp.data.get('recipient') or {})}
 \end{minipage}%
 \hfill
 \begin{minipage}[t]{0.45\textwidth}
@@ -72,6 +132,7 @@ Org.nr: \VAR{comp.data.recipient.org_number}\\
 \textbf{Betalningsvillkor:} \VAR{comp.data.payment_terms}
 \BLOCK{endif}
 \end{minipage}
+\BLOCK{endif}
 
 \vspace{2em}
 
@@ -81,7 +142,7 @@ Org.nr: \VAR{comp.data.recipient.org_number}\\
 \textbf{Beskrivning} & \textbf{Antal} & \textbf{Enhet} & \textbf{À-pris} & \textbf{Moms} & \textbf{Belopp} \\
 \midrule
 \BLOCK{for line in comp.data.get('lines', [])}
-\VAR{line.description} & \VAR{line.quantity} & \VAR{line.get('unit', 'st')} & \VAR{"{:,.2f}".format(line.unit_price)} & \VAR{line.get('vat_percent', 25)}\% & \VAR{"{:,.2f}".format(line.quantity * line.unit_price)} \\
+\VAR{line.description} & \VAR{line.quantity | num} & \VAR{line.get('unit', 'st')} & \VAR{line.unit_price | money} & \VAR{line.get('vat_percent', 25) | num}\% & \VAR{(line.quantity * line.unit_price) | money} \\
 \BLOCK{endfor}
 \bottomrule
 \end{tabularx}
@@ -97,16 +158,23 @@ Org.nr: \VAR{comp.data.recipient.org_number}\\
 
 \begin{flushright}
 \begin{tabular}{lr}
-\textbf{Summa exkl. moms:} & \VAR{"{:,.2f}".format(subtotal.val)} \VAR{comp.data.get('currency') or 'SEK'} \\
-\textbf{Moms:} & \VAR{"{:,.2f}".format(vat_total.val)} \VAR{comp.data.get('currency') or 'SEK'} \\
+\textbf{Summa exkl. moms:} & \VAR{subtotal.val | money} \VAR{comp.data.get('currency') or 'SEK'} \\
+\textbf{Moms:} & \VAR{vat_total.val | money} \VAR{comp.data.get('currency') or 'SEK'} \\
 \midrule
-\textbf{Att betala:} & \textbf{\VAR{"{:,.2f}".format(subtotal.val + vat_total.val)} \VAR{comp.data.get('currency') or 'SEK'}} \\
+\textbf{Att betala:} & \textbf{\VAR{(subtotal.val + vat_total.val) | money} \VAR{comp.data.get('currency') or 'SEK'}} \\
 \end{tabular}
 \end{flushright}
 
 \vspace{2em}
 
 \BLOCK{elif comp.type == 'payment_info'}
+%# Suppressed when a footer (the data's own or the page template's) already
+%# carries payment details — the footer is the canonical place; these fields
+%# are the fallback — and when the data has no payment fields at all.
+\BLOCK{set has_payment = comp.data.get('bankgiro') or comp.data.get('plusgiro') or comp.data.get('iban') or comp.data.get('bic') }
+\BLOCK{set data_footer = data.get('footer') or {} }
+\BLOCK{set footer_payment = page_template.footer_has_payment or data_footer.get('bankgiro') or data_footer.get('plusgiro') or data_footer.get('iban') or data_footer.get('bic') }
+\BLOCK{if has_payment and not footer_payment}
 \noindent\textbf{Betalningsinformation}\\[0.3em]
 \begin{tabular}{@{}ll}
 \BLOCK{if comp.data.get('bankgiro')}
@@ -122,6 +190,7 @@ Org.nr: \VAR{comp.data.recipient.org_number}\\
 \textbf{BIC:} & \VAR{comp.data.bic} \\
 \BLOCK{endif}
 \end{tabular}
+\BLOCK{endif}
 
 \BLOCK{elif comp.type == 'invoice_note'}
 \BLOCK{if comp.data.get('note')}
@@ -146,7 +215,7 @@ Org.nr: \VAR{comp.data.recipient.org_number}\\
 \BLOCK{for item in comp.data.get('items', [])}
 %# `is not none` (not truthiness): amount 0 must render as 0.00, only a
 %# truly absent amount gives an empty cell.
-\VAR{item.description} & \BLOCK{if item.get('amount') is not none}\VAR{"{:,.2f}".format(item.amount)}\BLOCK{endif} \\
+\VAR{item.description} & \BLOCK{if item.get('amount') is not none}\VAR{item.amount | money}\BLOCK{endif} \\
 \BLOCK{endfor}
 \bottomrule
 \end{tabularx}
@@ -155,7 +224,7 @@ Org.nr: \VAR{comp.data.recipient.org_number}\\
 
 \begin{flushright}
 \begin{tabular}{lr}
-\textbf{Summa:} & \textbf{\VAR{"{:,.2f}".format(comp.data.total_amount)} \VAR{comp.data.get('currency') or 'SEK'}} \\
+\textbf{Summa:} & \textbf{\VAR{comp.data.total_amount | money} \VAR{comp.data.get('currency') or 'SEK'}} \\
 \end{tabular}
 \end{flushright}
 

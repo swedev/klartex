@@ -19,7 +19,29 @@
           "properties": {
             "name": { "type": "string", "description": "Page template name" },
             "page_numbers": { "type": "boolean", "description": "Override: show page numbers" },
-            "first_page_header": { "type": "boolean", "description": "Override: show header on first page" }
+            "first_page_header": { "type": "boolean", "description": "Override: show header on first page" },
+            "font": { "type": "string", "description": "Dokumentets typsnitt (fontspec-namn, t.ex. 'Futura'). Måste finnas installerat där renderingen sker." },
+            "header_font": { "type": "string", "description": "Typsnitt för sidhuvud och sidfot. Default: samma som font." },
+            "footer": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "Sidfot på varje sida med företags-, kontakt- och betalningsuppgifter.",
+              "properties": {
+                "company": { "type": "string", "description": "Företagsnamn" },
+                "address": { "oneOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }], "description": "Postadress som array med en rad per element, t.ex. ['Storgatan 1', '123 45 Stad'] — radbryts som en postadress. En sträng renderas som en enda rad." },
+                "seat": { "type": "string", "description": "Styrelsens säte, t.ex. 'Malmö'" },
+                "org_number": { "type": "string", "description": "Organisationsnummer" },
+                "vat_number": { "type": "string", "description": "Momsregistreringsnummer (SExxxxxxxxxx01)" },
+                "f_tax": { "type": "boolean", "description": "true visar raden 'Godkänd för F-skatt'" },
+                "phone": { "type": "string", "description": "Telefon" },
+                "email": { "type": "string", "description": "E-post" },
+                "web": { "type": "string", "description": "Webbplats" },
+                "bankgiro": { "type": "string" },
+                "plusgiro": { "type": "string" },
+                "iban": { "type": "string" },
+                "bic": { "type": "string" }
+              }
+            }
           },
           "additionalProperties": false
         }

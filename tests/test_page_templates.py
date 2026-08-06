@@ -101,3 +101,38 @@ class TestListPageTemplates:
         templates = list_page_templates()
         formal = next(t for t in templates if t["name"] == "formal")
         assert "page_numbers" in formal["defaults"]
+
+
+class TestFontAndFooterOverrides:
+    """font/header_font/footer page-template options."""
+
+    def test_defaults_empty(self):
+        pt = load_page_template("formal")
+        assert pt.font is None
+        assert pt.header_font is None
+        assert pt.footer == {}
+        assert pt.footer_has_payment is False
+
+    def test_font_and_header_font(self):
+        pt = load_page_template(
+            {"name": "formal", "font": "Futura", "header_font": "Georgia"}
+        )
+        assert pt.font == "Futura"
+        assert pt.header_font == "Georgia"
+
+    def test_header_font_defaults_to_font(self):
+        pt = load_page_template({"name": "formal", "font": "Futura"})
+        assert pt.header_font == "Futura"
+
+    def test_footer_has_payment(self):
+        pt = load_page_template(
+            {"name": "formal", "footer": {"bankgiro": "1234-5678"}}
+        )
+        assert pt.footer_has_payment is True
+
+    def test_footer_without_payment_fields(self):
+        pt = load_page_template(
+            {"name": "formal", "footer": {"company": "Bolaget AB"}}
+        )
+        assert pt.footer == {"company": "Bolaget AB"}
+        assert pt.footer_has_payment is False

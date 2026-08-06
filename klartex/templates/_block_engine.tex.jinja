@@ -5,15 +5,7 @@
 \VAR{page_template_source}
 
 %# --- Apply page template overrides (skipped when external template is self-contained) ---
-\BLOCK{if not external_page_template}
-\BLOCK{if not page_template.page_numbers}
-\fancyfoot[C]{}
-\BLOCK{endif}
-\BLOCK{if not page_template.first_page_header}
-\fancypagestyle{plain}{\fancyhead{}\renewcommand{\headrulewidth}{0pt}}
-\thispagestyle{plain}
-\BLOCK{endif}
-\BLOCK{endif}
+\BLOCK{include '_page_template_overrides.tex.jinja'}
 
 \BLOCK{if lang == 'en'}
 \setdoclang{en}

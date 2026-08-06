@@ -1,4 +1,18 @@
 {
+  "page_template": "formal",
+  "footer": {
+    "company": "Mitt Företag AB",
+    "address": ["Storgatan 1", "123 45 Stockholm"],
+    "seat": "Stockholm",
+    "org_number": "556999-8888",
+    "vat_number": "SE556999888801",
+    "f_tax": true,
+    "email": "faktura@mittforetag.se",
+    "web": "www.mittforetag.se",
+    "bankgiro": "1234-5678",
+    "iban": "SE12 3456 7890 1234 5678 9012",
+    "bic": "ESSESESS"
+  },
   "invoice_number": "2026-001",
   "date": "2026-02-15",
   "due_date": "2026-03-17",
@@ -6,6 +20,12 @@
   "our_reference": "Anna Andersson",
   "payment_terms": "30 dagar netto",
   "currency": "SEK",
+  "sender": {
+    "name": "Mitt Företag AB",
+    "org_number": "556999-8888",
+    "address_line1": "Storgatan 1",
+    "address_line2": "123 45 Stockholm"
+  },
   "recipient": {
     "name": "Kundföretaget AB",
     "org_number": "556123-4567",
@@ -28,8 +48,5 @@
       "vat_percent": 25
     }
   ],
-  "bankgiro": "1234-5678",
-  "iban": "SE12 3456 7890 1234 5678 9012",
-  "bic": "ESSESESS",
   "note": "Tack för ert förtroende!"
 }

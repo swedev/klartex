@@ -74,9 +74,47 @@ def _inline_flat_filter(ctx, value):
     return render_inline(str(value), lang=ctx.get("lang", "sv"), newlines="space")
 
 
+def _number_style(ctx) -> str:
+    """Resolve the number style for a template context: an explicit
+    ``number_format`` in the data wins, else the document language."""
+    return ctx.get("number_format") or ctx.get("lang", "sv")
+
+
+@jinja2.pass_context
+def _money_filter(ctx, value):
+    """Jinja filter: format an amount with two decimals per the document's
+    number style. Swedish (default): thin-space groups and decimal comma
+    (``32\\,400,00``); English: ``32,400.00``. Output is raw LaTeX."""
+    if value is None:
+        return ""
+    formatted = f"{float(value):,.2f}"
+    if _number_style(ctx) == "en":
+        return formatted
+    return (
+        formatted.replace(",", "\x00").replace(".", ",").replace("\x00", r"\,")
+    )
+
+
+@jinja2.pass_context
+def _num_filter(ctx, value):
+    """Jinja filter: format a bare number (quantity, percentage) per the
+    document's number style — no grouping, no forced decimals, decimal
+    comma in Swedish."""
+    if value is None:
+        return ""
+    # .10g rather than bare g: g flips to exponent notation at 6 significant
+    # digits, which would turn quantity 1234567 into "1.23457e+06".
+    formatted = f"{float(value):.10g}"
+    if _number_style(ctx) == "en":
+        return formatted
+    return formatted.replace(".", ",")
+
+
 _jinja_env.filters["inline"] = _inline_filter
 _jinja_env.filters["inline_cell"] = _inline_cell_filter
 _jinja_env.filters["inline_flat"] = _inline_flat_filter
+_jinja_env.filters["money"] = _money_filter
+_jinja_env.filters["num"] = _num_filter
 
 
 def render(

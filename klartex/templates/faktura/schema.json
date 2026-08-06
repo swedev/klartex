@@ -5,7 +5,77 @@
   "type": "object",
   "required": ["invoice_number", "date", "due_date", "recipient", "lines"],
   "properties": {
-    "page_template": { "type": "string", "enum": ["formal", "clean", "none"], "default": "formal", "description": "Page template" },
+    "page_template": {
+      "description": "Sidmall: namn eller objekt med overrides (sidnummer, typsnitt, sidfot).",
+      "default": "formal",
+      "oneOf": [
+        { "type": "string", "enum": ["formal", "clean", "none"], "description": "Sidmallens namn" },
+        {
+          "type": "object",
+          "required": ["name"],
+          "additionalProperties": false,
+          "properties": {
+            "name": { "type": "string", "enum": ["formal", "clean", "none"], "description": "Sidmallens namn" },
+            "page_numbers": { "type": "boolean", "description": "Visa sidnummer i sidfoten" },
+            "first_page_header": { "type": "boolean", "description": "Visa sidhuvud på första sidan" },
+            "font": { "type": "string", "description": "Dokumentets typsnitt (fontspec-namn, t.ex. 'Futura'). Måste finnas installerat där renderingen sker." },
+            "header_font": { "type": "string", "description": "Typsnitt för sidhuvud och sidfot. Default: samma som font." },
+            "footer": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "Sidfot på varje sida med företags-, kontakt- och betalningsuppgifter. För fakturor: använd hellre fakturans eget footer-fält på toppnivå — det har företräde framför sidmallens.",
+              "properties": {
+                "company": { "type": "string", "description": "Företagsnamn" },
+                "address": { "oneOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }], "description": "Postadress som array med en rad per element, t.ex. ['Storgatan 1', '123 45 Stad'] — radbryts som en postadress. En sträng renderas som en enda rad." },
+                "seat": { "type": "string", "description": "Styrelsens säte, t.ex. 'Malmö'" },
+                "org_number": { "type": "string", "description": "Organisationsnummer" },
+                "vat_number": { "type": "string", "description": "Momsregistreringsnummer (SExxxxxxxxxx01)" },
+                "f_tax": { "type": "boolean", "description": "true visar raden 'Godkänd för F-skatt'" },
+                "phone": { "type": "string", "description": "Telefon" },
+                "email": { "type": "string", "description": "E-post" },
+                "web": { "type": "string", "description": "Webbplats" },
+                "bankgiro": { "type": "string" },
+                "plusgiro": { "type": "string" },
+                "iban": { "type": "string" },
+                "bic": { "type": "string" }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "number_format": { "type": "string", "enum": ["sv", "en"], "description": "Talformat för belopp: 'sv' ger 32 400,00 (default), 'en' ger 32,400.00." },
+    "logo": { "type": "string", "description": "Bildfil (pdf/png) som visas i fakturakroppens övre vänstra hörn, i linje med FAKTURA-blocket. Plain filnamn slås upp via asset-katalogen (sidmallens katalog) och cwd." },
+    "logo_height": { "type": "string", "default": "0.8cm", "description": "Logotypens höjd som LaTeX-dimension, t.ex. '1cm'." },
+    "logo_offset": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Finjustering av logotypens position, som andelar av dess höjd: x positivt flyttar höger (negativt vänster), y positivt flyttar uppåt (negativt neråt). T.ex. {\"y\": 0.25} när bildens formgivning har luft. Utgångsläge: vänsterkant vid marginalen, överkant i linje med FAKTURA-rubriken.",
+      "properties": {
+        "x": { "type": "number", "default": 0 },
+        "y": { "type": "number", "default": 0 }
+      }
+    },
+    "footer": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Fakturans sidfot: företags-, kontakt- och betalningsuppgifter på varje sida. Detta är den kanoniska platsen för betalningsuppgifter — de fristående bankgiro/plusgiro/iban/bic-fälten är bara en fallback och undertrycks när sidfoten har betalningsuppgifter.",
+      "properties": {
+        "company": { "type": "string", "description": "Företagsnamn" },
+        "address": { "oneOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }], "description": "Postadress som array med en rad per element, t.ex. ['Storgatan 1', '123 45 Stad'] — radbryts som en postadress. En sträng renderas som en enda rad." },
+        "seat": { "type": "string", "description": "Styrelsens säte, t.ex. 'Malmö'" },
+        "org_number": { "type": "string", "description": "Organisationsnummer" },
+        "vat_number": { "type": "string", "description": "Momsregistreringsnummer (SExxxxxxxxxx01)" },
+        "f_tax": { "type": "boolean", "description": "true visar raden 'Godkänd för F-skatt'" },
+        "phone": { "type": "string", "description": "Telefon" },
+        "email": { "type": "string", "description": "E-post" },
+        "web": { "type": "string", "description": "Webbplats" },
+        "bankgiro": { "type": "string" },
+        "plusgiro": { "type": "string" },
+        "iban": { "type": "string" },
+        "bic": { "type": "string" }
+      }
+    },
     "invoice_number": { "type": "string" },
     "date": { "type": "string", "description": "Invoice date (YYYY-MM-DD)" },
     "due_date": { "type": "string", "description": "Due date (YYYY-MM-DD)" },
@@ -13,6 +83,17 @@
     "our_reference": { "type": "string", "description": "Our reference / Vår referens" },
     "payment_terms": { "type": "string", "description": "e.g. 30 dagar netto" },
     "currency": { "type": "string", "default": "SEK" },
+    "sender": {
+      "type": "object",
+      "required": ["name"],
+      "description": "Avsändare/säljare — visas som eget block bredvid mottagaren i fakturakroppen. Ange bolagets juridiska namn här även när logotyp/sidfot finns.",
+      "properties": {
+        "name": { "type": "string" },
+        "org_number": { "type": "string" },
+        "address_line1": { "type": "string" },
+        "address_line2": { "type": "string" }
+      }
+    },
     "recipient": {
       "type": "object",
       "required": ["name"],
@@ -38,10 +119,10 @@
       },
       "minItems": 1
     },
-    "bankgiro": { "type": "string" },
-    "plusgiro": { "type": "string" },
-    "iban": { "type": "string" },
-    "bic": { "type": "string" },
+    "bankgiro": { "type": "string", "description": "Fallback: betalningsuppgifter hör hemma i fakturans footer-fält. Använd bara dessa fält när ingen sidfot med betalningsuppgifter är konfigurerad — blocket i brödtexten undertrycks annars." },
+    "plusgiro": { "type": "string", "description": "Fallback — se bankgiro." },
+    "iban": { "type": "string", "description": "Fallback — se bankgiro." },
+    "bic": { "type": "string", "description": "Fallback — se bankgiro." },
     "note": { "type": "string", "description": "Footer note" }
   }
 }

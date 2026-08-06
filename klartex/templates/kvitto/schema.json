@@ -5,7 +5,46 @@
   "type": "object",
   "required": ["receipt_number", "date", "total_amount", "items"],
   "properties": {
-    "page_template": { "type": "string", "enum": ["formal", "clean", "none"], "default": "formal", "description": "Page template" },
+    "page_template": {
+      "description": "Sidmall: namn eller objekt med overrides (sidnummer, typsnitt, sidfot).",
+      "default": "formal",
+      "oneOf": [
+        { "type": "string", "enum": ["formal", "clean", "none"], "description": "Sidmallens namn" },
+        {
+          "type": "object",
+          "required": ["name"],
+          "additionalProperties": false,
+          "properties": {
+            "name": { "type": "string", "enum": ["formal", "clean", "none"], "description": "Sidmallens namn" },
+            "page_numbers": { "type": "boolean", "description": "Visa sidnummer i sidfoten" },
+            "first_page_header": { "type": "boolean", "description": "Visa sidhuvud på första sidan" },
+            "font": { "type": "string", "description": "Dokumentets typsnitt (fontspec-namn, t.ex. 'Futura'). Måste finnas installerat där renderingen sker." },
+            "header_font": { "type": "string", "description": "Typsnitt för sidhuvud och sidfot. Default: samma som font." },
+            "footer": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "Sidfot på varje sida med företags-, kontakt- och betalningsuppgifter. För fakturor hör betalningsuppgifterna hemma här — fakturadatats egna bankgiro/plusgiro/iban/bic-fält är bara en fallback och undertrycks när sidfoten har betalningsuppgifter.",
+              "properties": {
+                "company": { "type": "string", "description": "Företagsnamn" },
+                "address": { "oneOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }], "description": "Postadress som array med en rad per element, t.ex. ['Storgatan 1', '123 45 Stad'] — radbryts som en postadress. En sträng renderas som en enda rad." },
+                "seat": { "type": "string", "description": "Styrelsens säte, t.ex. 'Malmö'" },
+                "org_number": { "type": "string", "description": "Organisationsnummer" },
+                "vat_number": { "type": "string", "description": "Momsregistreringsnummer (SExxxxxxxxxx01)" },
+                "f_tax": { "type": "boolean", "description": "true visar raden 'Godkänd för F-skatt'" },
+                "phone": { "type": "string", "description": "Telefon" },
+                "email": { "type": "string", "description": "E-post" },
+                "web": { "type": "string", "description": "Webbplats" },
+                "bankgiro": { "type": "string" },
+                "plusgiro": { "type": "string" },
+                "iban": { "type": "string" },
+                "bic": { "type": "string" }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "number_format": { "type": "string", "enum": ["sv", "en"], "description": "Talformat för belopp: 'sv' ger 32 400,00 (default), 'en' ger 32,400.00." },
     "receipt_number": { "type": "string" },
     "date": { "type": "string", "description": "Receipt date (YYYY-MM-DD)" },
     "total_amount": { "type": "number", "description": "Total amount paid. Authoritative — never computed from items." },

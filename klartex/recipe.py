@@ -162,12 +162,17 @@ def prepare_recipe_context(
     except jinja2.TemplateError:
         rendered_title = recipe.document.title
 
-    # Resolve page template (may contain Jinja expression like {{ data.page_template | default('formal') }})
-    try:
-        pt_template = title_env.from_string(recipe.document.page_template)
-        rendered_page_template = pt_template.render(data=data)
-    except jinja2.TemplateError:
-        rendered_page_template = recipe.document.page_template
+    # Resolve page template. A dict in the data (name + overrides such as
+    # font/footer) is passed through as-is; a string goes through the
+    # recipe's Jinja expression (e.g. {{ data.page_template | default('formal') }}).
+    if isinstance(data.get("page_template"), dict):
+        rendered_page_template: str | dict = data["page_template"]
+    else:
+        try:
+            pt_template = title_env.from_string(recipe.document.page_template)
+            rendered_page_template = pt_template.render(data=data)
+        except jinja2.TemplateError:
+            rendered_page_template = recipe.document.page_template
 
     # Resolve metadata fields
     resolved_metadata = []
@@ -223,7 +228,8 @@ def prepare_recipe_context(
             seen.add(comp.spec.sty_package)
 
     # Resolve page template
-    if page_template_source is not None:
+    external_page_template = page_template_source is not None
+    if external_page_template:
         page_tmpl = load_page_template("none")
     else:
         page_tmpl = load_page_template(rendered_page_template)
@@ -234,10 +240,13 @@ def prepare_recipe_context(
         "data": data,
         "title": rendered_title,
         "page_template_source": page_template_source,
+        "page_template": page_tmpl,
+        "external_page_template": external_page_template,
         "metadata": resolved_metadata,
         "components": resolved_components,
         "sty_packages": sty_packages,
         "lang": recipe.lang,
+        "number_format": data.get("number_format"),
     }
 
 

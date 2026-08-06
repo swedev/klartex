@@ -15,11 +15,18 @@ or an object with overrides::
     "page_template": {
         "name": "formal",
         "page_numbers": false,
-        "first_page_header": false
+        "first_page_header": false,
+        "font": "Futura",
+        "header_font": "Futura",
+        "footer": {
+            "company": "Bolaget AB",
+            "org_number": "556123-4567",
+            "bankgiro": "1234-5678"
+        }
     }
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 # Default directory for page template definitions
@@ -46,6 +53,19 @@ _BUILTIN_DEFAULTS: dict[str, dict] = {
 }
 
 
+# Footer fields grouped by footer column, in render order
+FOOTER_COMPANY_FIELDS = ("company", "address", "seat")
+FOOTER_CONTACT_FIELDS = ("phone", "email", "web")
+FOOTER_PAYMENT_FIELDS = ("bankgiro", "plusgiro", "iban", "bic")
+FOOTER_ORG_FIELDS = ("org_number", "vat_number", "f_tax")
+FOOTER_FIELDS = (
+    FOOTER_COMPANY_FIELDS
+    + FOOTER_CONTACT_FIELDS
+    + FOOTER_PAYMENT_FIELDS
+    + FOOTER_ORG_FIELDS
+)
+
+
 @dataclass
 class PageTemplate:
     """Resolved page template definition."""
@@ -54,6 +74,15 @@ class PageTemplate:
     description: str = ""
     page_numbers: bool = True
     first_page_header: bool = True
+    font: str | None = None
+    header_font: str | None = None
+    footer: dict = field(default_factory=dict)
+
+    @property
+    def footer_has_payment(self) -> bool:
+        """True when the footer carries any payment field — the signal for
+        the faktura recipe to suppress its in-body payment_info block."""
+        return any(self.footer.get(f) for f in FOOTER_PAYMENT_FIELDS)
 
 
 def load_page_template(
@@ -93,6 +122,9 @@ def load_page_template(
         first_page_header=overrides.get(
             "first_page_header", defaults["first_page_header"]
         ),
+        font=overrides.get("font"),
+        header_font=overrides.get("header_font", overrides.get("font")),
+        footer=overrides.get("footer") or {},
     )
 
 

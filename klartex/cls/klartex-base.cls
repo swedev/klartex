@@ -69,6 +69,11 @@
 \definecolor{brandsecondary}{HTML}{666666}
 \definecolor{brandaccent}{HTML}{0066CC}
 
+% Header/footer font hook — a no-op by default so header and footer follow
+% the main font. Redefined (e.g. to a \newfontfamily switch) when a page
+% template or the header_font page-template option selects a separate font.
+\newcommand{\kxheaderfont}{}
+
 % Document metadata
 \newcommand{\doctitle}{}
 \newcommand{\setdoctitle}[1]{\renewcommand{\doctitle}{#1}}

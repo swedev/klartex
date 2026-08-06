@@ -1,0 +1,26 @@
+%# Post-template overrides driven by page_template options (fonts, footer,
+%# page numbers, first-page header). Included by both meta-templates right
+%# after \VAR{page_template_source}. Skipped entirely for external
+%# (file-based) page templates — those own fonts and header/footer
+%# themselves, including any \kxfooter call.
+\BLOCK{from '_footer_macros.tex.jinja' import emit_kxfooter}
+\BLOCK{if not external_page_template}
+\BLOCK{if page_template.font}
+\setmainfont{\VAR{page_template.font}}
+\BLOCK{endif}
+\BLOCK{if page_template.header_font}
+\newfontfamily\kxheaderfontfamily{\VAR{page_template.header_font}}
+\renewcommand{\kxheaderfont}{\kxheaderfontfamily}
+\BLOCK{endif}
+%# A template-level footer (e.g. faktura's own footer field, emitted by the
+%# recipe base after this include) takes precedence over the page template's.
+\BLOCK{if page_template.footer and not (data is defined and data.get('footer'))}
+\VAR{emit_kxfooter(page_template.footer, page_template.page_numbers)}
+\BLOCK{elif not page_template.footer and not page_template.page_numbers}
+\fancyfoot[C]{}
+\BLOCK{endif}
+\BLOCK{if not page_template.first_page_header}
+\fancypagestyle{plain}{\fancyhead{}\renewcommand{\headrulewidth}{0pt}}
+\thispagestyle{plain}
+\BLOCK{endif}
+\BLOCK{endif}

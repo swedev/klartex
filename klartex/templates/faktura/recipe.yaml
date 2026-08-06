@@ -15,9 +15,13 @@ components:
       invoice_number: invoice_number
       date: date
       due_date: due_date
+      logo: logo
+      logo_height: logo_height
+      logo_offset: logo_offset
 
   - type: invoice_recipient
     data_map:
+      sender: sender
       recipient: recipient
       reference: reference
       our_reference: our_reference

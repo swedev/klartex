@@ -24,6 +24,41 @@
 
 \begin{document}
 
+%# Logo box for document headers (faktura/kvitto): top-aligned with the
+%# \LARGE\bfseries heading — the logo is lowered so its top edge sits at the
+%# cap height of "F", so a larger logo grows downward instead of up past the
+%# heading. logo_offset nudges it by fractions of its own height
+%# (x: positive = right, y: positive = up) for artwork with built-in air.
+\BLOCK{macro header_logo(cdata)}
+\BLOCK{set logo_offset = cdata.get('logo_offset') or {} }
+{\LARGE\bfseries%
+\BLOCK{if logo_offset.get('x')}
+\hspace*{\VAR{logo_offset.x}\dimexpr\VAR{cdata.get('logo_height') or '0.8cm'}\relax}%
+\BLOCK{endif}
+\raisebox{\dimexpr\fontcharht\font`F-\height+\VAR{logo_offset.get('y') or 0}\height\relax}{\includegraphics[height=\VAR{cdata.get('logo_height') or '0.8cm'}]{\VAR{cdata.logo}}}}%
+\BLOCK{endmacro}
+
+%# Document header: optional logo on the left (in line with the party blocks
+%# below), title + rows on the right with left-aligned content whose left
+%# edge lines up with the right-hand party column.
+\BLOCK{macro doc_header(cdata, title, rows)}
+\noindent
+\begin{minipage}[t]{0.45\textwidth}
+\BLOCK{if cdata.get('logo')}
+\VAR{header_logo(cdata)}
+\BLOCK{endif}
+~
+\end{minipage}%
+\hfill
+\begin{minipage}[t]{0.45\textwidth}
+{\LARGE\bfseries \VAR{title}}\\[0.5em]
+\BLOCK{for label, value in rows}
+{\normalsize \VAR{label}: \VAR{value}}\BLOCK{if not loop.last}\\
+\BLOCK{endif}
+\BLOCK{endfor}
+\end{minipage}
+\BLOCK{endmacro}
+
 \BLOCK{for comp in components}
 %# ---- Component: \VAR{comp.type} ----
 \BLOCK{if comp.type == 'heading'}
@@ -47,33 +82,7 @@
 \VAR{render_agenda(comp.data.get('items', []), comp.options.get('numberingStyle', 'section'), comp.options.get('decisionLabel', 'Beslut:'))}
 
 \BLOCK{elif comp.type == 'invoice_header'}
-%# Two columns matching the sender/recipient blocks below: optional logo on
-%# the left (in line with "Avsändare"), FAKTURA block on the right with
-%# left-aligned content whose left edge lines up with "Mottagare".
-\noindent
-\begin{minipage}[t]{0.45\textwidth}
-\BLOCK{if comp.data.get('logo')}
-%# Top-align the logo with the FAKTURA heading: lower it so its top edge
-%# sits at the cap height of \LARGE\bfseries "F" — a larger logo then grows
-%# downward instead of up past the heading. logo_offset nudges it by
-%# fractions of its own height (x: positive = right, y: positive = up) for
-%# artwork with built-in air.
-\BLOCK{set logo_offset = comp.data.get('logo_offset') or {} }
-{\LARGE\bfseries%
-\BLOCK{if logo_offset.get('x')}
-\hspace*{\VAR{logo_offset.x}\dimexpr\VAR{comp.data.get('logo_height') or '0.8cm'}\relax}%
-\BLOCK{endif}
-\raisebox{\dimexpr\fontcharht\font`F-\height+\VAR{logo_offset.get('y') or 0}\height\relax}{\includegraphics[height=\VAR{comp.data.get('logo_height') or '0.8cm'}]{\VAR{comp.data.logo}}}}%
-\BLOCK{endif}
-~
-\end{minipage}%
-\hfill
-\begin{minipage}[t]{0.45\textwidth}
-{\LARGE\bfseries FAKTURA}\\[0.5em]
-{\normalsize Nr: \VAR{comp.data.get('invoice_number', '')}}\\
-{\normalsize Datum: \VAR{comp.data.get('date', '')}}\\
-{\normalsize Förfallodatum: \VAR{comp.data.get('due_date', '')}}
-\end{minipage}
+\VAR{doc_header(comp.data, 'FAKTURA', [('Nr', comp.data.get('invoice_number', '')), ('Datum', comp.data.get('date', '')), ('Förfallodatum', comp.data.get('due_date', ''))])}
 
 \vspace{1em}
 
@@ -93,44 +102,49 @@ Org.nr: \VAR{party.org_number}\\
 \VAR{party.address_line2}
 \BLOCK{endif}
 \BLOCK{endmacro}
-\noindent
+%# References line block, shared by both layouts below.
+\BLOCK{macro invoice_refs(cdata)}
+\BLOCK{if cdata.get('reference')}
+\textbf{Er referens:} \VAR{cdata.reference}\\
+\BLOCK{endif}
+\BLOCK{if cdata.get('our_reference')}
+\textbf{Vår referens:} \VAR{cdata.our_reference}\\
+\BLOCK{endif}
+\BLOCK{if cdata.get('payment_terms')}
+\textbf{Betalningsvillkor:} \VAR{cdata.payment_terms}
+\BLOCK{endif}
+\BLOCK{endmacro}
+\BLOCK{set has_refs = comp.data.get('reference') or comp.data.get('our_reference') or comp.data.get('payment_terms') }
 \BLOCK{if comp.data.get('sender')}
 %# With a sender: Avsändare | Mottagare side by side, references below.
+%# Without a recipient (e.g. kvitto) the right column stays empty.
+\noindent
 \begin{minipage}[t]{0.45\textwidth}
 \VAR{invoice_party('Avsändare', comp.data.sender)}
 \end{minipage}%
 \hfill
 \begin{minipage}[t]{0.45\textwidth}
-\VAR{invoice_party('Mottagare', comp.data.recipient or {})}
+\BLOCK{if comp.data.get('recipient')}
+\VAR{invoice_party('Mottagare', comp.data.recipient)}
+\BLOCK{else}
+~
+\BLOCK{endif}
 \end{minipage}
+\BLOCK{if has_refs}
 
 \vspace{1.5em}
 
 \noindent
-\BLOCK{if comp.data.get('reference')}
-\textbf{Er referens:} \VAR{comp.data.reference}\\
+\VAR{invoice_refs(comp.data)}
 \BLOCK{endif}
-\BLOCK{if comp.data.get('our_reference')}
-\textbf{Vår referens:} \VAR{comp.data.our_reference}\\
-\BLOCK{endif}
-\BLOCK{if comp.data.get('payment_terms')}
-\textbf{Betalningsvillkor:} \VAR{comp.data.payment_terms}
-\BLOCK{endif}
-\BLOCK{else}
+\BLOCK{elif comp.data.get('recipient') or has_refs}
+\noindent
 \begin{minipage}[t]{0.45\textwidth}
 \VAR{invoice_party('Mottagare', comp.data.get('recipient') or {})}
 \end{minipage}%
 \hfill
 \begin{minipage}[t]{0.45\textwidth}
-\BLOCK{if comp.data.get('reference')}
-\textbf{Er referens:} \VAR{comp.data.reference}\\
-\BLOCK{endif}
-\BLOCK{if comp.data.get('our_reference')}
-\textbf{Vår referens:} \VAR{comp.data.our_reference}\\
-\BLOCK{endif}
-\BLOCK{if comp.data.get('payment_terms')}
-\textbf{Betalningsvillkor:} \VAR{comp.data.payment_terms}
-\BLOCK{endif}
+\VAR{invoice_refs(comp.data)}
 \end{minipage}
 \BLOCK{endif}
 
@@ -199,11 +213,7 @@ Org.nr: \VAR{party.org_number}\\
 \BLOCK{endif}
 
 \BLOCK{elif comp.type == 'receipt_header'}
-\begin{flushright}
-{\Large\bfseries KVITTO}\\[0.5em]
-{\normalsize Nr: \VAR{comp.data.get('receipt_number', '')}}\\
-{\normalsize Datum: \VAR{comp.data.get('date', '')}}
-\end{flushright}
+\VAR{doc_header(comp.data, 'KVITTO', [('Nr', comp.data.get('receipt_number', '')), ('Datum', comp.data.get('date', ''))])}
 
 \vspace{1em}
 

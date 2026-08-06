@@ -1,6 +1,19 @@
 {
   "receipt_number": "2026-014",
   "date": "2026-07-06",
+  "sender": {
+    "name": "Föreningen Exempel",
+    "org_number": "802400-1234",
+    "address_line1": "Storgatan 1",
+    "address_line2": "123 45 Stockholm"
+  },
+  "footer": {
+    "company": "Föreningen Exempel",
+    "address": ["Storgatan 1", "123 45 Stockholm"],
+    "org_number": "802400-1234",
+    "email": "kassor@foreningenexempel.se",
+    "bankgiro": "1234-5678"
+  },
   "total_amount": 350,
   "currency": "SEK",
   "payment_method": "Swish",

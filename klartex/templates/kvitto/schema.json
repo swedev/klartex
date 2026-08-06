@@ -45,6 +45,48 @@
       ]
     },
     "number_format": { "type": "string", "enum": ["sv", "en"], "description": "Talformat för belopp: 'sv' ger 32 400,00 (default), 'en' ger 32,400.00." },
+    "logo": { "type": "string", "description": "Bildfil (pdf/png) som visas i kvittots övre vänstra hörn, i linje med KVITTO-blocket. Plain filnamn slås upp via asset-katalogen (sidmallens katalog) och cwd." },
+    "logo_height": { "type": "string", "default": "0.8cm", "description": "Logotypens höjd som LaTeX-dimension, t.ex. '1cm'." },
+    "logo_offset": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Finjustering av logotypens position, som andelar av dess höjd: x positivt flyttar höger (negativt vänster), y positivt flyttar uppåt (negativt neråt). Utgångsläge: vänsterkant vid marginalen, överkant i linje med KVITTO-rubriken.",
+      "properties": {
+        "x": { "type": "number", "default": 0 },
+        "y": { "type": "number", "default": 0 }
+      }
+    },
+    "sender": {
+      "type": "object",
+      "required": ["name"],
+      "description": "Utställare/säljare — visas som Avsändare-block i kvittokroppen. Ange bolagets juridiska namn här även när logotyp/sidfot finns.",
+      "properties": {
+        "name": { "type": "string" },
+        "org_number": { "type": "string" },
+        "address_line1": { "type": "string" },
+        "address_line2": { "type": "string" }
+      }
+    },
+    "footer": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Kvittots sidfot: företags-, kontakt- och betalningsuppgifter på varje sida.",
+      "properties": {
+        "company": { "type": "string", "description": "Företagsnamn" },
+        "address": { "oneOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }], "description": "Postadress som array med en rad per element, t.ex. ['Storgatan 1', '123 45 Stad'] — radbryts som en postadress. En sträng renderas som en enda rad." },
+        "seat": { "type": "string", "description": "Styrelsens säte, t.ex. 'Malmö'" },
+        "org_number": { "type": "string", "description": "Organisationsnummer" },
+        "vat_number": { "type": "string", "description": "Momsregistreringsnummer (SExxxxxxxxxx01)" },
+        "f_tax": { "type": "boolean", "description": "true visar raden 'Godkänd för F-skatt'" },
+        "phone": { "type": "string", "description": "Telefon" },
+        "email": { "type": "string", "description": "E-post" },
+        "web": { "type": "string", "description": "Webbplats" },
+        "bankgiro": { "type": "string" },
+        "plusgiro": { "type": "string" },
+        "iban": { "type": "string" },
+        "bic": { "type": "string" }
+      }
+    },
     "receipt_number": { "type": "string" },
     "date": { "type": "string", "description": "Receipt date (YYYY-MM-DD)" },
     "total_amount": { "type": "number", "description": "Total amount paid. Authoritative — never computed from items." },

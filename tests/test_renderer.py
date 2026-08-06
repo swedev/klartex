@@ -437,6 +437,40 @@ def test_kvitto_zero_amount_renders_missing_amount_empty():
     assert "100,00" in tex
 
 
+def test_kvitto_sender_logo_and_footer():
+    """kvitto mirrors faktura: sender block, header logo, and a top-level
+    footer that emits \\kxfooter."""
+    data = {
+        "receipt_number": "K-2",
+        "date": "2026-08-07",
+        "total_amount": 100,
+        "items": [{"description": "Avgift", "amount": 100}],
+        "sender": {"name": "Säljbolaget AB", "org_number": "556111-2222"},
+        "logo": "logo.pdf",
+        "footer": {"company": "Säljbolaget AB", "bankgiro": "1234-5678"},
+    }
+    tex = _render_recipe_tex("kvitto", data)
+    assert "Avsändare" in tex
+    assert "Säljbolaget AB" in tex
+    assert r"\includegraphics[height=0.8cm]{logo.pdf}" in tex
+    assert r"\usepackage{klartex-footer}" in tex
+    assert "bankgiro={1234-5678}" in tex
+
+
+def test_kvitto_without_sender_renders_no_party_block():
+    """Without sender/recipient the invoice_recipient component must render
+    nothing — no empty Mottagare label."""
+    data = {
+        "receipt_number": "K-3",
+        "date": "2026-08-07",
+        "total_amount": 100,
+        "items": [{"description": "Avgift"}],
+    }
+    tex = _render_recipe_tex("kvitto", data)
+    assert "Mottagare" not in tex
+    assert "Avsändare" not in tex
+
+
 def test_kvitto_minimal_payload_skips_metadata_list():
     """Without payment_method/paid_by all optional metadata is dropped and the
     description_list component must render nothing (no empty tabularx)."""

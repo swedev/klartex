@@ -31,7 +31,18 @@ pipx install klartex
 pip install klartex
 ```
 
-Requires Python ≥ 3.12 and XeLaTeX (`brew install --cask mactex` or `apt install texlive-xetex`).
+Requires Python ≥ 3.12 and XeLaTeX.
+
+```bash
+# macOS
+brew install --cask mactex
+
+# Debian/Ubuntu
+sudo apt install texlive-xetex texlive-fonts-recommended \
+  texlive-latex-extra texlive-latex-recommended texlive-science texlive-plain-generic
+```
+
+The Debian/Ubuntu package set is the one CI installs, so it is the set the full test suite runs against. `texlive-xetex` alone is not enough — rendering needs `ulem` (in `texlive-plain-generic`), `tcolorbox` and `siunitx`, among others.
 
 ## Usage
 

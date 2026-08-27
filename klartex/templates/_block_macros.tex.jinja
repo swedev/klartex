@@ -18,7 +18,10 @@
 \BLOCK{if not suppress_needspace}\kxneedspace{\VAR{_needspace}}\BLOCK{endif}
 \vspace{\VAR{_vspace_above}}
 \BLOCK{if textAlign == "center"}\begin{center}\BLOCK{elif textAlign == "right"}\begin{flushright}\BLOCK{endif}
-{\setstretch{1.1}\VAR{_size}\bfseries \VAR{text | inline}\par}
+%# raggedright for left-aligned headings: a justified paragraph at heading
+%# sizes produces overfull lines that stick into the margin instead of
+%# breaking early.
+{\setstretch{1.1}\VAR{_size}\bfseries\BLOCK{if textAlign == "left"}\raggedright\BLOCK{endif} \VAR{text | inline}\par}
 \BLOCK{if textAlign == "center"}\end{center}\BLOCK{elif textAlign == "right"}\end{flushright}\BLOCK{endif}
 \nopagebreak[4]\vspace*{-\parskip}\vspace{\VAR{_vspace_below}}
 \BLOCK{endmacro}

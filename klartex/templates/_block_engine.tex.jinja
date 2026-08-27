@@ -199,7 +199,7 @@
 \BLOCK{if _sp_before}
 \vspace{\VAR{_sp_before}}
 \BLOCK{endif}
-\noindent \VAR{block.text | inline}
+\noindent \BLOCK{if block.get('revision') == 'added'}\kxadded{\VAR{block.text | inline}}\BLOCK{elif block.get('revision') == 'removed'}\kxremoved{\VAR{block.text | inline}}\BLOCK{else}\VAR{block.text | inline}\BLOCK{endif}
 
 \BLOCK{if _sp_after}
 \vspace{\VAR{_sp_after}}

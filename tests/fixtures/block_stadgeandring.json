@@ -1,0 +1,158 @@
+{
+  "lang": "sv",
+  "page_template": "formal",
+  "body": [
+    {
+      "type": "heading",
+      "text": "Förslag till stadgeändringar"
+    },
+    {
+      "type": "text",
+      "text": "Styrelsen föreslår att föreningsstämman antar nedanstående ändringar av stadgarna. {+Tillagd text visas i grönt+} och {-struken text visas i rött med genomstrykning-}. Ändringarna ska antas av två på varandra följande stämmor."
+    },
+    {
+      "type": "description_list",
+      "entries": [
+        {
+          "label": "Ärende:",
+          "value": "Stadgeändring enligt § 24"
+        },
+        {
+          "label": "Beslutsform:",
+          "value": "Två stämmor, enkel majoritet"
+        }
+      ]
+    },
+    {
+      "type": "clause",
+      "number": "§ 7",
+      "level": 2,
+      "text": "Kallelse till föreningsstämma",
+      "content": [
+        {
+          "type": "text",
+          "text": "Kallelse till ordinarie föreningsstämma ska utfärdas tidigast {-sex veckor-}{+åtta veckor+} och senast {-två veckor-}{+fyra veckor+} före stämman."
+        },
+        {
+          "type": "text",
+          "text": "Kallelse sker genom anslag i föreningens trapphus samt genom brev till varje medlem som anmält annan adress än lägenhetens.",
+          "revision": "removed"
+        },
+        {
+          "type": "text",
+          "text": "Kallelse sker genom anslag i föreningens trapphus samt genom e-post till den adress medlemmen anmält till styrelsen. Medlem som inte anmält e-postadress kallas genom brev.",
+          "revision": "added"
+        }
+      ]
+    },
+    {
+      "type": "clause",
+      "number": "§ 12",
+      "level": 2,
+      "text": "Avgifter",
+      "content": [
+        {
+          "type": "text",
+          "text": "Årsavgiften fördelas på bostadsrätterna i förhållande till {-lägenheternas andelstal-}{+lägenheternas bruksarea+}."
+        },
+        {
+          "type": "table",
+          "header": [
+            "Avgift",
+            "Nuvarande lydelse",
+            "Föreslagen lydelse"
+          ],
+          "rows": [
+            [
+              "Årsavgift",
+              "{-Betalas kvartalsvis-}",
+              "{+Betalas månadsvis i förskott+}"
+            ],
+            [
+              "Överlåtelseavgift",
+              "{-2,5 % av prisbasbeloppet-}",
+              "{+3,5 % av prisbasbeloppet+}"
+            ],
+            [
+              "Pantsättningsavgift",
+              "1 % av prisbasbeloppet",
+              "1 % av prisbasbeloppet"
+            ],
+            [
+              "Påminnelseavgift",
+              "{-Uttas ej-}",
+              "{+60 kronor per påminnelse+}"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "type": "clause",
+      "number": "§ 18",
+      "level": 2,
+      "text": "Underhåll och underhållsplan",
+      "content": [
+        {
+          "type": "text",
+          "text": "Föreningen ska upprätta en underhållsplan som omfattar minst {-tio år-}{+trettio år+} framåt."
+        },
+        {
+          "type": "text",
+          "text": "{+Föreningen ska vid varje ordinarie föreningsstämma redovisa hur underhållsplanen följts under det gångna verksamhetsåret. Redovisningen ska omfatta genomförda åtgärder, nedlagda kostnader och en bedömning av kommande års behov. Styrelsen ansvarar för att underlaget hålls tillgängligt för medlemmarna senast två veckor före stämman, och för att avvikelser från planen kommenteras särskilt. Om en planerad åtgärd skjutits upp ska skälet anges tillsammans med en ny tidpunkt för genomförandet. Underhållsplanen ska revideras minst vart tredje år och beslutas av styrelsen efter samråd med föreningens revisorer. Vid större ombyggnader eller andra åtgärder som väsentligt påverkar föreningens ekonomi ska frågan hänskjutas till föreningsstämman för beslut, även om åtgärden ryms inom den fastställda planen. Detsamma gäller åtgärder som medför att medlemmarnas avgifter behöver höjas med mer än tio procent under ett enskilt verksamhetsår.+}"
+        },
+        {
+          "type": "text",
+          "text": "Styrelsen får besluta om avvikelser från underhållsplanen när det krävs för att avhjälpa akuta skador."
+        }
+      ]
+    },
+    {
+      "type": "clause",
+      "number": "§ 22",
+      "level": 2,
+      "text": "Andrahandsupplåtelse",
+      "content": [
+        {
+          "type": "text",
+          "text": "Paragrafen i sin helhet föreslås utgå och ersättas av en hänvisning till bostadsrättslagens regler:"
+        },
+        {
+          "type": "text",
+          "text": "Upplåtelse av lägenhet i andra hand får ske endast efter styrelsens skriftliga samtycke. Ansökan om samtycke ska vara skriftlig och innehålla uppgift om skälet för upplåtelsen, den tid upplåtelsen avser samt namn och kontaktuppgifter för den som lägenheten ska upplåtas till. Styrelsen ska pröva ansökan vid närmast följande sammanträde, dock senast inom sex veckor från det att fullständig ansökan kommit in. Samtycke lämnas för högst ett år i taget och får förenas med villkor om att bostadsrättshavaren anmäler byte av andrahandshyresgäst. Samtycke får vägras endast om föreningen har befogad anledning att motsätta sig upplåtelsen. Som befogad anledning räknas bland annat att den föreslagna hyresgästen tidigare misskött sig i föreningens fastighet eller att lägenheten redan varit upplåten i andra hand under sammanlagt mer än tre år. Bostadsrättshavaren svarar under upplåtelsetiden för att årsavgiften betalas i rätt tid och för att den som bor i lägenheten iakttar de ordningsregler som gäller i föreningen.",
+          "revision": "removed"
+        },
+        {
+          "type": "text",
+          "text": "Skador som orsakas av andrahandshyresgästen ansvarar bostadsrättshavaren för på samma sätt som för egna skador. Om upplåtelsen sker utan styrelsens samtycke ska styrelsen skriftligen anmoda bostadsrättshavaren att omedelbart upphöra med upplåtelsen. Rättar sig bostadsrättshavaren inte inom två veckor från anmodan är nyttjanderätten förverkad och föreningen har rätt att säga upp bostadsrättshavaren till avflyttning. Detsamma gäller om bostadsrättshavaren lämnat oriktiga uppgifter i ansökan om samtycke. En upplåtelse som avser en del av lägenheten kräver inte styrelsens samtycke, förutsatt att bostadsrättshavaren själv bor kvar i lägenheten och att upplåtelsen inte medför men för föreningen eller för någon annan medlem. Styrelsen får dock begära att få veta vilka personer som stadigvarande bor i lägenheten. Föreningen tar ut en avgift för andrahandsupplåtelse med högst tio procent av prisbasbeloppet per år. Avgiften beräknas per påbörjad månad och betalas av bostadsrättshavaren tillsammans med årsavgiften.",
+          "revision": "removed"
+        },
+        {
+          "type": "text",
+          "text": "Om upplåtelsen pågår under en del av ett kalenderår ska avgiften jämkas i motsvarande mån. Beslut om avgiftens storlek fattas av styrelsen och ska framgå av föreningens avgiftsförteckning. Bostadsrättshavare som upplåter sin lägenhet i andra hand ska anmäla en adress i Sverige dit föreningen kan skicka kallelser och annan information. Har någon sådan adress inte anmälts anses kallelse ha kommit bostadsrättshavaren till handa när den anslagits i fastighetens trapphus. Styrelsen ska föra en förteckning över lämnade samtycken och över de tidsperioder de avser, och förteckningen ska hållas tillgänglig för revisorerna. Vid överlåtelse av bostadsrätten upphör ett lämnat samtycke att gälla vid tillträdesdagen, även om den tid samtycket avser inte har löpt ut. Den nya bostadsrättshavaren får ansöka om nytt samtycke enligt vad som sägs ovan. Föreningen är inte skyldig att lämna samtycke enbart av det skälet att den tidigare bostadsrättshavaren haft det.",
+          "revision": "removed"
+        },
+        {
+          "type": "text",
+          "text": "{+Upplåtelse av lägenhet i andra hand får ske efter styrelsens samtycke enligt 7 kap. bostadsrättslagen. Föreningen tar ut avgift för andrahandsupplåtelse enligt lagens högsta tillåtna nivå.+}"
+        }
+      ]
+    },
+    {
+      "type": "signatures",
+      "new_page": false,
+      "parties": [
+        {
+          "name": "Brf Ekbacken",
+          "signatory": "Karin Nilsson",
+          "title": "Ordförande"
+        },
+        {
+          "name": "Brf Ekbacken",
+          "signatory": "Lars Pettersson",
+          "title": "Sekreterare"
+        }
+      ]
+    }
+  ]
+}

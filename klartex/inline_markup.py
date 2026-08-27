@@ -10,9 +10,33 @@ Markers (deliberately narrow — see issue #25):
 - ``*italic*``      → ``\\textit{...}``
 - `` `code` ``      → ``\\texttt{...}``
 - ``"..."``         → locale-aware smart quotes (sv: ``”…”``, en: ``“…”``)
+- ``{+added+}``     → ``\\kxadded{...}`` — change marking (#40)
+- ``{-removed-}``   → ``\\kxremoved{...}`` — change marking (#40)
 
-Out of scope for v1: links, headings-in-text, lists-in-text, blockquotes,
-strikethrough, escape hatches (``\\*`` to print a literal ``*`` etc.).
+Out of scope: links, headings-in-text, lists-in-text, blockquotes, *generic*
+strikethrough (``~~text~~``), escape hatches (``\\*`` to print a literal ``*``
+etc.). Semantic change marking is in scope; arbitrary strikethrough is not.
+
+Change-marker semantics:
+
+- The markers arrive here in *escaped* form (``\\{+…+\\}``), because
+  ``escape_data()`` has already turned ``{`` and ``}`` into ``\\{`` / ``\\}``.
+  Both the opener and its matching closer must be present.
+- Markup inside marker content still renders: ``{+**viktigt** tillägg+}`` →
+  ``\\kxadded{\\textbf{viktigt} tillägg}``.
+- Mixed nesting renders nested: ``{-gammal {+ny+} gammal-}`` puts a
+  ``\\kxadded`` group inside the ``\\kxremoved`` argument. Same-type nesting is
+  undefined: a closer pairs with the nearest preceding opener of its kind, so
+  the inner marker converts and the outer opener is left literal.
+- Adjacent markers stay separate spans, mirroring adjacent bold.
+- Empty (``{++}``), unmatched, or lone markers stay literal and print as
+  visible text.
+- Markers may span literal newlines; the newline pass converts those inside
+  the macro argument, which both ``\\textcolor`` and ulem's ``\\sout`` accept.
+- Caveat: the grammar is narrow but not free of false positives — literal
+  text shaped like ``{-1-}`` converts. Both delimiters are required, so
+  ordinary brace prose (``intervallet {-5, 5}``) does not, and such prose
+  cannot reach across the string to pair with a later marker's closer.
 """
 
 import re
@@ -24,6 +48,16 @@ _CODE_RE = re.compile(r"`([^`]+)`")
 _BOLD_RE = re.compile(r"\*\*(.+?)\*\*", re.DOTALL)
 # Italic: a single * not adjacent to another *.
 _ITALIC_RE = re.compile(r"(?<!\*)\*([^*\n]+)\*(?!\*)")
+
+# Change marking (#40). Matched in escaped form: ``{+x+}`` reaches this
+# function as ``\{+x+\}``. Non-greedy so adjacent markers stay separate;
+# DOTALL so a marked span may cross a literal newline. Marker content may not
+# contain another opener of the same kind, which pairs every closer with the
+# *nearest* preceding opener — without that, an unmatched ``\{-`` earlier in
+# the string would swallow a later real marker's closer and strike out the
+# prose between them.
+_ADDED_RE = re.compile(r"\\\{\+((?:(?!\\\{\+).)+?)\+\\\}", re.DOTALL)
+_REMOVED_RE = re.compile(r"\\\{-((?:(?!\\\{-).)+?)-\\\}", re.DOTALL)
 
 # (open, close) for paired double quotes per language.
 _QUOTE_PAIRS = {
@@ -56,6 +90,11 @@ def render_inline(text: str, lang: str = "sv", newlines: str = "break") -> str:
         return _CODE_PLACEHOLDER.format(len(code_spans) - 1)
 
     text = _CODE_RE.sub(stash, text)
+    # Change markers run after the code stash (a marker inside backticks stays
+    # literal) and before bold/italic, so markup inside marker content is still
+    # reached by the later global passes.
+    text = _ADDED_RE.sub(r"\\kxadded{\1}", text)
+    text = _REMOVED_RE.sub(r"\\kxremoved{\1}", text)
     text = _BOLD_RE.sub(r"\\textbf{\1}", text)
     text = _ITALIC_RE.sub(r"\\textit{\1}", text)
     text = _smart_quotes(text, lang)

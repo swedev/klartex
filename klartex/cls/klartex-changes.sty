@@ -1,0 +1,35 @@
+% klartex-changes.sty - Change marking component (#40)
+%
+% Semantic macros for documents that show what changed between two versions
+% (canonical case: stadgeändringar).
+%
+% Usage:
+%   \kxadded{text}    - text added in the proposed version
+%   \kxremoved{text}  - text struck from the current version
+%
+% The visual contract lives in the \kxaddedstyle / \kxremovedstyle hooks:
+% a page template can \renewcommand either one to restyle change marking
+% without touching a single call site.
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{klartex-changes}[2026/08/27 Klartex Change Marking]
+
+% [normalem] is mandatory: plain ulem redefines \emph and \em to underline,
+% which would restyle emphasis in every document that loads the base class.
+\RequirePackage[normalem]{ulem}
+\RequirePackage{xcolor}
+
+% Dark enough to stay legible in grayscale print.
+\definecolor{kxaddedcolor}{HTML}{1A7A3C}
+\definecolor{kxremovedcolor}{HTML}{B00020}
+
+% Style hooks — the redefinable half of the contract.
+\newcommand{\kxaddedstyle}[1]{\textcolor{kxaddedcolor}{#1}}
+\newcommand{\kxremovedstyle}[1]{\textcolor{kxremovedcolor}{\sout{#1}}}
+
+% Semantic macros — the stable half. \sout breaks at spaces and tolerates
+% \\ inside its argument, so marked spans may cross lines and page breaks.
+\newcommand{\kxadded}[1]{\kxaddedstyle{#1}}
+\newcommand{\kxremoved}[1]{\kxremovedstyle{#1}}
+
+\endinput

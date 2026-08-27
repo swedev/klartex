@@ -87,3 +87,130 @@ def test_multiple_newlines():
 
 def test_newline_works_with_other_markup():
     assert render_inline("**bold**\n*italic*") == r"\textbf{bold} \\ \textit{italic}"
+
+
+# --- Change marking (#40) -------------------------------------------------
+#
+# Inputs are written in the *escaped* form the filter really receives:
+# escape_data() turns "{+x+}" into "\{+x+\}" before render_inline runs.
+
+
+def test_added_marker():
+    assert render_inline(r"ny \{+lydelse+\} här") == r"ny \kxadded{lydelse} här"
+
+
+def test_removed_marker():
+    assert render_inline(r"gammal \{-lydelse-\} här") == r"gammal \kxremoved{lydelse} här"
+
+
+def test_both_markers_in_one_string():
+    assert (
+        render_inline(r"\{-gammalt-\} blir \{+nytt+\}")
+        == r"\kxremoved{gammalt} blir \kxadded{nytt}"
+    )
+
+
+def test_bold_inside_marker_content():
+    assert render_inline(r"\{+**viktigt** tillägg+\}") == r"\kxadded{\textbf{viktigt} tillägg}"
+
+
+def test_italic_inside_marker_content():
+    assert render_inline(r"\{-*struket* ord-\}") == r"\kxremoved{\textit{struket} ord}"
+
+
+def test_code_span_inside_marker_content():
+    assert render_inline(r"\{+kör `foo` nu+\}") == r"\kxadded{kör \texttt{foo} nu}"
+
+
+def test_marker_inside_code_span_stays_literal():
+    # The code stash runs first, so backticked markers are never converted.
+    assert render_inline(r"`\{+x+\}`") == r"\texttt{\{+x+\}}"
+
+
+def test_mixed_nesting_added_inside_removed():
+    assert (
+        render_inline(r"\{-gammal \{+ny+\} gammal-\}")
+        == r"\kxremoved{gammal \kxadded{ny} gammal}"
+    )
+
+
+def test_mixed_nesting_removed_inside_added():
+    assert (
+        render_inline(r"\{+ny \{-gammal-\} ny+\}")
+        == r"\kxadded{ny \kxremoved{gammal} ny}"
+    )
+
+
+def test_adjacent_markers_stay_separate():
+    assert render_inline(r"\{+a+\}\{-b-\}") == r"\kxadded{a}\kxremoved{b}"
+
+
+def test_adjacent_same_type_markers_stay_separate():
+    assert render_inline(r"\{+a+\} \{+b+\}") == r"\kxadded{a} \kxadded{b}"
+
+
+def test_empty_markers_stay_literal():
+    assert render_inline(r"\{++\} \{--\}") == r"\{++\} \{--\}"
+
+
+def test_unmatched_opener_stays_literal():
+    assert render_inline(r"en \{+ensam öppnare") == r"en \{+ensam öppnare"
+
+
+def test_mismatched_delimiters_stay_literal():
+    # Opener and closer must be the same kind.
+    assert render_inline(r"\{+a-\}") == r"\{+a-\}"
+
+
+def test_brace_prose_is_not_a_marker():
+    # Both delimiters are required — a closing brace without the sign is inert.
+    assert render_inline(r"intervallet \{-5, 5\}") == r"intervallet \{-5, 5\}"
+
+
+def test_escaped_specials_inside_marker_content():
+    assert (
+        render_inline(r"\{+50 \% av \_summan\_ \& mer+\}")
+        == r"\kxadded{50 \% av \_summan\_ \& mer}"
+    )
+
+
+def test_marker_content_spanning_newline():
+    assert render_inline("\\{+rad ett\nrad två+\\}") == r"\kxadded{rad ett \\ rad två}"
+
+
+def test_marker_content_spanning_newline_in_cell_mode():
+    assert (
+        render_inline("\\{-rad ett\nrad två-\\}", newlines="cell")
+        == r"\kxremoved{rad ett \newline rad två}"
+    )
+
+
+def test_marker_with_smart_quotes_inside():
+    assert render_inline('\\{+en "citerad" fras+\\}') == "\\kxadded{en ”citerad” fras}"
+
+
+def test_unmatched_opener_does_not_capture_a_later_marker():
+    # A lone \{- earlier in the string must not pair with a real marker's
+    # closer further along, which would strike out the prose between them.
+    assert (
+        render_inline(r"poängen \{-3\} sätts i intervallet \{-fem-\} enheter")
+        == r"poängen \{-3\} sätts i intervallet \kxremoved{fem} enheter"
+    )
+
+
+def test_unmatched_added_opener_does_not_capture_a_later_marker():
+    assert (
+        render_inline(r"nivå \{+A\} och \{+fem+\} till")
+        == r"nivå \{+A\} och \kxadded{fem} till"
+    )
+
+
+def test_closer_pairs_with_nearest_opener_of_its_kind():
+    assert (
+        render_inline(r"\{-A\} text \{+B+\} mer \{-C-\}")
+        == r"\{-A\} text \kxadded{B} mer \kxremoved{C}"
+    )
+
+
+def test_escaped_braces_inside_marker_content_survive():
+    assert render_inline(r"\{+funktionen f\{x\}+\}") == r"\kxadded{funktionen f\{x\}}"

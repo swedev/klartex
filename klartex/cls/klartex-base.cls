@@ -180,5 +180,6 @@
 \RequirePackage{klartex-budgettabell}
 \RequirePackage{klartex-notapparat}
 \RequirePackage{klartex-callout}
+\RequirePackage{klartex-changes}
 
 \endinput

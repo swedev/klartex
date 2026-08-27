@@ -8,7 +8,15 @@
   "additionalProperties": false,
   "properties": {
     "type": { "type": "string", "const": "text" },
-    "text": { "type": "string", "description": "Paragraph text" },
+    "text": {
+      "type": "string",
+      "description": "Styckets text. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} (grön) och {-struken text-} (röd genomstruken)."
+    },
+    "revision": {
+      "type": "string",
+      "enum": ["added", "removed"],
+      "description": "Markera hela stycket som tillagt ('added', grön text) eller struket ('removed', röd genomstruken text) i en ändringsmarkering, t.ex. en stadgeändring. För delar av ett stycke, använd inline-markörerna {+…+} / {-…-} i text i stället."
+    },
     "spacing_before": {
       "type": "string",
       "description": "Override the vertical space above this block. Plain-unit LaTeX dimension string ('1em', '0.5cm', '0em'). Macro-based dimensions ('\\baselineskip') are not supported — backslashes are escaped like in all other strings. Not validated beyond that — an invalid dimension fails at compile time. Wins over block_settings and the built-in default."

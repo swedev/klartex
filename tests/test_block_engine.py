@@ -1397,3 +1397,99 @@ class TestHeadingAlignment:
         tex = _render_tex(data)
         assert r"\begin{flushright}" in tex
         assert r"\raggedright" not in tex
+
+
+class TestChangeMarking:
+    """Change marking (#40): inline `{+…+}` / `{-…-}` markers and the
+    block-level `revision` attribute on `text`."""
+
+    def test_inline_markers_become_macros(self):
+        data = {"body": [{"type": "text", "text": "tidigast {-sex-}{+åtta+} veckor"}]}
+        tex = _render_tex(data)
+        assert r"\kxremoved{sex}" in tex
+        assert r"\kxadded{åtta}" in tex
+
+    def test_marker_delimiters_are_consumed(self):
+        data = {"body": [{"type": "text", "text": "{+ny+} och {-gammal-}"}]}
+        tex = _render_tex(data)
+        assert r"\{+" not in tex
+        assert r"+\}" not in tex
+        assert r"\{-" not in tex
+        assert r"-\}" not in tex
+
+    def test_markers_work_in_table_cells(self):
+        data = {"body": [{
+            "type": "table",
+            "header": ["Avgift", "Förslag"],
+            "rows": [["Årsavgift", "{-kvartalsvis-} {+månadsvis+}"]],
+        }]}
+        tex = _render_tex(data)
+        assert r"\kxremoved{kvartalsvis}" in tex
+        assert r"\kxadded{månadsvis}" in tex
+
+    def test_revision_added_wraps_paragraph(self):
+        data = {"body": [{"type": "text", "text": "Nytt stycke.", "revision": "added"}]}
+        tex = _render_tex(data)
+        assert r"\kxadded{Nytt stycke.}" in tex
+
+    def test_revision_removed_wraps_paragraph(self):
+        data = {"body": [{"type": "text", "text": "Utgår helt.", "revision": "removed"}]}
+        tex = _render_tex(data)
+        assert r"\kxremoved{Utgår helt.}" in tex
+
+    def test_no_revision_leaves_paragraph_unwrapped(self):
+        data = {"body": [{"type": "text", "text": "Oförändrat stycke."}]}
+        tex = _render_tex(data)
+        assert "Oförändrat stycke." in tex
+        assert r"\kxadded" not in tex
+        assert r"\kxremoved" not in tex
+
+    def test_revision_inside_clause_content(self):
+        data = {"body": [{
+            "type": "clause",
+            "number": "§ 7",
+            "level": 2,
+            "text": "Kallelse",
+            "content": [
+                {"type": "text", "text": "Gamla lydelsen.", "revision": "removed"},
+                {"type": "text", "text": "Nya lydelsen.", "revision": "added"},
+            ],
+        }]}
+        tex = _render_tex(data)
+        assert r"\kxremoved{Gamla lydelsen.}" in tex
+        assert r"\kxadded{Nya lydelsen.}" in tex
+
+    def test_invalid_revision_value_rejected(self):
+        from klartex.renderer import render
+
+        data = {"body": [{"type": "text", "text": "x", "revision": "changed"}]}
+        with pytest.raises(ValueError, match="Invalid 'text' block"):
+            render(BLOCK_ENGINE_TEMPLATE, data)
+
+    def test_fixture_validates_and_renders_tex(self):
+        data = json.loads((FIXTURES / "block_stadgeandring.json").read_text())
+        tex = _render_tex(data)
+        assert r"\kxadded{" in tex
+        assert r"\kxremoved{" in tex
+        assert r"\{+" not in tex
+        assert r"-\}" not in tex
+
+    @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+    def test_stadgeandring_fixture_compiles(self):
+        from klartex.renderer import render
+
+        data = json.loads((FIXTURES / "block_stadgeandring.json").read_text())
+        pdf = render(BLOCK_ENGINE_TEMPLATE, data)
+        assert pdf[:5] == b"%PDF-"
+
+    @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+    @pytest.mark.parametrize("revision", ["added", "removed"])
+    def test_revision_block_compiles(self, revision):
+        from klartex.renderer import render
+
+        data = {"body": [
+            {"type": "text", "text": "Ett stycke med ändringsmarkering.", "revision": revision},
+            {"type": "text", "text": "Inline {+tillagt+} och {-struket-} i löptext."},
+        ]}
+        pdf = render(BLOCK_ENGINE_TEMPLATE, data)
+        assert pdf[:5] == b"%PDF-"

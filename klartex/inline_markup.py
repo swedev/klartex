@@ -26,7 +26,8 @@ Change-marker semantics:
   ``\\kxadded{\\textbf{viktigt} tillägg}``.
 - Mixed nesting renders nested: ``{-gammal {+ny+} gammal-}`` puts a
   ``\\kxadded`` group inside the ``\\kxremoved`` argument. Same-type nesting is
-  undefined — the non-greedy match closes at the first closer.
+  undefined: a closer pairs with the nearest preceding opener of its kind, so
+  the inner marker converts and the outer opener is left literal.
 - Adjacent markers stay separate spans, mirroring adjacent bold.
 - Empty (``{++}``), unmatched, or lone markers stay literal and print as
   visible text.
@@ -34,7 +35,8 @@ Change-marker semantics:
   the macro argument, which both ``\\textcolor`` and ulem's ``\\sout`` accept.
 - Caveat: the grammar is narrow but not free of false positives — literal
   text shaped like ``{-1-}`` converts. Both delimiters are required, so
-  ordinary brace prose (``intervallet {-5, 5}``) does not.
+  ordinary brace prose (``intervallet {-5, 5}``) does not, and such prose
+  cannot reach across the string to pair with a later marker's closer.
 """
 
 import re
@@ -49,9 +51,13 @@ _ITALIC_RE = re.compile(r"(?<!\*)\*([^*\n]+)\*(?!\*)")
 
 # Change marking (#40). Matched in escaped form: ``{+x+}`` reaches this
 # function as ``\{+x+\}``. Non-greedy so adjacent markers stay separate;
-# DOTALL so a marked span may cross a literal newline.
-_ADDED_RE = re.compile(r"\\\{\+(.+?)\+\\\}", re.DOTALL)
-_REMOVED_RE = re.compile(r"\\\{-(.+?)-\\\}", re.DOTALL)
+# DOTALL so a marked span may cross a literal newline. Marker content may not
+# contain another opener of the same kind, which pairs every closer with the
+# *nearest* preceding opener — without that, an unmatched ``\{-`` earlier in
+# the string would swallow a later real marker's closer and strike out the
+# prose between them.
+_ADDED_RE = re.compile(r"\\\{\+((?:(?!\\\{\+).)+?)\+\\\}", re.DOTALL)
+_REMOVED_RE = re.compile(r"\\\{-((?:(?!\\\{-).)+?)-\\\}", re.DOTALL)
 
 # (open, close) for paired double quotes per language.
 _QUOTE_PAIRS = {

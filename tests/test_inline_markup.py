@@ -187,3 +187,30 @@ def test_marker_content_spanning_newline_in_cell_mode():
 
 def test_marker_with_smart_quotes_inside():
     assert render_inline('\\{+en "citerad" fras+\\}') == "\\kxadded{en ”citerad” fras}"
+
+
+def test_unmatched_opener_does_not_capture_a_later_marker():
+    # A lone \{- earlier in the string must not pair with a real marker's
+    # closer further along, which would strike out the prose between them.
+    assert (
+        render_inline(r"poängen \{-3\} sätts i intervallet \{-fem-\} enheter")
+        == r"poängen \{-3\} sätts i intervallet \kxremoved{fem} enheter"
+    )
+
+
+def test_unmatched_added_opener_does_not_capture_a_later_marker():
+    assert (
+        render_inline(r"nivå \{+A\} och \{+fem+\} till")
+        == r"nivå \{+A\} och \kxadded{fem} till"
+    )
+
+
+def test_closer_pairs_with_nearest_opener_of_its_kind():
+    assert (
+        render_inline(r"\{-A\} text \{+B+\} mer \{-C-\}")
+        == r"\{-A\} text \kxadded{B} mer \kxremoved{C}"
+    )
+
+
+def test_escaped_braces_inside_marker_content_survive():
+    assert render_inline(r"\{+funktionen f\{x\}+\}") == r"\kxadded{funktionen f\{x\}}"

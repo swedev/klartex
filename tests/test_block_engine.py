@@ -1372,3 +1372,28 @@ class TestSpacingOverrides:
         }
         pdf = render(BLOCK_ENGINE_TEMPLATE, data)
         assert pdf[:5] == b"%PDF-"
+
+
+class TestHeadingAlignment:
+    """Left-aligned headings set \\raggedright; center/right rely on their
+    surrounding environment instead."""
+
+    def test_left_is_ragged_right_by_default(self):
+        tex = _render_tex({"body": [{"type": "heading", "text": "Rubrik"}]})
+        assert tex.count(r"\raggedright") == 1
+
+    def test_explicit_left_is_ragged_right(self):
+        data = {"body": [{"type": "heading", "text": "Rubrik", "textAlign": "left"}]}
+        assert _render_tex(data).count(r"\raggedright") == 1
+
+    def test_center_is_not_ragged_right(self):
+        data = {"body": [{"type": "heading", "text": "Rubrik", "textAlign": "center"}]}
+        tex = _render_tex(data)
+        assert r"\begin{center}" in tex
+        assert r"\raggedright" not in tex
+
+    def test_right_is_not_ragged_right(self):
+        data = {"body": [{"type": "heading", "text": "Rubrik", "textAlign": "right"}]}
+        tex = _render_tex(data)
+        assert r"\begin{flushright}" in tex
+        assert r"\raggedright" not in tex

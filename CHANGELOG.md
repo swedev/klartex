@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.14.0 — 2026-08-27
+
+### New features
+- **Svenskt talformat i recept.** Nya Jinja-filter `money`/`num` renderar belopp svenskt som default (`32 400,00` — smala mellanslagsgrupper, decimalkomma) i stället för det tidigare hårdkodade engelska formatet. Dokumentets språk avgör stilen; `number_format` (`sv`/`en`) i faktura-/kvitto-data överstyr. `num` använder `.10g` så stora kvantiteter inte slår över i exponentnotation. (#41)
+- **Sidmallsoptioner i alla recept-scheman.** `page_template` accepterar objektform (som i block-motorn) med nya `font` och `header_font` (fontspec-familjenamn; `header_font` faller tillbaka på `font` via `\kxheaderfont` i `klartex-base`) samt `footer`. Footern renderas av nya `klartex-footer.sty` (`\kxfooter`): tre justerade kolumner (Adress | Företag | Betalning), bottenankrade mot fotens baslinje så höga footrar växer uppåt, radbruten postadress (sträng eller array av rader), språkmedvetna etiketter och sidnummer bara när dokumentet är längre än en sida. (#42)
+- **Faktura: avsändare, footer och logga.** Fakturan bär ett eget `footer`-fält på toppnivå — den kanoniska platsen för betalningsuppgifter, med företräde framför sidmallens footer; `payment_info`-blocket i brödtexten är en dokumenterad fallback som undertrycks när en footer har betalningsuppgifter (och renderar inget alls utan data). Nya `sender` (Avsändare-block bredvid Mottagare, med referenser under) och `logo`/`logo_height`/`logo_offset` (toppjusterad med FAKTURA-rubriken, offset i andelar av loggans höjd). FAKTURA-kolumnen är vänsterställd och delar mottagarkolumnens vänsterkant. (#41, #42)
+- **Kvitto: avsändare, header-logga och footer** — samma behandling som fakturan: valfri `sender`, `logo`/`logo_height`/`logo_offset` i headern och `footer` på toppnivå. Header och referensrader är utbrutna till delade `doc_header`/`invoice_refs`-makron som faktura och kvitto delar, och `invoice_recipient` renderar avsändar-only-layouter (tom högerkolumn) respektive ingenting alls utan data — ingen tom Mottagare-etikett längre.
+
+### Fixes
+- **Vänsterställda rubriker sätts ragged-right.** Ett utslutet stycke i rubrikstorlek har för få brytpunkter per rad, så TeX överfyller i stället för att bryta tidigt och sista ordet sticker ut i högermarginalen. `textAlign: "left"` (default) sätter nu `\raggedright`; center/right är oförändrade.
+
 ## 0.13.0 — 2026-07-25
 
 ### New features

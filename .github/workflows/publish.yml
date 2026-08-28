@@ -1,37 +1,84 @@
 name: Publish to PyPI
 
+# The release gate: the suite runs inside the pinned base image — the same
+# environment klartex renders in — before the package is built, so nothing
+# reaches PyPI that has not passed there.
+#
+# The pin below is a literal tag + manifest digest, so git history records
+# which environment every release was tested in. Bumping the base image
+# means bumping this pin in its own PR; copy tag and digest from the step
+# summary of the `base-image.yml` run that published them.
+#
+# workflow_dispatch runs everything up to and including the package build
+# and then stops: the publish job is guarded on the release event, so the
+# gate can be exercised on demand without touching PyPI.
+
 on:
   release:
     types: [published]
+  workflow_dispatch:
 
 permissions:
   contents: read
+  packages: read
   id-token: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
+
+    # Pulling the ~2.75 GB image costs a couple of minutes, which is why
+    # the timeout is what it is. The gate runs on amd64 runners while
+    # production is arm64; both manifests come from the same Dockerfile and
+    # the same digest-pinned upstream, but they are separate builds.
+    container:
+      image: ghcr.io/swedev/klartex-base:20260828-3@sha256:b011056413d449bdc41b893ff1bd538a2be46d78d3794698eb134f45936d6ff2
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    env:
+      # Turns the Georgia render test's skip into a failure: a base image
+      # that lost the Microsoft core fonts blocks the release instead of
+      # silently shipping a version that cannot render with them.
+      KLARTEX_REQUIRE_GEORGIA: "1"
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install TeX Live
+      # poppler-utils is not baked into the base image — it is a test-only
+      # dependency and the image stays production-faithful. apt-get update
+      # is mandatory: the image ships without package lists.
+      - name: Install test-only dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            texlive-xetex texlive-fonts-recommended texlive-latex-extra \
-            texlive-latex-recommended texlive-science texlive-plain-generic \
-            poppler-utils
+          apt-get update
+          apt-get install -y --no-install-recommends poppler-utils
 
+      # Every Python entry point below is invoked through the venv's
+      # absolute path: activation does not survive between Actions steps,
+      # and the system interpreter is PEP 668-managed.
       - name: Install project
-        run: pip install --break-system-packages .[dev]
+        run: |
+          python3 -m venv /tmp/venv
+          /tmp/venv/bin/pip install ".[dev]"
 
+      # shell: bash gives the step `-o pipefail`, without which the step
+      # would report tee's exit status and a pytest failure could pass.
       - name: Run tests
-        run: pytest -v --tb=short
+        shell: bash
+        run: |
+          export PATH=/usr/local/texlive-bin:$PATH
+          /tmp/venv/bin/pytest -v -rs --tb=short 2>&1 | tee test-output.txt
+
+      - name: Verify no xelatex skips
+        run: |
+          ! grep -q "SKIPPED.*xelatex" test-output.txt
 
       - name: Build package
-        run: pip install --break-system-packages build && python -m build
+        run: |
+          /tmp/venv/bin/pip install build
+          /tmp/venv/bin/python -m build
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -40,6 +87,7 @@ jobs:
           path: dist/
 
   publish:
+    if: github.event_name == 'release'
     needs: build
     runs-on: ubuntu-latest
     environment: pypi

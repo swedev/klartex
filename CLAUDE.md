@@ -27,7 +27,7 @@ klartex example _block                         # canonical example payload
 
 `xelatex` is required for ~all rendering tests, and `pdftotext` (poppler-utils) for the text-layer round-trip tests in `tests/test_pdf_text_layer.py`. CI explicitly fails if any xelatex-tagged test is skipped (`.github/workflows/ci.yml`), so don't add `pytest.skip` shortcuts to silence local failures — install TeX Live instead: `brew install --cask mactex` on macOS, or on Debian/Ubuntu the package set in `README.md`, which mirrors the one `.github/workflows/ci.yml` installs (`texlive-xetex` alone is missing `ulem`, `tcolorbox` and `siunitx`).
 
-The render environment klartex is developed against lives in `docker/Dockerfile.base` and is published as `ghcr.io/swedev/klartex-base` by `.github/workflows/base-image.yml`, which runs the full suite inside the freshly built amd64 image before pushing. Changing the Dockerfile therefore implies a follow-up PR in each consumer that moves its pinned `tag@digest` — copy it from the build's step summary.
+The render environment klartex is developed against lives in `docker/Dockerfile.base` and is published as `ghcr.io/swedev/klartex-base` by `.github/workflows/base-image.yml`, which runs the full suite inside the freshly built amd64 image before pushing. `.github/workflows/publish.yml` pins a `tag@digest` from that registry and runs the suite inside it as the release gate, so a version only reaches PyPI after passing in the render environment. Changing the Dockerfile therefore implies a follow-up PR that moves the pin in `publish.yml` and in every external consumer — copy it from the build's step summary.
 
 ## Releases
 
@@ -36,7 +36,7 @@ The render environment klartex is developed against lives in `docker/Dockerfile.
    1. Bump `version` in `pyproject.toml`.
    2. Add a dated entry at the top of `CHANGELOG.md` (groups: `Breaking changes` / `New features` / `Fixes` / `Spacing`).
    3. Commit as `Release vX.Y.Z: <summary>` and push to `main`.
-   4. `gh release create vX.Y.Z --generate-notes` pushes the tag and creates the release, which triggers `.github/workflows/publish.yml` — runs tests and publishes to PyPI.
+   4. `gh release create vX.Y.Z --generate-notes` pushes the tag and creates the release, which triggers `.github/workflows/publish.yml` — runs the suite inside the pinned base image, builds the package and publishes to PyPI.
 
 ## Architecture
 

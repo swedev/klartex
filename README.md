@@ -54,6 +54,8 @@ FROM ghcr.io/swedev/klartex-base:<tagg>@sha256:<digest>
 
 Pinna alltid tagg **och** manifest-digest — det finns ingen `latest`-tagg. Imagen byggs av `.github/workflows/base-image.yml` från `docker/Dockerfile.base`, och hela testsviten körs inuti den färdigbyggda amd64-imagen innan något publiceras — en image som klartex inte renderar i når aldrig registret.
 
+Samma image är också releasegrind: `.github/workflows/publish.yml` kör hela testsviten inuti den pinnade imagen innan paketet byggs, så varje version som publiceras på PyPI har passerat i renderingsmiljön.
+
 ## Användning
 
 ### Som Python-bibliotek

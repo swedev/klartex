@@ -54,6 +54,8 @@ FROM ghcr.io/swedev/klartex-base:<tag>@sha256:<digest>
 
 Always pin the tag **and** the manifest digest — there is no `latest` tag. The image is built by `.github/workflows/base-image.yml` from `docker/Dockerfile.base`, and the full test suite runs inside the freshly built amd64 image before anything is published — an image klartex cannot render in never reaches the registry.
 
+The same image is also the release gate: `.github/workflows/publish.yml` runs the full test suite inside the pinned image before the package is built, so every version published to PyPI has passed in the render environment.
+
 ## Usage
 
 ### As a Python library

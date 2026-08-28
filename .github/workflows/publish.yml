@@ -65,15 +65,20 @@ jobs:
 
       # shell: bash gives the step `-o pipefail`, without which the step
       # would report tee's exit status and a pytest failure could pass.
+      #
+      # The log is captured outside the workspace: hatchling's sdist packs
+      # whatever the checkout contains, and a stray test-output.txt matches
+      # neither .gitignore nor [tool.hatch.build].exclude, so it would ship
+      # to PyPI inside the tarball.
       - name: Run tests
         shell: bash
         run: |
           export PATH=/usr/local/texlive-bin:$PATH
-          /tmp/venv/bin/pytest -v -rs --tb=short 2>&1 | tee test-output.txt
+          /tmp/venv/bin/pytest -v -rs --tb=short 2>&1 | tee /tmp/test-output.txt
 
       - name: Verify no xelatex skips
         run: |
-          ! grep -q "SKIPPED.*xelatex" test-output.txt
+          ! grep -q "SKIPPED.*xelatex" /tmp/test-output.txt
 
       - name: Build package
         run: |

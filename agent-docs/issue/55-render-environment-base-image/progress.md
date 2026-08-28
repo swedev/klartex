@@ -4,6 +4,10 @@
 
 (Update as work proceeds — newest entries first)
 
+## 2026-08-28 — PR #57 review feedback addressed
+
+- `publish.yml` tees the pytest log to `/tmp/test-output.txt` instead of the workspace root, and the xelatex skip guard greps that path. Reviewer finding, verified locally: hatchling's sdist packs the checkout, and `test-output.txt` matches neither `.gitignore` (`*.log`/`*.out`, no `.txt`) nor `[tool.hatch.build].exclude`, so a build after the test step shipped `klartex-0.15.0/test-output.txt` inside the PyPI tarball. This mirrors what `base-image.yml`'s self-test already does. `ci.yml` tees to the workspace root as before — it builds no package, so nothing is packed there.
+
 ## 2026-08-28 — PR 2 implemented (release gate in `publish.yml`)
 
 Branch `issue/55-render-environment-base-image-r2`, cut from current `main` because the round-1 branch carries merged PR #56.

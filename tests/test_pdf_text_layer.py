@@ -43,7 +43,8 @@ BATTERY = [
 ]
 
 
-def _text_layer(pdf: bytes) -> str:
+def _raw_text_layer(pdf: bytes) -> str:
+    """The untouched ``pdftotext`` output, page separators (\\f) intact."""
     with tempfile.TemporaryDirectory() as tmp:
         path = Path(tmp) / "doc.pdf"
         path.write_bytes(pdf)
@@ -53,9 +54,21 @@ def _text_layer(pdf: bytes) -> str:
             check=True,
             timeout=60,
         )
+    return out.stdout.decode("utf-8")
+
+
+def _text_layer(pdf: bytes) -> str:
     # pdftotext wraps lines at the rendered line breaks; join so a phrase
     # that wrapped in the PDF is still found as one string.
-    return " ".join(out.stdout.decode("utf-8").split())
+    return " ".join(_raw_text_layer(pdf).split())
+
+
+def _pages(pdf: bytes) -> list[str]:
+    """Text-layer pages, whitespace-normalized, trailing empties dropped."""
+    pages = [" ".join(page.split()) for page in _raw_text_layer(pdf).split("\f")]
+    while pages and not pages[-1]:
+        pages.pop()
+    return pages
 
 
 @requires_tools
@@ -113,3 +126,55 @@ def test_generated_quotation_marks_survive():
     text = _text_layer(render(BLOCK_ENGINE_TEMPLATE, data))
     assert "”avgiften”" in text
     assert "”§ 12”" in text
+
+
+LOREM = (
+    "Föreningens medlemmar samlas till ordinarie stämma för att behandla "
+    "de ärenden som stadgarna föreskriver och de förslag som styrelsen lagt fram. "
+)
+
+
+@requires_tools
+def test_paragraph_longer_than_a_page_breaks_onto_next_page():
+    """A paragraph taller than the text block must break across pages.
+
+    With a penalty array whose last value repeats for every remaining line,
+    every interline break inside a paragraph is forbidden, xelatex reports an
+    overfull \\vbox and clips the tail below the bottom margin. The clipped
+    text is still absent from the text layer, so the marker word closing the
+    paragraph is the decisive assertion — the page count alone is not, since
+    the clipped render also produces two pages.
+    """
+    data = {
+        "lang": "sv",
+        "body": [{"type": "text", "text": LOREM * 60 + "SLUTMARKÖR"}],
+    }
+    pages = _pages(render(BLOCK_ENGINE_TEMPLATE, data))
+    assert len(pages) >= 2, f"expected a multi-page render, got {len(pages)}"
+    assert "SLUTMARKÖR" in pages[-1], "paragraph tail clipped instead of broken"
+
+
+@requires_tools
+def test_widow_and_orphan_penalties_keep_the_two_line_policy():
+    """The 1- and 2-line widow/orphan protection must survive the fix.
+
+    Dropping the penalty arrays entirely would also let long paragraphs break,
+    so assert the actual values: forbidden (10000) for the first two lines from
+    either edge, free (0) beyond them.
+    """
+    probe = (
+        r"W1=\the\widowpenalties 1. "
+        r"W2=\the\widowpenalties 2. "
+        r"W3=\the\widowpenalties 3. "
+        r"C1=\the\clubpenalties 1. "
+        r"C2=\the\clubpenalties 2. "
+        r"C3=\the\clubpenalties 3."
+    )
+    data = {"lang": "sv", "body": [{"type": "latex", "source": probe}]}
+    text = _text_layer(render(BLOCK_ENGINE_TEMPLATE, data))
+    assert "W1=10000." in text
+    assert "W2=10000." in text
+    assert "W3=0." in text
+    assert "C1=10000." in text
+    assert "C2=10000." in text
+    assert "C3=0." in text

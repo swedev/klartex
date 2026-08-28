@@ -42,7 +42,17 @@ sudo apt install texlive-xetex texlive-fonts-recommended \
   texlive-latex-extra texlive-latex-recommended texlive-science texlive-plain-generic
 ```
 
-Paketuppsättningen för Debian/Ubuntu är densamma som CI installerar, alltså den som hela testsviten körs mot. `texlive-xetex` ensamt räcker inte — bland annat `ulem` (i `texlive-plain-generic`), `tcolorbox` och `siunitx` behövs för att rendera.
+Paketuppsättningen för Debian/Ubuntu är densamma som CI installerar vid varje push — en snabb approximation av renderingsmiljön. `texlive-xetex` ensamt räcker inte — bland annat `ulem` (i `texlive-plain-generic`), `tcolorbox` och `siunitx` behövs för att rendera.
+
+### Färdig renderingsmiljö (containerimage)
+
+Den miljö klartex släpps mot publiceras som `ghcr.io/swedev/klartex-base`: full TeX Live plus Microsoft core fonts (Georgia, Arial, Times New Roman …) och den Python-runtime som behövs för att installera paketet. Tjänster som renderar med klartex bygger vidare på den i stället för att återskapa apt-listan.
+
+```dockerfile
+FROM ghcr.io/swedev/klartex-base:<tagg>@sha256:<digest>
+```
+
+Pinna alltid tagg **och** manifest-digest — det finns ingen `latest`-tagg. Imagen byggs av `.github/workflows/base-image.yml` från `docker/Dockerfile.base`, och hela testsviten körs inuti den färdigbyggda amd64-imagen innan något publiceras — en image som klartex inte renderar i når aldrig registret.
 
 ## Användning
 

@@ -1,0 +1,64 @@
+# The render environment klartex is developed and released against — TeX
+# Live, Microsoft core fonts and the Python runtime needed to install and
+# exercise the package. Published as ghcr.io/swedev/klartex-base by
+# .github/workflows/base-image.yml, which runs the full klartex test suite
+# inside the freshly built amd64 image before anything is pushed.
+#
+# Consumers (swedev/klartex.se's backend image, and any other service that
+# renders with klartex) pin a tag + manifest digest from that registry and
+# add their venv and app source on top. Published tags referenced by a
+# consumer Dockerfile anywhere in its history must never be deleted.
+#
+# This is layer substrate only: no WORKDIR, ENV, EXPOSE, HEALTHCHECK or
+# CMD. Runtime configuration belongs in the consuming Dockerfile.
+#
+# No test-only packages are installed here (notably poppler-utils, which
+# the pdftotext round-trip tests need): the image is a production artifact
+# and stays faithful to what production runs. The workflows install such
+# dependencies transiently at test time.
+
+# Full TeX Live image — has everything klartex might need (tcolorbox,
+# tikzfill, siunitx, fontspec, …) pre-installed. ~7 GB image, but build
+# time is ~5 min instead of ~50+ min (no tlmgr install step).
+#
+# The build arg lets the workflow resolve texlive/texlive:latest to a
+# digest once and pass the same pinned ref to both the image it tests and
+# the image it pushes, so upstream cannot drift between the two builds.
+ARG TEXLIVE_REF=texlive/texlive:latest
+FROM ${TEXLIVE_REF}
+
+LABEL org.opencontainers.image.source="https://github.com/swedev/klartex"
+LABEL org.opencontainers.image.licenses="MIT"
+LABEL org.opencontainers.image.description="TeX Live render environment for klartex, with Microsoft core fonts"
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        python3 python3-pip python3-venv curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Microsoft core fonts (Georgia, Arial, Times New Roman, …) — common in
+# user-supplied page templates. EULA accepted via debconf so install is
+# non-interactive. fc-cache registers them so fontspec finds them at
+# render time. Bundle authors can still ship their own .ttf as an asset.
+RUN . /etc/os-release \
+    && echo "deb http://deb.debian.org/debian $VERSION_CODENAME contrib" \
+        > /etc/apt/sources.list.d/contrib.list \
+    && apt-get update \
+    && echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true \
+        | debconf-set-selections \
+    && apt-get install -y --no-install-recommends \
+        ttf-mscorefonts-installer fontconfig \
+    && fc-cache -f \
+    && rm -rf /var/lib/apt/lists/*
+
+# texlive/texlive sets PATH via /etc/profile (login shell). Processes that
+# run non-interactive do not get it, so symlink the arch-specific bin dir
+# to a stable path callers can put on PATH themselves.
+RUN ln -s "$(ls -d /usr/local/texlive/*/bin/* | head -1)" /usr/local/texlive-bin
+
+# Sanity check — runs per platform at build time and fails the build if
+# the base is broken (dead symlink, missing TeX installation, failed font
+# install). Absolute paths: the TeX binaries are not on PATH here.
+RUN /usr/local/texlive-bin/xelatex --version \
+    && /usr/local/texlive-bin/kpsewhich fontspec.sty \
+    && fc-list | grep -qi georgia \
+    && fc-list | grep -qi arial

@@ -20,6 +20,7 @@
             "first_page_header": { "type": "boolean", "description": "Visa sidhuvud på första sidan" },
             "font": { "type": "string", "description": "Dokumentets typsnitt (fontspec-namn, t.ex. 'Futura'). Måste finnas installerat där renderingen sker." },
             "header_font": { "type": "string", "description": "Typsnitt för sidhuvud och sidfot. Default: samma som font." },
+            "diff_style": { "type": "string", "enum": ["color", "underline"], "default": "color", "description": "Hur tillagd text markeras: \"color\" (grön text, default) eller \"underline\" (grön understruken \u2014 konventionen i \u00e4ndringsdokument, och den signal som \u00f6verlever svartvit utskrift). Struken text \u00e4r \u00f6verstruken i b\u00e5da fallen." },
             "footer": {
               "type": "object",
               "additionalProperties": false,

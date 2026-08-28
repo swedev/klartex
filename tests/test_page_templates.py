@@ -136,3 +136,14 @@ class TestFontAndFooterOverrides:
         )
         assert pt.footer == {"company": "Bolaget AB"}
         assert pt.footer_has_payment is False
+
+
+class TestDiffStyle:
+    """diff_style page-template option (how an addition is marked)."""
+
+    def test_defaults_to_color(self):
+        assert load_page_template("formal").diff_style == "color"
+
+    def test_underline_override_is_carried(self):
+        pt = load_page_template({"name": "clean", "diff_style": "underline"})
+        assert pt.diff_style == "underline"

@@ -25,7 +25,7 @@ klartex schema _block                          # full block-engine JSON Schema (
 klartex example _block                         # canonical example payload
 ```
 
-`xelatex` is required for ~all rendering tests. CI explicitly fails if any xelatex-tagged test is skipped (`.github/workflows/ci.yml`), so don't add `pytest.skip` shortcuts to silence local failures — install TeX Live instead: `brew install --cask mactex` on macOS, or on Debian/Ubuntu the package set in `README.md`, which mirrors the one `.github/workflows/ci.yml` installs (`texlive-xetex` alone is missing `ulem`, `tcolorbox` and `siunitx`).
+`xelatex` is required for ~all rendering tests, and `pdftotext` (poppler-utils) for the text-layer round-trip tests in `tests/test_pdf_text_layer.py`. CI explicitly fails if any xelatex-tagged test is skipped (`.github/workflows/ci.yml`), so don't add `pytest.skip` shortcuts to silence local failures — install TeX Live instead: `brew install --cask mactex` on macOS, or on Debian/Ubuntu the package set in `README.md`, which mirrors the one `.github/workflows/ci.yml` installs (`texlive-xetex` alone is missing `ulem`, `tcolorbox` and `siunitx`).
 
 ## Releases
 

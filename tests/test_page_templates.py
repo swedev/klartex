@@ -136,3 +136,20 @@ class TestFontAndFooterOverrides:
         )
         assert pt.footer == {"company": "Bolaget AB"}
         assert pt.footer_has_payment is False
+
+
+class TestDiffHighlight:
+    """diff_highlight page-template option (which side of a change gets a
+    background)."""
+
+    def test_defaults_to_none(self):
+        assert load_page_template("formal").diff_highlight == "none"
+
+    def test_override_is_carried(self):
+        pt = load_page_template({"name": "clean", "diff_highlight": "both"})
+        assert pt.diff_highlight == "both"
+
+    def test_each_value_survives_loading(self):
+        for value in ("none", "added", "removed", "both"):
+            pt = load_page_template({"name": "formal", "diff_highlight": value})
+            assert pt.diff_highlight == value

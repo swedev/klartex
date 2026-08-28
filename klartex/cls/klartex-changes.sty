@@ -9,8 +9,7 @@
 %
 % The visual contract lives in the \kxaddedstyle / \kxremovedstyle hooks:
 % a page template can \renewcommand either one to restyle change marking
-% without touching a single call site. \kxdiffhighlight{none|added|removed|both}
-% switches between the two shipped renderings for those hooks.
+% without touching a single call site.
 
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{klartex-changes}[2026/08/27 Klartex Change Marking]
@@ -19,41 +18,14 @@
 % which would restyle emphasis in every document that loads the base class.
 \RequirePackage[normalem]{ulem}
 \RequirePackage{xcolor}
-% soul draws a background that follows the text across line and page breaks,
-% which \colorbox cannot do. It ships in collection-plaingeneric, already
-% required for ulem.
-\RequirePackage{soul}
 
 % Dark enough to stay legible in grayscale print.
 \definecolor{kxaddedcolor}{HTML}{1A7A3C}
 \definecolor{kxremovedcolor}{HTML}{B00020}
-% Light enough for the text above to keep its contrast.
-\definecolor{kxaddedbgcolor}{HTML}{DCF2E3}
-\definecolor{kxremovedbgcolor}{HTML}{FBDEE1}
 
 % Style hooks — the redefinable half of the contract.
 \newcommand{\kxaddedstyle}[1]{\textcolor{kxaddedcolor}{#1}}
 \newcommand{\kxremovedstyle}[1]{\textcolor{kxremovedcolor}{\sout{#1}}}
-
-% Highlighted variants. soul commands cannot be nested inside one another, and
-% mixing \hl with ulem's \sout aborts the build, so a highlighted removal
-% carries no strikethrough — the background is the signal instead.
-\newcommand{\kxaddedhl}[1]{{\sethlcolor{kxaddedbgcolor}\textcolor{kxaddedcolor}{\hl{#1}}}}
-\newcommand{\kxremovedhl}[1]{{\sethlcolor{kxremovedbgcolor}\textcolor{kxremovedcolor}{\hl{#1}}}}
-
-% \kxdiffhighlight{none|added|removed|both} — which side gets a background.
-\newcommand{\kxdiffhighlight}[1]{%
-  \edef\kx@dh{#1}%
-  \def\kx@dhadded{added}\def\kx@dhremoved{removed}\def\kx@dhboth{both}%
-  \ifx\kx@dh\kx@dhadded
-    \renewcommand{\kxaddedstyle}[1]{\kxaddedhl{##1}}%
-  \else\ifx\kx@dh\kx@dhremoved
-    \renewcommand{\kxremovedstyle}[1]{\kxremovedhl{##1}}%
-  \else\ifx\kx@dh\kx@dhboth
-    \renewcommand{\kxaddedstyle}[1]{\kxaddedhl{##1}}%
-    \renewcommand{\kxremovedstyle}[1]{\kxremovedhl{##1}}%
-  \fi\fi\fi
-}
 
 % Semantic macros — the stable half. \sout breaks at spaces and tolerates
 % \\ inside its argument, so marked spans may cross lines and page breaks.

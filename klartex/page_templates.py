@@ -77,7 +77,6 @@ class PageTemplate:
     font: str | None = None
     header_font: str | None = None
     footer: dict = field(default_factory=dict)
-    diff_highlight: str = "none"
 
     @property
     def footer_has_payment(self) -> bool:
@@ -93,8 +92,7 @@ def load_page_template(
 
     Args:
         spec: Either a template name string, or a dict with ``name`` and
-              optional overrides (``page_numbers``, ``first_page_header``,
-              ``font``, ``header_font``, ``footer``, ``diff_highlight``).
+              optional overrides (``page_numbers``, ``first_page_header``).
 
     Returns:
         Resolved PageTemplate with defaults and overrides applied.
@@ -127,7 +125,6 @@ def load_page_template(
         font=overrides.get("font"),
         header_font=overrides.get("header_font", overrides.get("font")),
         footer=overrides.get("footer") or {},
-        diff_highlight=overrides.get("diff_highlight") or "none",
     )
 
 

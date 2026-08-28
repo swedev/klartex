@@ -22,7 +22,6 @@
             "first_page_header": { "type": "boolean", "description": "Override: show header on first page" },
             "font": { "type": "string", "description": "Dokumentets typsnitt (fontspec-namn, t.ex. 'Futura'). Måste finnas installerat där renderingen sker." },
             "header_font": { "type": "string", "description": "Typsnitt för sidhuvud och sidfot. Default: samma som font." },
-            "diff_highlight": { "type": "string", "enum": ["none", "added", "removed", "both"], "default": "none", "description": "Bakgrundsfärg bakom ändringsmarkerad text ({+tillagt+} / [-struket-]): \"added\", \"removed\", \"both\" eller \"none\". Struken text med bakgrund saknar genomstrykning \u2014 de går inte att kombinera." },
             "footer": {
               "type": "object",
               "additionalProperties": false,

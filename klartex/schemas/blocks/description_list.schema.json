@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://klartex.se/schemas/blocks/description-list/v0.3",
   "title": "Description List Block",
-  "description": "Label/value definition list (HTML <dl>). Used for meeting metadata, party info, key-value displays — anywhere a sequence of label-value pairs needs to be rendered. Compose with the columns block for side-by-side layouts.",
+  "description": "Label/value definition list (HTML <dl>). Used for meeting metadata, party info, key-value displays — anywhere a sequence of label-value pairs needs to be rendered. Compose with the columns block for side-by-side layouts. Labels and values pass through inline markup.",
   "type": "object",
   "required": ["type", "entries"],
   "additionalProperties": false,
@@ -16,8 +16,14 @@
         "required": ["label", "value"],
         "additionalProperties": false,
         "properties": {
-          "label": { "type": "string" },
-          "value": { "type": "string" }
+          "label": {
+            "type": "string",
+            "description": "Etikett. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} / [-struken text-]. Radbrytning blir mellanslag — etikettkolumnen är enradig."
+          },
+          "value": {
+            "type": "string",
+            "description": "Värde. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} (grön) och [-struken text-] (röd genomstruken). Radbrytning blir radbrytning inuti cellen."
+          }
         }
       },
       "minItems": 1

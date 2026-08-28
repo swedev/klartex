@@ -501,6 +501,26 @@ def test_kvitto_minimal_payload_skips_metadata_list():
     assert " None" not in tex
 
 
+def test_recipe_metadata_passes_through_inline_markup():
+    """The recipe path shares render_description_list with the block engine,
+    so document metadata gets inline markup and change markers too (#47)."""
+    data = json.loads((FIXTURES / "protokoll.json").read_text())
+    data["location"] = "Klubbhuset, [-Storgatan 1-] {+**Lillgatan 2**+}"
+    tex = _render_recipe_tex("protokoll", data)
+    assert r"\kxremoved{Storgatan 1}" in tex
+    assert r"\kxadded{\textbf{Lillgatan 2}}" in tex
+    assert "**" not in tex
+
+
+def test_recipe_metadata_newline_is_cell_safe():
+    """Metadata values land in the paragraph-mode X column: a newline must
+    become \\newline, never a bare \\\\ that would end the table row."""
+    data = json.loads((FIXTURES / "protokoll.json").read_text())
+    data["location"] = "Klubbhuset\nStorgatan 1"
+    tex = _render_recipe_tex("protokoll", data)
+    assert r"Klubbhuset \newline Storgatan 1" in tex
+
+
 def test_xelatex_timeout_raises_runtime_error(monkeypatch):
     """TimeoutExpired must be translated to the pipeline's RuntimeError contract."""
     import subprocess

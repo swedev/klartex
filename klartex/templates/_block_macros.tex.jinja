@@ -34,7 +34,7 @@
 \noindent
 \begin{tabularx}{\linewidth}{@{}l >{\raggedright\arraybackslash}X@{}}
 \BLOCK{for entry in entries}
-\textbf{\VAR{entry.label}} & \VAR{entry.value} \\
+\textbf{\VAR{entry.label | inline_flat}} & \VAR{entry.value | inline_cell} \\
 \BLOCK{endfor}
 \end{tabularx}
 \vspace{\VAR{spacing_after or "2em"}}

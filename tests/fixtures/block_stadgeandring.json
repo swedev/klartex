@@ -8,7 +8,7 @@
     },
     {
       "type": "text",
-      "text": "Styrelsen föreslår att föreningsstämman antar nedanstående ändringar av stadgarna. {+Tillagd text visas i grönt+} och {-struken text visas i rött med genomstrykning-}. Ändringarna ska antas av två på varandra följande stämmor."
+      "text": "Styrelsen föreslår att föreningsstämman antar nedanstående ändringar av stadgarna. {+Tillagd text visas i grönt+} och [-struken text visas i rött med genomstrykning-]. Ändringarna ska antas av två på varandra följande stämmor."
     },
     {
       "type": "description_list",
@@ -31,7 +31,7 @@
       "content": [
         {
           "type": "text",
-          "text": "Kallelse till ordinarie föreningsstämma ska utfärdas tidigast {-sex veckor-}{+åtta veckor+} och senast {-två veckor-}{+fyra veckor+} före stämman."
+          "text": "Kallelse till ordinarie föreningsstämma ska utfärdas tidigast [-sex veckor-]{+åtta veckor+} och senast [-två veckor-]{+fyra veckor+} före stämman."
         },
         {
           "type": "text",
@@ -53,7 +53,7 @@
       "content": [
         {
           "type": "text",
-          "text": "Årsavgiften fördelas på bostadsrätterna i förhållande till {-lägenheternas andelstal-}{+lägenheternas bruksarea+}."
+          "text": "Årsavgiften fördelas på bostadsrätterna i förhållande till [-lägenheternas andelstal-]{+lägenheternas bruksarea+}."
         },
         {
           "type": "table",
@@ -65,12 +65,12 @@
           "rows": [
             [
               "Årsavgift",
-              "{-Betalas kvartalsvis-}",
+              "[-Betalas kvartalsvis-]",
               "{+Betalas månadsvis i förskott+}"
             ],
             [
               "Överlåtelseavgift",
-              "{-2,5 % av prisbasbeloppet-}",
+              "[-2,5 % av prisbasbeloppet-]",
               "{+3,5 % av prisbasbeloppet+}"
             ],
             [
@@ -80,7 +80,7 @@
             ],
             [
               "Påminnelseavgift",
-              "{-Uttas ej-}",
+              "[-Uttas ej-]",
               "{+60 kronor per påminnelse+}"
             ]
           ]
@@ -95,7 +95,7 @@
       "content": [
         {
           "type": "text",
-          "text": "Föreningen ska upprätta en underhållsplan som omfattar minst {-tio år-}{+trettio år+} framåt."
+          "text": "Föreningen ska upprätta en underhållsplan som omfattar minst [-tio år-]{+trettio år+} framåt."
         },
         {
           "type": "text",

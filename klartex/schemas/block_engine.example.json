@@ -22,7 +22,7 @@
     },
     {
       "type": "text",
-      "text": "Detta är ett exempeldokument som visar alla tillgängliga blocktyper i klartex blockmotor. Du kan använda **fet stil**, *kursiv*, `kod` och \"smarta citattecken\" direkt i text. Ändringsmarkering skrivs {+tillagd text+} och {-struken text-}."
+      "text": "Detta är ett exempeldokument som visar alla tillgängliga blocktyper i klartex blockmotor. Du kan använda **fet stil**, *kursiv*, `kod` och \"smarta citattecken\" direkt i text. Ändringsmarkering skrivs {+tillagd text+} och [-struken text-]."
     },
     {
       "type": "callout",

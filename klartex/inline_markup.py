@@ -11,7 +11,7 @@ Markers (deliberately narrow — see issue #25):
 - `` `code` ``      → ``\\texttt{...}``
 - ``"..."``         → locale-aware smart quotes (sv: ``”…”``, en: ``“…”``)
 - ``{+added+}``     → ``\\kxadded{...}`` — change marking (#40)
-- ``{-removed-}``   → ``\\kxremoved{...}`` — change marking (#40)
+- ``[-removed-]``   → ``\\kxremoved{...}`` — change marking (#40)
 
 Out of scope: links, headings-in-text, lists-in-text, blockquotes, *generic*
 strikethrough (``~~text~~``), escape hatches (``\\*`` to print a literal ``*``
@@ -19,24 +19,34 @@ etc.). Semantic change marking is in scope; arbitrary strikethrough is not.
 
 Change-marker semantics:
 
-- The markers arrive here in *escaped* form (``\\{+…+\\}``), because
+- The notation is ``git diff --word-diff``'s: ``{+added+}`` is character for
+  character git's, and ``[-removed-]`` matches git's brackets.
+- The added marker arrives here in *escaped* form (``\\{+…+\\}``), because
   ``escape_data()`` has already turned ``{`` and ``}`` into ``\\{`` / ``\\}``.
-  Both the opener and its matching closer must be present.
+  Brackets are not escaped, so the removed marker arrives as written. Both the
+  opener and its matching closer must be present.
 - Markup inside marker content still renders: ``{+**viktigt** tillägg+}`` →
   ``\\kxadded{\\textbf{viktigt} tillägg}``.
-- Mixed nesting renders nested: ``{-gammal {+ny+} gammal-}`` puts a
+- Mixed nesting renders nested: ``[-gammal {+ny+} gammal-]`` puts a
   ``\\kxadded`` group inside the ``\\kxremoved`` argument. Same-type nesting is
   undefined: a closer pairs with the nearest preceding opener of its kind, so
   the inner marker converts and the outer opener is left literal.
 - Adjacent markers stay separate spans, mirroring adjacent bold.
+- Both markers render every character the author put inside them. Spaces and
+  tabs at the edges of ``{+…+}`` render outside the macro, because
+  ``\\textcolor`` would otherwise drop a leading one; inside ``[-…-]`` they
+  are struck along with the rest of the removed run. Write the space outside
+  the marker to keep it out of the strike.
 - Empty (``{++}``), unmatched, or lone markers stay literal and print as
-  visible text.
+  visible text. An added marker holding only spaces (``{+ +}``) contributes
+  just that spacing.
 - Markers may span literal newlines; the newline pass converts those inside
   the macro argument, which both ``\\textcolor`` and ulem's ``\\sout`` accept.
 - Caveat: the grammar is narrow but not free of false positives — literal
-  text shaped like ``{-1-}`` converts. Both delimiters are required, so
-  ordinary brace prose (``intervallet {-5, 5}``) does not, and such prose
-  cannot reach across the string to pair with a later marker's closer.
+  text shaped like ``[-1-]`` converts. Both delimiters are required, so
+  ordinary bracket prose (``intervallet [-5, 5]``, a citation ``[1]``) does
+  not, and such prose cannot reach across the string to pair with a later
+  marker's closer.
 """
 
 import re
@@ -49,15 +59,37 @@ _BOLD_RE = re.compile(r"\*\*(.+?)\*\*", re.DOTALL)
 # Italic: a single * not adjacent to another *.
 _ITALIC_RE = re.compile(r"(?<!\*)\*([^*\n]+)\*(?!\*)")
 
-# Change marking (#40). Matched in escaped form: ``{+x+}`` reaches this
-# function as ``\{+x+\}``. Non-greedy so adjacent markers stay separate;
-# DOTALL so a marked span may cross a literal newline. Marker content may not
-# contain another opener of the same kind, which pairs every closer with the
-# *nearest* preceding opener — without that, an unmatched ``\{-`` earlier in
-# the string would swallow a later real marker's closer and strike out the
-# prose between them.
+# Drop the inner lookahead and an unmatched ``[-`` earlier in the string
+# swallows a later real marker's closer, striking out the prose between them.
 _ADDED_RE = re.compile(r"\\\{\+((?:(?!\\\{\+).)+?)\+\\\}", re.DOTALL)
-_REMOVED_RE = re.compile(r"\\\{-((?:(?!\\\{-).)+?)-\\\}", re.DOTALL)
+_REMOVED_RE = re.compile(r"\[-((?:(?!\[-).)+?)-\]", re.DOTALL)
+
+# ``\textcolor`` discards a space at the very start of its argument, so a
+# leading space inside an added marker would vanish from the output entirely.
+# Emitting edge spaces and tabs outside the macro preserves them. ``\kxremoved``
+# needs no such treatment: ulem's ``\sout`` typesets the space and strikes it
+# along with the rest of the removed run, which is what removal means.
+# Newlines stay inside — the newline pass converts them, and the macro accepts
+# the result.
+_EDGE_WS = " \t"
+
+
+def _marker_sub(macro: str):
+    """Build a re.sub replacement that wraps ``macro`` around the marker
+    content, leaving edge spaces and tabs outside the macro argument."""
+
+    def replace(match: re.Match) -> str:
+        content = match.group(1)
+        inner = content.strip(_EDGE_WS)
+        if not inner:
+            # Nothing to mark; keep the spacing the author wrote.
+            return content
+        lead = content[: len(content) - len(content.lstrip(_EDGE_WS))]
+        trail = content[len(content.rstrip(_EDGE_WS)) :]
+        return f"{lead}\\{macro}{{{inner}}}{trail}"
+
+    return replace
+
 
 # (open, close) for paired double quotes per language.
 _QUOTE_PAIRS = {
@@ -93,7 +125,7 @@ def render_inline(text: str, lang: str = "sv", newlines: str = "break") -> str:
     # Change markers run after the code stash (a marker inside backticks stays
     # literal) and before bold/italic, so markup inside marker content is still
     # reached by the later global passes.
-    text = _ADDED_RE.sub(r"\\kxadded{\1}", text)
+    text = _ADDED_RE.sub(_marker_sub("kxadded"), text)
     text = _REMOVED_RE.sub(r"\\kxremoved{\1}", text)
     text = _BOLD_RE.sub(r"\\textbf{\1}", text)
     text = _ITALIC_RE.sub(r"\\textit{\1}", text)

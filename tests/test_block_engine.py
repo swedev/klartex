@@ -1400,28 +1400,28 @@ class TestHeadingAlignment:
 
 
 class TestChangeMarking:
-    """Change marking (#40): inline `{+…+}` / `{-…-}` markers and the
+    """Change marking (#40): inline `{+…+}` / `[-…-]` markers and the
     block-level `revision` attribute on `text`."""
 
     def test_inline_markers_become_macros(self):
-        data = {"body": [{"type": "text", "text": "tidigast {-sex-}{+åtta+} veckor"}]}
+        data = {"body": [{"type": "text", "text": "tidigast [-sex-]{+åtta+} veckor"}]}
         tex = _render_tex(data)
         assert r"\kxremoved{sex}" in tex
         assert r"\kxadded{åtta}" in tex
 
     def test_marker_delimiters_are_consumed(self):
-        data = {"body": [{"type": "text", "text": "{+ny+} och {-gammal-}"}]}
+        data = {"body": [{"type": "text", "text": "{+ny+} och [-gammal-]"}]}
         tex = _render_tex(data)
         assert r"\{+" not in tex
         assert r"+\}" not in tex
-        assert r"\{-" not in tex
-        assert r"-\}" not in tex
+        assert "[-" not in tex
+        assert "-]" not in tex
 
     def test_markers_work_in_table_cells(self):
         data = {"body": [{
             "type": "table",
             "header": ["Avgift", "Förslag"],
-            "rows": [["Årsavgift", "{-kvartalsvis-} {+månadsvis+}"]],
+            "rows": [["Årsavgift", "[-kvartalsvis-] {+månadsvis+}"]],
         }]}
         tex = _render_tex(data)
         assert r"\kxremoved{kvartalsvis}" in tex
@@ -1489,7 +1489,49 @@ class TestChangeMarking:
 
         data = {"body": [
             {"type": "text", "text": "Ett stycke med ändringsmarkering.", "revision": revision},
-            {"type": "text", "text": "Inline {+tillagt+} och {-struket-} i löptext."},
+            {"type": "text", "text": "Inline {+tillagt+} och [-struket-] i löptext."},
         ]}
+        pdf = render(BLOCK_ENGINE_TEMPLATE, data)
+        assert pdf[:5] == b"%PDF-"
+
+
+class TestDiffHighlight:
+    """The diff_highlight page-template option reaches the LaTeX source."""
+
+    def test_absent_by_default(self):
+        tex = _render_tex({"body": [{"type": "text", "text": "hej"}]})
+        assert r"\kxdiffhighlight" not in tex
+
+    def test_none_emits_nothing(self):
+        data = {
+            "page_template": {"name": "clean", "diff_highlight": "none"},
+            "body": [{"type": "text", "text": "hej"}],
+        }
+        assert r"\kxdiffhighlight" not in _render_tex(data)
+
+    def test_each_value_is_emitted(self):
+        for value in ("added", "removed", "both"):
+            data = {
+                "page_template": {"name": "clean", "diff_highlight": value},
+                "body": [{"type": "text", "text": "hej"}],
+            }
+            assert f"\\kxdiffhighlight{{{value}}}" in _render_tex(data)
+
+    @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+    def test_highlighted_document_compiles(self):
+        """soul-based highlights must survive a real compile — the package is
+        a runtime dependency and \\hl cannot be nested in ulem's \\sout."""
+        from klartex.renderer import render
+
+        data = {
+            "lang": "sv",
+            "page_template": {"name": "clean", "diff_highlight": "both"},
+            "body": [
+                {"type": "heading", "text": "tidigast [-sex-] {+åtta+} veckor"},
+                {"type": "text", "text": "Struket: [-gammal lydelse-] och tillagt: {+ny lydelse+}."},
+                {"type": "text", "text": "Struket stycke.", "revision": "removed"},
+                {"type": "table", "header": ["A"], "rows": [["[-x-] {+y+}"]]},
+            ],
+        }
         pdf = render(BLOCK_ENGINE_TEMPLATE, data)
         assert pdf[:5] == b"%PDF-"

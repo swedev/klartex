@@ -1493,3 +1493,42 @@ class TestChangeMarking:
         ]}
         pdf = render(BLOCK_ENGINE_TEMPLATE, data)
         assert pdf[:5] == b"%PDF-"
+
+
+class TestDiffStyle:
+    """The diff_style page-template option reaches the LaTeX source."""
+
+    def test_absent_by_default(self):
+        tex = _render_tex({"body": [{"type": "text", "text": "hej"}]})
+        assert r"\kxdiffstyle" not in tex
+
+    def test_color_emits_nothing(self):
+        data = {
+            "page_template": {"name": "clean", "diff_style": "color"},
+            "body": [{"type": "text", "text": "hej"}],
+        }
+        assert r"\kxdiffstyle" not in _render_tex(data)
+
+    def test_underline_is_emitted(self):
+        data = {
+            "page_template": {"name": "clean", "diff_style": "underline"},
+            "body": [{"type": "text", "text": "hej"}],
+        }
+        assert r"\kxdiffstyle{underline}" in _render_tex(data)
+
+    @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+    def test_underlined_document_compiles(self):
+        from klartex.renderer import render
+
+        data = {
+            "lang": "sv",
+            "page_template": {"name": "clean", "diff_style": "underline"},
+            "body": [
+                {"type": "heading", "text": "tidigast [-sex-] {+åtta+} veckor"},
+                {"type": "text", "text": "Struket: [-gammal-] och tillagt: {+ny lydelse+}."},
+                {"type": "text", "text": "Tillagt stycke.", "revision": "added"},
+                {"type": "table", "header": ["A"], "rows": [["[-x-] {+y+}"]]},
+            ],
+        }
+        pdf = render(BLOCK_ENGINE_TEMPLATE, data)
+        assert pdf[:5] == b"%PDF-"

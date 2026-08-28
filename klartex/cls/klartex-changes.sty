@@ -27,6 +27,20 @@
 \newcommand{\kxaddedstyle}[1]{\textcolor{kxaddedcolor}{#1}}
 \newcommand{\kxremovedstyle}[1]{\textcolor{kxremovedcolor}{\sout{#1}}}
 
+% Underlined addition — the convention in legal amendment documents, and the
+% one signal that survives greyscale printing, where colour alone does not.
+% \uline comes from the ulem already loaded above, so this costs no dependency.
+\newcommand{\kxaddedul}[1]{\textcolor{kxaddedcolor}{\uline{#1}}}
+
+% \kxdiffstyle{color|underline} — how an addition is marked. Removals are
+% struck through either way.
+\newcommand{\kxdiffstyle}[1]{%
+  \edef\kx@ds{#1}\def\kx@dsul{underline}%
+  \ifx\kx@ds\kx@dsul
+    \renewcommand{\kxaddedstyle}[1]{\kxaddedul{##1}}%
+  \fi
+}
+
 % Semantic macros — the stable half. \sout breaks at spaces and tolerates
 % \\ inside its argument, so marked spans may cross lines and page breaks.
 \newcommand{\kxadded}[1]{\kxaddedstyle{#1}}

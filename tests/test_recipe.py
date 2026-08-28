@@ -147,3 +147,52 @@ class TestRecipeEscaping:
         data["attendees"][0] = "Name {with} braces"
         pdf_bytes = render("protokoll", data)
         assert pdf_bytes[:5] == b"%PDF-"
+
+
+class TestRecipeLanguageReachesInlineFilters:
+    """The inline filters are `pass_context` and read `lang` from the render
+    context. `_recipe_base.tex.jinja` must import the shared macros `with
+    context`, or every recipe renders Swedish typography regardless of the
+    recipe's own language (#47)."""
+
+    RECIPE_YAML = """
+template:
+  name: entest
+  description: English test recipe
+  lang: en
+document:
+  title: "Test"
+  metadata:
+    - label: "Venue:"
+      field: location
+components:
+  - type: description_list
+    options:
+      source: document.metadata
+"""
+
+    def _render(self, tmp_path, data):
+        from klartex.renderer import _jinja_env
+        from klartex.tex_escape import escape_data
+
+        recipe_yaml = tmp_path / "recipe.yaml"
+        recipe_yaml.write_text(self.RECIPE_YAML)
+        recipe = load_recipe(recipe_yaml)
+        context = prepare_recipe_context(recipe, escape_data(data))
+        return _jinja_env.get_template("_recipe_base.tex.jinja").render(context)
+
+    def test_english_recipe_gets_english_smart_quotes(self, tmp_path):
+        tex = self._render(tmp_path, {"location": 'The "Blue" Room'})
+        assert "The “Blue” Room" in tex
+        assert "The ”Blue” Room" not in tex
+
+    def test_swedish_recipe_keeps_swedish_smart_quotes(self):
+        """The shipped sv recipes must be unaffected by the context change."""
+        from klartex.renderer import get_registry, _render_recipe
+        from klartex.tex_escape import escape_data
+
+        data = json.loads((FIXTURES / "protokoll.json").read_text())
+        data["location"] = 'Lokalen "Norden"'
+        info = get_registry()["protokoll"]
+        tex = _render_recipe(info, escape_data(data))
+        assert "Lokalen ”Norden”" in tex

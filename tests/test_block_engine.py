@@ -1101,6 +1101,20 @@ class TestCellSafeLineBreaks:
         tex = _render_tex(data)
         assert "Två rader" in tex
 
+    def test_description_list_value_newline_is_cell_safe(self):
+        data = {"body": [{"type": "description_list",
+                          "entries": [{"label": "Adress", "value": "Rad 1\nRad 2"}]}]}
+        tex = _render_tex(data)
+        assert r"Rad 1 \newline Rad 2" in tex
+        assert r"Rad 1 \\ Rad 2" not in tex
+
+    def test_description_list_label_newline_collapses_to_space(self):
+        """Labels sit in an LR-mode `l` column where no in-cell break exists."""
+        data = {"body": [{"type": "description_list",
+                          "entries": [{"label": "Två\nrader", "value": "x"}]}]}
+        tex = _render_tex(data)
+        assert "Två rader" in tex
+
     def test_text_block_newline_still_paragraph_break(self):
         data = {"body": [{"type": "text", "text": "rad 1\nrad 2"}]}
         tex = _render_tex(data)
@@ -1427,6 +1441,18 @@ class TestChangeMarking:
         assert r"\kxremoved{kvartalsvis}" in tex
         assert r"\kxadded{månadsvis}" in tex
 
+    def test_markers_work_in_description_list(self):
+        data = {"body": [{
+            "type": "description_list",
+            "entries": [{"label": "Beslutsform:",
+                         "value": "Två stämmor, [-två tredjedels-] {+enkel+} majoritet"}],
+        }]}
+        tex = _render_tex(data)
+        assert r"\kxremoved{två tredjedels}" in tex
+        assert r"\kxadded{enkel}" in tex
+        assert r"\{+" not in tex
+        assert "[-" not in tex
+
     def test_revision_added_wraps_paragraph(self):
         data = {"body": [{"type": "text", "text": "Nytt stycke.", "revision": "added"}]}
         tex = _render_tex(data)
@@ -1530,5 +1556,70 @@ class TestDiffStyle:
                 {"type": "table", "header": ["A"], "rows": [["[-x-] {+y+}"]]},
             ],
         }
+        pdf = render(BLOCK_ENGINE_TEMPLATE, data)
+        assert pdf[:5] == b"%PDF-"
+
+
+class TestDescriptionListInlineMarkup:
+    """`description_list` routes both columns through the inline filters:
+    `inline_flat` for the LR-mode label column, `inline_cell` for the
+    paragraph-mode value column (#47)."""
+
+    def test_bold_in_value_becomes_textbf(self):
+        data = {"body": [{"type": "description_list",
+                          "entries": [{"label": "Ärende:", "value": "Ändring av **§ 24**"}]}]}
+        tex = _render_tex(data)
+        assert r"\textbf{§ 24}" in tex
+        assert "**" not in tex
+
+    def test_bold_in_label_nests_inside_the_column_bold(self):
+        """The label column already wraps its content in \\textbf, so a bare
+        \\textbf assertion would pass without the filter — assert the nesting."""
+        data = {"body": [{"type": "description_list",
+                          "entries": [{"label": "**Obs:**", "value": "x"}]}]}
+        tex = _render_tex(data)
+        assert r"\textbf{\textbf{Obs:}}" in tex
+        assert "**" not in tex
+
+    def test_code_and_italic_in_value(self):
+        data = {"body": [{"type": "description_list",
+                          "entries": [{"label": "Fält:", "value": "*lutande* och `kod`"}]}]}
+        tex = _render_tex(data)
+        assert r"\textit{lutande}" in tex
+        assert r"\texttt{kod}" in tex
+
+    def test_swedish_smart_quotes_by_default(self):
+        data = {"body": [{"type": "description_list",
+                          "entries": [{"label": "Namn:", "value": 'Föreningen "Norden"'}]}]}
+        tex = _render_tex(data)
+        assert "Föreningen ”Norden”" in tex
+
+    def test_english_lang_reaches_the_imported_macro(self):
+        """The inline filters are pass_context and read `lang` from the render
+        context; the macro import must carry it (`with context`)."""
+        data = {
+            "lang": "en",
+            "body": [
+                {"type": "heading", "text": 'The "Nordic" Society'},
+                {"type": "description_list",
+                 "entries": [{"label": "Name:", "value": 'The "Nordic" Society'}]},
+            ],
+        }
+        tex = _render_tex(data)
+        assert tex.count("The “Nordic” Society") == 2
+        assert "The ”Nordic” Society" not in tex
+
+    @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+    def test_marked_up_description_list_compiles(self):
+        from klartex.renderer import render
+
+        data = {"body": [{
+            "type": "description_list",
+            "entries": [
+                {"label": "**Ärende:**", "value": 'Stadgeändring i "§ 24"'},
+                {"label": "Beslutsform:", "value": "Två stämmor, [-två tredjedels-] {+enkel+} majoritet"},
+                {"label": "Adress:", "value": "Storgatan 1\n123 45 Staden"},
+            ],
+        }]}
         pdf = render(BLOCK_ENGINE_TEMPLATE, data)
         assert pdf[:5] == b"%PDF-"

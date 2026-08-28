@@ -27,6 +27,8 @@ klartex example _block                         # canonical example payload
 
 `xelatex` is required for ~all rendering tests, and `pdftotext` (poppler-utils) for the text-layer round-trip tests in `tests/test_pdf_text_layer.py`. CI explicitly fails if any xelatex-tagged test is skipped (`.github/workflows/ci.yml`), so don't add `pytest.skip` shortcuts to silence local failures — install TeX Live instead: `brew install --cask mactex` on macOS, or on Debian/Ubuntu the package set in `README.md`, which mirrors the one `.github/workflows/ci.yml` installs (`texlive-xetex` alone is missing `ulem`, `tcolorbox` and `siunitx`).
 
+The render environment klartex is developed against lives in `docker/Dockerfile.base` and is published as `ghcr.io/swedev/klartex-base` by `.github/workflows/base-image.yml`, which runs the full suite inside the freshly built amd64 image before pushing. Changing the Dockerfile therefore implies a follow-up PR in each consumer that moves its pinned `tag@digest` — copy it from the build's step summary.
+
 ## Releases
 
 1. Releases are always initiated by the user.

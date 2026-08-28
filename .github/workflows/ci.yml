@@ -40,9 +40,12 @@ jobs:
       - name: Install project
         run: pip install --break-system-packages .[dev]
 
+      # shell: bash gives the step `-o pipefail`, without which the step
+      # would report tee's exit status and a pytest failure could pass.
       - name: Run tests
+        shell: bash
         run: |
-          pytest -v --tb=short 2>&1 | tee test-output.txt
+          pytest -v -rs --tb=short 2>&1 | tee test-output.txt
 
       - name: Verify no xelatex skips
         run: |

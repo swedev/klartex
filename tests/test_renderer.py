@@ -3,6 +3,7 @@
 import json
 import os
 import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -12,6 +13,20 @@ from klartex.renderer import render, get_registry
 FIXTURES = Path(__file__).parent / "fixtures"
 
 HAS_XELATEX = shutil.which("xelatex") is not None
+
+
+def _has_font(name: str) -> bool:
+    if shutil.which("fc-list") is None:
+        return False
+    out = subprocess.run(["fc-list"], capture_output=True, text=True).stdout
+    return name.lower() in out.lower()
+
+
+# Environments that are supposed to render like production (the base-image
+# self-test and the release gate) set this, turning the missing-font skip
+# below into a failure.
+REQUIRE_GEORGIA = os.environ.get("KLARTEX_REQUIRE_GEORGIA") == "1"
+HAS_GEORGIA = _has_font("Georgia")
 
 
 def test_unknown_template():
@@ -666,3 +681,22 @@ def test_faktura_font_options_emitted():
     tex = _render_recipe_tex("faktura", data)
     assert r"\setmainfont{Futura}" in tex
     assert r"\newfontfamily\kxheaderfontfamily{Georgia}" in tex
+
+
+@pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+@pytest.mark.skipif(
+    not HAS_GEORGIA and not REQUIRE_GEORGIA, reason="Georgia not installed"
+)
+def test_header_font_georgia_renders():
+    """A page-template font must survive a real xelatex run, not just the .tex.
+
+    The skip reason deliberately avoids the word xelatex so the CI guard
+    against silently skipped xelatex tests is not tripped where mscorefonts
+    are genuinely absent.
+    """
+    data = _minimal_faktura(
+        page_template={"name": "formal", "header_font": "Georgia"}
+    )
+    pdf_bytes = render("faktura", data)
+    assert pdf_bytes[:5] == b"%PDF-"
+    assert len(pdf_bytes) > 1000

@@ -1400,28 +1400,28 @@ class TestHeadingAlignment:
 
 
 class TestChangeMarking:
-    """Change marking (#40): inline `{+…+}` / `{-…-}` markers and the
+    """Change marking (#40): inline `{+…+}` / `[-…-]` markers and the
     block-level `revision` attribute on `text`."""
 
     def test_inline_markers_become_macros(self):
-        data = {"body": [{"type": "text", "text": "tidigast {-sex-}{+åtta+} veckor"}]}
+        data = {"body": [{"type": "text", "text": "tidigast [-sex-]{+åtta+} veckor"}]}
         tex = _render_tex(data)
         assert r"\kxremoved{sex}" in tex
         assert r"\kxadded{åtta}" in tex
 
     def test_marker_delimiters_are_consumed(self):
-        data = {"body": [{"type": "text", "text": "{+ny+} och {-gammal-}"}]}
+        data = {"body": [{"type": "text", "text": "{+ny+} och [-gammal-]"}]}
         tex = _render_tex(data)
         assert r"\{+" not in tex
         assert r"+\}" not in tex
-        assert r"\{-" not in tex
-        assert r"-\}" not in tex
+        assert "[-" not in tex
+        assert "-]" not in tex
 
     def test_markers_work_in_table_cells(self):
         data = {"body": [{
             "type": "table",
             "header": ["Avgift", "Förslag"],
-            "rows": [["Årsavgift", "{-kvartalsvis-} {+månadsvis+}"]],
+            "rows": [["Årsavgift", "[-kvartalsvis-] {+månadsvis+}"]],
         }]}
         tex = _render_tex(data)
         assert r"\kxremoved{kvartalsvis}" in tex
@@ -1489,7 +1489,7 @@ class TestChangeMarking:
 
         data = {"body": [
             {"type": "text", "text": "Ett stycke med ändringsmarkering.", "revision": revision},
-            {"type": "text", "text": "Inline {+tillagt+} och {-struket-} i löptext."},
+            {"type": "text", "text": "Inline {+tillagt+} och [-struket-] i löptext."},
         ]}
         pdf = render(BLOCK_ENGINE_TEMPLATE, data)
         assert pdf[:5] == b"%PDF-"

@@ -100,12 +100,12 @@ def test_added_marker():
 
 
 def test_removed_marker():
-    assert render_inline(r"gammal \{-lydelse-\} här") == r"gammal \kxremoved{lydelse} här"
+    assert render_inline(r"gammal [-lydelse-] här") == r"gammal \kxremoved{lydelse} här"
 
 
 def test_both_markers_in_one_string():
     assert (
-        render_inline(r"\{-gammalt-\} blir \{+nytt+\}")
+        render_inline(r"[-gammalt-] blir \{+nytt+\}")
         == r"\kxremoved{gammalt} blir \kxadded{nytt}"
     )
 
@@ -115,7 +115,7 @@ def test_bold_inside_marker_content():
 
 
 def test_italic_inside_marker_content():
-    assert render_inline(r"\{-*struket* ord-\}") == r"\kxremoved{\textit{struket} ord}"
+    assert render_inline(r"[-*struket* ord-]") == r"\kxremoved{\textit{struket} ord}"
 
 
 def test_code_span_inside_marker_content():
@@ -129,20 +129,20 @@ def test_marker_inside_code_span_stays_literal():
 
 def test_mixed_nesting_added_inside_removed():
     assert (
-        render_inline(r"\{-gammal \{+ny+\} gammal-\}")
+        render_inline(r"[-gammal \{+ny+\} gammal-]")
         == r"\kxremoved{gammal \kxadded{ny} gammal}"
     )
 
 
 def test_mixed_nesting_removed_inside_added():
     assert (
-        render_inline(r"\{+ny \{-gammal-\} ny+\}")
+        render_inline(r"\{+ny [-gammal-] ny+\}")
         == r"\kxadded{ny \kxremoved{gammal} ny}"
     )
 
 
 def test_adjacent_markers_stay_separate():
-    assert render_inline(r"\{+a+\}\{-b-\}") == r"\kxadded{a}\kxremoved{b}"
+    assert render_inline(r"\{+a+\}[-b-]") == r"\kxadded{a}\kxremoved{b}"
 
 
 def test_adjacent_same_type_markers_stay_separate():
@@ -150,7 +150,7 @@ def test_adjacent_same_type_markers_stay_separate():
 
 
 def test_empty_markers_stay_literal():
-    assert render_inline(r"\{++\} \{--\}") == r"\{++\} \{--\}"
+    assert render_inline(r"\{++\} [--]") == r"\{++\} [--]"
 
 
 def test_unmatched_opener_stays_literal():
@@ -180,7 +180,7 @@ def test_marker_content_spanning_newline():
 
 def test_marker_content_spanning_newline_in_cell_mode():
     assert (
-        render_inline("\\{-rad ett\nrad två-\\}", newlines="cell")
+        render_inline("[-rad ett\nrad två-]", newlines="cell")
         == r"\kxremoved{rad ett \newline rad två}"
     )
 
@@ -193,7 +193,7 @@ def test_unmatched_opener_does_not_capture_a_later_marker():
     # A lone \{- earlier in the string must not pair with a real marker's
     # closer further along, which would strike out the prose between them.
     assert (
-        render_inline(r"poängen \{-3\} sätts i intervallet \{-fem-\} enheter")
+        render_inline(r"poängen \{-3\} sätts i intervallet [-fem-] enheter")
         == r"poängen \{-3\} sätts i intervallet \kxremoved{fem} enheter"
     )
 
@@ -207,10 +207,45 @@ def test_unmatched_added_opener_does_not_capture_a_later_marker():
 
 def test_closer_pairs_with_nearest_opener_of_its_kind():
     assert (
-        render_inline(r"\{-A\} text \{+B+\} mer \{-C-\}")
+        render_inline(r"\{-A\} text \{+B+\} mer [-C-]")
         == r"\{-A\} text \kxadded{B} mer \kxremoved{C}"
     )
 
 
 def test_escaped_braces_inside_marker_content_survive():
     assert render_inline(r"\{+funktionen f\{x\}+\}") == r"\kxadded{funktionen f\{x\}}"
+
+
+def test_leading_space_inside_added_marker_survives_as_a_space():
+    assert render_inline(r"tidigast\{+ åtta+\}") == r"tidigast \kxadded{åtta}"
+
+
+def test_trailing_space_inside_added_marker_survives_as_a_space():
+    assert render_inline(r"\{+åtta +\}veckor") == r"\kxadded{åtta} veckor"
+
+
+def test_tabs_count_as_edge_whitespace_in_added_marker():
+    assert render_inline("\\{+\tny\t+\\}") == "\t\\kxadded{ny}\t"
+
+
+def test_inner_spacing_in_added_marker_is_untouched():
+    assert render_inline(r"\{+två  ord+\}") == r"\kxadded{två  ord}"
+
+
+def test_added_marker_holding_only_spaces_contributes_just_the_spacing():
+    assert render_inline(r"a\{+ +\}b") == "a b"
+
+
+def test_newline_at_added_marker_edge_stays_inside_the_macro():
+    # Only spaces and tabs are hoisted out; the newline pass handles the rest.
+    assert render_inline("\\{+\nny+\\}") == "\\kxadded{ \\\\ ny}"
+
+
+def test_removed_marker_keeps_its_edge_space_inside_the_strike():
+    # Deliberate: a space inside a removed run is part of what was removed.
+    # An author who wants it outside the strike writes it outside the marker.
+    assert render_inline(r"tidigast[- sex-]") == r"tidigast\kxremoved{ sex}"
+
+
+def test_space_outside_the_removed_marker_is_not_struck():
+    assert render_inline(r"tidigast [-sex-]") == r"tidigast \kxremoved{sex}"

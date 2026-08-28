@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.15.0 — 2026-08-28
+
+### New features
+- **Ändringsmarkering.** Dokument som visar vad som ändrats mellan två versioner — kanoniskt fall: stadgeändringar — markeras nu inline i `git diff --word-diff`-notation: `{+tillagt+}` renderas grönt och `[-struket-]` rött med genomstrykning. Markörerna gäller i alla fält som passerar `| inline`-filtret, alltså även i tabellceller. Nya `klartex-changes.sty` äger utseendet via de omdefinierbara hookarna `\kxaddedstyle` / `\kxremovedstyle`, och laddas från `klartex-base.cls` så markeringen fungerar på både blockmotorn och recept-vägen. För hela stycken finns `revision: "added" | "removed"` på `text`-blocket. Kanoniskt exempel: `tests/fixtures/block_stadgeandring.json`. (#40)
+- **`diff_style` i sidmallsobjektet.** `page_template: {"diff_style": "underline"}` markerar tillagd text med grön understrykning i stället för enbart grön text; struken text är överstruken i båda fallen. Understruket tillägg mot överstruken strykning är konventionen i ändringsdokument, och till skillnad från färg överlever den svartvit utskrift. Default är `"color"`. Understrykningen ritas av `ulem`, som redan laddas — inget nytt beroende. (#40)
+
+### Fixes
+- **Kantblanksteg i `{+ tillagt +}` försvinner inte längre.** `\textcolor` kastar ett blanksteg först i sitt argument, så ett mellanslag författaren skrev föll bort ur utdatan utan spår. Blanksteg och tabbar i markörinnehållets kanter emitteras nu utanför makrot. `[-struket-]` behåller sina — ett mellanslag inuti en struken passage är en del av det som strukits, och den som vill ha det utanför strykningen skriver det utanför markören.
+- **Installationsinstruktionerna listar alla TeX-paket som krävs.** `apt install texlive-xetex` räcker inte — bland annat `ulem`, `tcolorbox` och `siunitx` saknas, och den som följde instruktionen fick ett LaTeX-fel som inte namngav det saknade paketet. README anger nu samma paketuppsättning som CI installerar, alltså den hela testsviten körs mot. (#48)
+
 ## 0.14.0 — 2026-08-27
 
 ### New features

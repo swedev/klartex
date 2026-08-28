@@ -58,8 +58,13 @@
 
 % Forbid 1- and 2-line widows (last lines of a paragraph alone on a new page)
 % and orphans (first lines of a paragraph alone at the bottom of a page).
-\widowpenalties 2 10000 10000
-\clubpenalties 2 10000 10000
+% The terminating 0 is required: eTeX clamps the line index to the array
+% length, so the last value applies to every remaining line. Without it the
+% 10000 repeats through the whole paragraph, forbidding every interline break
+% — a paragraph longer than a page then cannot break and is clipped at the
+% bottom margin (overfull \vbox, no error, content silently lost).
+\widowpenalties 3 10000 10000 0
+\clubpenalties 3 10000 10000 0
 
 % Font — no default override; fontspec uses Latin Modern automatically.
 % Page templates can set a custom font via \setmainfont in the preamble.

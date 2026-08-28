@@ -123,4 +123,4 @@ Spacing fixes accumulate in `_block_engine.tex.jinja` as `\kxneedspace` glue tri
 
 ## Languages
 
-User-facing messages, schema descriptions, and CHANGELOG/README are in Swedish; code, identifiers, and Python docstrings are in English. The user (`Martin Söderholm`) communicates in Swedish — match the language of the user's message in replies.
+User-facing messages, schema descriptions, and CHANGELOG/README are in Swedish; code, identifiers, and Python docstrings are in English. GitHub issues and pull requests are in English, title and body alike, with Swedish domain terms (`valsedel`, `resultaträkning`, `stadgeändringar`) kept as terms inside the English text. The user (`Martin Söderholm`) communicates in Swedish — match the language of the user's message in replies.

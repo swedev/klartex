@@ -1,12 +1,6 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
-    paths-ignore:
-      - "*.md"
-      - "agent-docs/**"
-      - "LICENSE"
   pull_request:
     branches: [main]
     paths-ignore:
@@ -15,7 +9,7 @@ on:
       - "LICENSE"
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  group: ${{ github.workflow }}-${{ github.head_ref }}
   cancel-in-progress: true
 
 permissions:

@@ -512,6 +512,23 @@ def test_recipe_metadata_passes_through_inline_markup():
     assert "**" not in tex
 
 
+def test_recipe_agenda_items_pass_through_inline_markup():
+    """The recipe path shares render_agenda with the block engine, so protokoll
+    agenda items get inline markup and change markers too (#60). protokoll
+    renders `decimal`, where the branch writes its own \\textbf around the
+    title — hence the nested assertion."""
+    data = json.loads((FIXTURES / "protokoll.json").read_text())
+    data["agenda_items"][0]["title"] = "Mötets **öppnande**"
+    data["agenda_items"][0]["discussion"] = "[-Kort-] {+Lång+} diskussion"
+    data["agenda_items"][1]["decision"] = 'Valdes "enhälligt"'
+    tex = _render_recipe_tex("protokoll", data)
+    assert r"\textbf{Mötets \textbf{öppnande}}" in tex
+    assert r"\kxremoved{Kort}" in tex
+    assert r"\kxadded{Lång}" in tex
+    assert "Valdes ”enhälligt”" in tex
+    assert "**" not in tex
+
+
 def test_recipe_metadata_newline_is_cell_safe():
     """Metadata values land in the paragraph-mode X column: a newline must
     become \\newline, never a bare \\\\ that would end the table row."""

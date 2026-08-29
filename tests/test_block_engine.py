@@ -1726,3 +1726,100 @@ class TestAgendaInlineMarkup:
         }]}
         pdf = render(BLOCK_ENGINE_TEMPLATE, data)
         assert pdf[:5] == b"%PDF-"
+
+
+class TestHeaderFieldsInlineMarkup:
+    """`title_page`, `signatures` and `name_roster` route their text fields
+    through the inline filter (#69). Every field lands inside a macro
+    argument or a table cell, so newlines collapse to a space (`inline_flat`)
+    — except `name_roster.role`, a paragraph-mode X column where a newline
+    becomes `\\newline` (`inline_cell`)."""
+
+    def test_title_page_fields_pass_through_inline_markup(self):
+        data = {"body": [{
+            "type": "title_page",
+            "party1": "**Uppdragsgivaren AB**",
+            "party2": 'Erik "Eriksson"',
+            "title": "Konsultavtal\nmed bilagor",
+        }]}
+        tex = _render_tex(data)
+        assert (r"\makedoctitle{\textbf{Uppdragsgivaren AB}}"
+                r"{Erik ”Eriksson”}{Konsultavtal med bilagor}") in tex
+
+    def test_signatures_header_and_party_fields_pass_through_inline_markup(self):
+        data = {"body": [{
+            "type": "signatures",
+            "new_page": False,
+            "header": "Underskrifter [-2025-] {+2026+}",
+            "parties": [{"name": "**Acme** AB",
+                         "signatory": "Anna\nAndersson",
+                         "title": "*VD*"}],
+        }]}
+        tex = _render_tex(data)
+        header = r"Underskrifter \kxremoved{2025} \kxadded{2026}"
+        assert r"\section*{" + header + "}" in tex
+        assert r"\addcontentsline{toc}{section}{" + header + "}" in tex
+        assert r"\kxsignaturepane{\textbf{Acme} AB}{Anna Andersson}{\textit{VD}}{}" in tex
+        assert r"\{+" not in tex
+        assert "[-" not in tex
+
+    def test_signatures_signatory_defaults_to_the_filtered_name(self):
+        """\\kxsignatory@line compares party name and signatory token by
+        token, so the default must be the same filtered output as `name`."""
+        data = {"body": [{"type": "signatures", "new_page": False,
+                          "parties": [{"name": "**Acme** AB"}]}]}
+        tex = _render_tex(data)
+        assert r"\kxsignaturepane{\textbf{Acme} AB}{\textbf{Acme} AB}{}{}" in tex
+
+    def test_name_roster_fields_pass_through_inline_markup(self):
+        data = {"body": [{
+            "type": "name_roster",
+            "title": 'Styrelsen "2026"',
+            "people": [{"name": "**Anna** Andersson",
+                        "role": "Ordförande\nsedan 2020",
+                        "note": "[-omval-] {+nyval+}"}],
+        }]}
+        tex = _render_tex(data)
+        assert r"\namnrollista{Styrelsen ”2026”}{" in tex
+        assert (r"\person{\textbf{Anna} Andersson}{Ordförande \newline sedan 2020}"
+                r"{\kxremoved{omval} \kxadded{nyval}}") in tex
+        assert "**" not in tex
+
+    def test_english_lang_reaches_the_filter(self):
+        data = {
+            "lang": "en",
+            "body": [
+                {"type": "title_page", "title": 'The "Nordic" Agreement'},
+                {"type": "name_roster", "title": 'Board "2026"',
+                 "people": [{"name": "Anna", "role": "Chair"}]},
+            ],
+        }
+        tex = _render_tex(data)
+        assert "The “Nordic” Agreement" in tex
+        assert "Board “2026”" in tex
+        assert "”Nordic”" not in tex
+
+    @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+    def test_marked_up_header_fields_compile(self):
+        from klartex.renderer import render
+
+        data = {"body": [
+            {"type": "title_page",
+             "party1": "**Uppdragsgivaren AB**",
+             "party2": 'Erik "Eriksson"',
+             "title": "Konsultavtal\nmed bilagor"},
+            {"type": "name_roster",
+             "title": 'Styrelsen "2026"',
+             "people": [{"name": "**Anna** Andersson",
+                         "role": "Ordförande\nsedan 2020",
+                         "note": "[-omval-] {+nyval+}"},
+                        {"name": "Erik Eriksson", "role": "`Kassör`"}]},
+            {"type": "signatures", "new_page": False,
+             "header": "Underskrifter [-2025-] {+2026+}",
+             "parties": [{"name": "**Acme** AB",
+                          "signatory": "Anna\nAndersson",
+                          "title": "*VD*"},
+                         {"name": 'Föreningen "Norden"'}]},
+        ]}
+        pdf = render(BLOCK_ENGINE_TEMPLATE, data)
+        assert pdf[:5] == b"%PDF-"

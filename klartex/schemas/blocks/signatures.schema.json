@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://klartex.se/schemas/blocks/signatures/v0.3",
   "title": "Signatures Block",
-  "description": "Signature block for one or more parties, laid out in a configurable number of columns",
+  "description": "Signature block for one or more parties, laid out in a configurable number of columns. The header and party text fields pass through inline markup.",
   "type": "object",
   "required": ["type", "parties"],
   "additionalProperties": false,
@@ -12,7 +12,7 @@
     "contract_intro": { "type": "boolean", "default": false, "description": "Rendera standardingressen 'Detta avtal har upprättats i två (2) likalydande exemplar, av vilka parterna tagit var sitt.' ovanför signaturerna. Sätt true för avtal; utelämna för dokument som inte är avtal." },
     "header": {
       "type": "string",
-      "description": "Optional section header text shown above the signatures (e.g. 'Underskrifter'). Omit for no header."
+      "description": "Optional section header text shown above the signatures (e.g. 'Underskrifter'). Omit for no header. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} / [-struken text-]. Radbrytning blir mellanslag — fältet är enradigt."
     },
     "columns": {
       "type": "integer",
@@ -31,9 +31,9 @@
       "items": {
         "type": "object",
         "properties": {
-          "name": { "type": "string", "description": "Party/company name (omit to suppress the bold header above the signature)" },
-          "signatory": { "type": "string", "description": "Name of person signing (defaults to name if omitted)" },
-          "title": { "type": "string", "description": "Signatory title, e.g. 'Verkställande Direktör, Acme AB'" }
+          "name": { "type": "string", "description": "Party/company name (omit to suppress the bold header above the signature). Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} / [-struken text-]. Radbrytning blir mellanslag — fältet är enradigt." },
+          "signatory": { "type": "string", "description": "Name of person signing (defaults to name if omitted). Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} / [-struken text-]. Radbrytning blir mellanslag — fältet är enradigt." },
+          "title": { "type": "string", "description": "Signatory title, e.g. 'Verkställande Direktör, Acme AB'. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} / [-struken text-]. Radbrytning blir mellanslag — fältet är enradigt." }
         }
       },
       "minItems": 1

@@ -2,13 +2,13 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://klartex.se/schemas/blocks/name_roster/v0.1",
   "title": "Name Roster Block",
-  "description": "Name/role/note table for board listings etc.",
+  "description": "Name/role/note table for board listings etc. All text fields pass through inline markup.",
   "type": "object",
   "required": ["type", "title", "people"],
   "additionalProperties": false,
   "properties": {
     "type": { "type": "string", "const": "name_roster" },
-    "title": { "type": "string", "description": "Table heading" },
+    "title": { "type": "string", "description": "Table heading. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} / [-struken text-]. Radbrytning blir mellanslag — fältet är enradigt." },
     "people": {
       "type": "array",
       "description": "People entries",
@@ -17,9 +17,9 @@
         "required": ["name", "role"],
         "additionalProperties": false,
         "properties": {
-          "name": { "type": "string", "description": "Person name" },
-          "role": { "type": "string", "description": "Role or title" },
-          "note": { "type": "string", "description": "Additional note (e.g. term info)" }
+          "name": { "type": "string", "description": "Person name. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} / [-struken text-]. Radbrytning blir mellanslag — fältet är enradigt." },
+          "role": { "type": "string", "description": "Role or title. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} / [-struken text-]. Radbrytning blir radbrytning inom cellen." },
+          "note": { "type": "string", "description": "Additional note (e.g. term info). Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} / [-struken text-]. Radbrytning blir mellanslag — fältet är enradigt." }
         }
       },
       "minItems": 1

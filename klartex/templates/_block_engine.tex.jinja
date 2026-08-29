@@ -177,7 +177,7 @@
 \BLOCK{set _sp_after = block.get('spacing_after') or _bs.get('spacing_after') }
 
 \BLOCK{if block.type == 'title_page'}
-\makedoctitle{\VAR{block.get('party1', '')}}{\VAR{block.get('party2', '')}}{\VAR{block.get('title', '')}}
+\makedoctitle{\VAR{block.get('party1', '') | inline_flat}}{\VAR{block.get('party2', '') | inline_flat}}{\VAR{block.get('title', '') | inline_flat}}
 
 \BLOCK{elif block.type == 'heading'}
 \VAR{render_heading(block.text, block.get('level', 1), block.get('textAlign', 'left'), suppress_needspace, _sp_before, _sp_after)}
@@ -249,8 +249,8 @@
 \BLOCK{elif block.type == 'signatures'}
 \BLOCK{if block.get("new_page", true)}\clearpage\BLOCK{else}\vspace{0.5cm}\BLOCK{endif}
 \BLOCK{if block.get('header')}
-\section*{\VAR{block.header}}
-\addcontentsline{toc}{section}{\VAR{block.header}}
+\section*{\VAR{block.header | inline_flat}}
+\addcontentsline{toc}{section}{\VAR{block.header | inline_flat}}
 \vspace{0.5cm}
 \BLOCK{endif}
 \BLOCK{if block.get("contract_intro")}
@@ -266,7 +266,7 @@
 \noindent
 \BLOCK{endif}
 \begin{minipage}[t]{\VAR{sig_width}\textwidth}
-\kxsignaturepane{\VAR{party.get('name', '')}}{\VAR{party.get('signatory', party.get('name', ''))}}{\VAR{party.get('title', '')}}{\VAR{hide_loc}}
+\kxsignaturepane{\VAR{party.get('name', '') | inline_flat}}{\VAR{party.get('signatory', party.get('name', '')) | inline_flat}}{\VAR{party.get('title', '') | inline_flat}}{\VAR{hide_loc}}
 \end{minipage}\BLOCK{if (loop.index % sig_cols != 0) and (not loop.last)}\hfill\BLOCK{endif}
 \BLOCK{if (loop.index % sig_cols == 0) and (not loop.last)}
 
@@ -321,9 +321,9 @@
 
 \BLOCK{elif block.type == 'name_roster'}
 \vspace{1em}
-\namnrollista{\VAR{block.title}}{%
+\namnrollista{\VAR{block.title | inline_flat}}{%
 \BLOCK{for person in block.people}
-\person{\VAR{person.name}}{\VAR{person.role}}{\VAR{person.get('note', '')}}
+\person{\VAR{person.name | inline_flat}}{\VAR{person.role | inline_cell}}{\VAR{person.get('note', '') | inline_flat}}
 \BLOCK{endfor}
 }
 \vspace{1em}

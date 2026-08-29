@@ -18,8 +18,8 @@
         { "name": "Anna Lindberg", "role": "Ordförande", "note": "omval, 1 år" },
         { "name": "Erik Johansson", "role": "Kassör", "note": "kvarstår" },
         { "name": "Maria Svensson", "role": "Sekreterare", "note": "kvarstår" },
-        { "name": "Lars Pettersson", "role": "Ledamot", "note": "omval, 2 år" },
-        { "name": "Sofia Ekström", "role": "Ledamot", "note": "nyval, 2 år" }
+        { "name": "Lars Pettersson", "role": "Ledamot", "note": "[-omval, 1 år-] {+omval, 2 år+}" },
+        { "name": "Sofia Ekström", "role": "Ledamot", "note": "**nyval**, 2 år" }
       ]
     },
     {

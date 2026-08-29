@@ -2,14 +2,14 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://klartex.se/schemas/blocks/title-page/v0.1",
   "title": "Title Page Block",
-  "description": "Full-page title with party names and document title",
+  "description": "Full-page title with party names and document title. All text fields pass through inline markup.",
   "type": "object",
   "required": ["type"],
   "additionalProperties": false,
   "properties": {
     "type": { "type": "string", "const": "title_page" },
-    "party1": { "type": "string", "description": "First party name" },
-    "party2": { "type": "string", "description": "Second party name" },
-    "title": { "type": "string", "description": "Document title" }
+    "party1": { "type": "string", "description": "First party name. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} / [-struken text-]. Radbrytning blir mellanslag — fältet är enradigt." },
+    "party2": { "type": "string", "description": "Second party name. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} / [-struken text-]. Radbrytning blir mellanslag — fältet är enradigt." },
+    "title": { "type": "string", "description": "Document title. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} / [-struken text-]. Radbrytning blir mellanslag — fältet är enradigt." }
   }
 }

@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://klartex.se/schemas/blocks/agenda/v0.2",
   "title": "Agenda Block",
-  "description": "Numbered agenda items with optional discussion, decision, and sub-items. Use `numberingStyle: \"section\"` (default) for §-prefixed items (meeting minutes), or `numberingStyle: \"decimal\"` for plain numbered items (1., 2., …) with optional decimal sub-items (1.1., 1.2., …).",
+  "description": "Numbered agenda items with optional discussion, decision, and sub-items. Use `numberingStyle: \"section\"` (default) for §-prefixed items (meeting minutes), or `numberingStyle: \"decimal\"` for plain numbered items (1., 2., …) with optional decimal sub-items (1.1., 1.2., …). Item text passes through inline markup.",
   "type": "object",
   "required": ["type", "items"],
   "additionalProperties": false,
@@ -17,7 +17,7 @@
     "decisionLabel": {
       "type": "string",
       "default": "Beslut:",
-      "description": "Label for the decision line. Default is Swedish \"Beslut:\"."
+      "description": "Label for the decision line. Default is Swedish \"Beslut:\". Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} / [-struken text-]. Radbrytning blir mellanslag — etiketten är enradig."
     },
     "items": {
       "type": "array",
@@ -27,13 +27,13 @@
         "required": ["title"],
         "additionalProperties": false,
         "properties": {
-          "title": { "type": "string", "description": "Agenda item title" },
-          "discussion": { "type": "string", "description": "Discussion text" },
-          "decision": { "type": "string", "description": "Decision text" },
+          "title": { "type": "string", "description": "Agenda item title. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} (grön) och [-struken text-] (röd genomstruken). Radbrytning blir radbrytning." },
+          "discussion": { "type": "string", "description": "Discussion text. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} (grön) och [-struken text-] (röd genomstruken). Radbrytning blir radbrytning." },
+          "decision": { "type": "string", "description": "Decision text. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} (grön) och [-struken text-] (röd genomstruken). Radbrytning blir radbrytning." },
           "subItems": {
             "type": "array",
             "items": { "type": "string" },
-            "description": "Optional flat sub-items rendered with decimal sub-numbering (1.1., 1.2., …). Only meaningful with `numberingStyle: \"decimal\"`."
+            "description": "Optional flat sub-items rendered with decimal sub-numbering (1.1., 1.2., …). Only meaningful with `numberingStyle: \"decimal\"`. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} (grön) och [-struken text-] (röd genomstruken). Radbrytning blir radbrytning."
           }
         }
       },

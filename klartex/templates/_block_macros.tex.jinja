@@ -43,18 +43,21 @@
 %# Render the agenda block. `items` is a list of {title, discussion?, decision?, subItems?}.
 %# `numStyle` is "section" (§-numbered, dagordning environment) or "decimal"
 %# (1., 2., …, with optional decimal subItems 1.1., 1.2., …).
+%# Item text and `decLabel` pass through inline markup; every emission site is
+%# paragraph mode, so item fields use `inline` (newline → \\) and the
+%# single-line `decLabel` uses `inline_flat` (newline → space).
 \BLOCK{macro render_agenda(items, numStyle="section", decLabel="Beslut:")}
 \BLOCK{if numStyle == 'section'}
 \begin{dagordning}
 \BLOCK{for item in items}
-\punkt{\VAR{item.title}}
+\punkt{\VAR{item.title | inline}}
 \BLOCK{if item.get('discussion')}
 
-\noindent \VAR{item.discussion}
+\noindent \VAR{item.discussion | inline}
 \BLOCK{endif}
 \BLOCK{if item.get('decision')}
 
-\noindent \textbf{\VAR{decLabel}} \VAR{item.decision}
+\noindent \textbf{\VAR{decLabel | inline_flat}} \VAR{item.decision | inline}
 \BLOCK{endif}
 \BLOCK{endfor}
 \end{dagordning}
@@ -66,20 +69,20 @@
 \begingroup
 \hangindent=1.0cm
 \hangafter=1
-\noindent \makebox[1.0cm][l]{\textbf{\VAR{parent_idx}.}}\textbf{\VAR{item.title}}\par
+\noindent \makebox[1.0cm][l]{\textbf{\VAR{parent_idx}.}}\textbf{\VAR{item.title | inline}}\par
 \endgroup
 \BLOCK{if item.get('discussion')}
 \par
 \begingroup
 \setlength{\leftskip}{1.0cm}
-\noindent \VAR{item.discussion}\par
+\noindent \VAR{item.discussion | inline}\par
 \endgroup
 \BLOCK{endif}
 \BLOCK{if item.get('decision')}
 \par
 \begingroup
 \setlength{\leftskip}{1.0cm}
-\noindent \textbf{\VAR{decLabel}} \VAR{item.decision}\par
+\noindent \textbf{\VAR{decLabel | inline_flat}} \VAR{item.decision | inline}\par
 \endgroup
 \BLOCK{endif}
 \BLOCK{if item.get('subItems')}
@@ -89,7 +92,7 @@
 \setlength{\leftskip}{1.0cm}
 \hangindent=1.0cm
 \hangafter=1
-\noindent \makebox[1.0cm][l]{\textbf{\VAR{parent_idx}.\VAR{loop.index}.}}\VAR{sub}\par
+\noindent \makebox[1.0cm][l]{\textbf{\VAR{parent_idx}.\VAR{loop.index}.}}\VAR{sub | inline}\par
 \endgroup
 \BLOCK{endfor}
 \BLOCK{endif}

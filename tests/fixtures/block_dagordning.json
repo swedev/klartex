@@ -25,8 +25,8 @@
         {"title": "Godkännande av dagordning", "decision": "Dagordningen godkändes."},
         {
           "title": "Ekonomisk rapport",
-          "discussion": "Kassören presenterade den ekonomiska rapporten för perioden januari--februari 2026.",
-          "decision": "Styrelsen godkände den ekonomiska rapporten."
+          "discussion": "Kassören presenterade den ekonomiska rapporten för perioden januari--februari 2026. Resultatet var **positivt**.",
+          "decision": "Styrelsen godkände rapporten [-med reservation-] {+utan anmärkning+}."
         },
         {"title": "Övriga frågor", "discussion": "Inga övriga frågor togs upp."},
         {"title": "Mötets avslutande"}

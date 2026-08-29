@@ -1453,6 +1453,18 @@ class TestChangeMarking:
         assert r"\{+" not in tex
         assert "[-" not in tex
 
+    def test_markers_work_in_agenda(self):
+        data = {"body": [{
+            "type": "agenda",
+            "items": [{"title": "Kallelse",
+                       "decision": "Kallelse skickas [-sex-] {+åtta+} veckor i förväg."}],
+        }]}
+        tex = _render_tex(data)
+        assert r"\kxremoved{sex}" in tex
+        assert r"\kxadded{åtta}" in tex
+        assert r"\{+" not in tex
+        assert "[-" not in tex
+
     def test_revision_added_wraps_paragraph(self):
         data = {"body": [{"type": "text", "text": "Nytt stycke.", "revision": "added"}]}
         tex = _render_tex(data)
@@ -1619,6 +1631,97 @@ class TestDescriptionListInlineMarkup:
                 {"label": "**Ärende:**", "value": 'Stadgeändring i "§ 24"'},
                 {"label": "Beslutsform:", "value": "Två stämmor, [-två tredjedels-] {+enkel+} majoritet"},
                 {"label": "Adress:", "value": "Storgatan 1\n123 45 Staden"},
+            ],
+        }]}
+        pdf = render(BLOCK_ENGINE_TEMPLATE, data)
+        assert pdf[:5] == b"%PDF-"
+
+
+class TestAgendaInlineMarkup:
+    """`agenda` routes item text through the inline filter — title, discussion,
+    decision, `decisionLabel` and `subItems`, in both numbering styles (#60)."""
+
+    @pytest.mark.parametrize(
+        "numbering_style, expected_title",
+        [
+            # The section branch emits \punkt{…} and \punkt supplies the outer
+            # \textbf itself; the decimal branch writes the \textbf inline. A
+            # bare \textbf{justerare} would pass in the decimal branch without
+            # the fix, so each branch asserts its own shape.
+            ("section", r"\punkt{\textbf{justerare}}"),
+            ("decimal", r"\textbf{\textbf{justerare}}"),
+        ],
+    )
+    def test_item_fields_pass_through_inline_markup(self, numbering_style, expected_title):
+        data = {"body": [{
+            "type": "agenda",
+            "numberingStyle": numbering_style,
+            "decisionLabel": "Beslut\nfattat:",
+            "items": [{
+                "title": "**justerare**",
+                "discussion": "[-Kort-] {+Lång+} diskussion\nRad 2",
+                "decision": "*lutande* och `kod`",
+            }],
+        }]}
+        tex = _render_tex(data)
+        assert expected_title in tex
+        assert "**" not in tex
+        assert r"\kxremoved{Kort}" in tex
+        assert r"\kxadded{Lång}" in tex
+        assert r"\{+" not in tex
+        assert "[-" not in tex
+        assert r"diskussion \\ Rad 2" in tex
+        assert r"\textit{lutande}" in tex
+        assert r"\texttt{kod}" in tex
+        assert r"\textbf{Beslut fattat:}" in tex
+
+    def test_sub_items_pass_through_inline_markup(self):
+        data = {"body": [{
+            "type": "agenda",
+            "numberingStyle": "decimal",
+            "items": [{"title": "Ekonomi",
+                       "subItems": ["**Budget** [-2025-] {+2026+}"]}],
+        }]}
+        tex = _render_tex(data)
+        assert (r"\makebox[1.0cm][l]{\textbf{1.1.}}"
+                r"\textbf{Budget} \kxremoved{2025} \kxadded{2026}") in tex
+
+    def test_english_lang_reaches_the_imported_macro(self):
+        """The inline filter is pass_context and reads `lang` from the render
+        context; the macro import must carry it (`with context`)."""
+        data = {
+            "lang": "en",
+            "body": [{"type": "agenda",
+                      "items": [{"title": 'The "Nordic" Society',
+                                 "discussion": 'A "quoted" phrase.'}]}],
+        }
+        tex = _render_tex(data)
+        assert "The “Nordic” Society" in tex
+        assert "A “quoted” phrase." in tex
+        assert "”Nordic”" not in tex
+
+    def test_swedish_smart_quotes_by_default(self):
+        data = {"body": [{"type": "agenda",
+                          "items": [{"title": 'Föreningen "Norden"',
+                                     "discussion": 'Om "stadgarna".'}]}]}
+        tex = _render_tex(data)
+        assert "Föreningen ”Norden”" in tex
+        assert "Om ”stadgarna”." in tex
+
+    @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+    @pytest.mark.parametrize("numbering_style", ["section", "decimal"])
+    def test_marked_up_agenda_compiles(self, numbering_style):
+        from klartex.renderer import render
+
+        data = {"body": [{
+            "type": "agenda",
+            "numberingStyle": numbering_style,
+            "items": [
+                {"title": "Val av **justerare** [-och sekreterare-]",
+                 "discussion": "Frågan om {+arvode+} diskuterades.",
+                 "decision": 'Anna valdes.\nErik valdes till "ersättare".'},
+                {"title": "Ekonomi",
+                 "subItems": ["**Budget** 2026", "Rapport i `SIE4`-format"]},
             ],
         }]}
         pdf = render(BLOCK_ENGINE_TEMPLATE, data)

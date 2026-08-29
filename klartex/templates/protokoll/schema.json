@@ -92,9 +92,9 @@
         "type": "object",
         "required": ["title"],
         "properties": {
-          "title": { "type": "string" },
-          "discussion": { "type": "string" },
-          "decision": { "type": "string" }
+          "title": { "type": "string", "description": "Punktens rubrik. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} (grön) och [-struken text-] (röd genomstruken). Radbrytning blir radbrytning." },
+          "discussion": { "type": "string", "description": "Diskussionstext. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} (grön) och [-struken text-] (röd genomstruken). Radbrytning blir radbrytning." },
+          "decision": { "type": "string", "description": "Beslutstext. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} (grön) och [-struken text-] (röd genomstruken). Radbrytning blir radbrytning." }
         }
       },
       "minItems": 1

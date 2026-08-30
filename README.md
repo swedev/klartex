@@ -137,6 +137,8 @@ De tre namnen `formal`, `clean` och `none` är alias för färdiga kombinationer
 
 Ett alias kan kombineras med en slot som ersätter den sidan av kombinationen: `{"name": "clean", "footer": null}` ger logotypsidhuvudet utan sidfot.
 
+Objektformen av `letterhead` kräver `org_name` — namnet är det som sidhuvudet byggs runt, och utan det skulle övriga uppgifter inte skrivas ut. Ett sidhuvud helt utan uppgifter anges som variantnamnet självt (`"header": "letterhead"`). `logo` är ett filnamn utan LaTeX-specialtecken (`\ # $ % & _ { } ~ ^`).
+
 Utöver sloten finns inställningar på dokumentnivå — `font`, `header_font` och `diff_style` — som gäller oavsett om en slot har egen LaTeX, plus `page_numbers` och `first_page_header`.
 
 ### Egen sidmall

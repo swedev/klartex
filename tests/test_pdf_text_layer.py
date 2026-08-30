@@ -234,3 +234,31 @@ def test_both_slots_empty_leaves_no_chrome():
     assert len(pages) >= 2
     for page in pages:
         assert "Sida" not in page
+
+
+@requires_tools
+@pytest.mark.parametrize(
+    "contact",
+    [
+        {"email": "info@klartex.se"},
+        {"phone": "070-123 45 67"},
+        {"email": "info@klartex.se", "phone": "070-123 45 67"},
+        {"web": "klartex.se", "phone": "070-123 45 67"},
+    ],
+)
+def test_letterhead_contact_column_survives_empty_leading_fields(contact):
+    """The contact column separator must be emitted only between lines that
+    render. An unconditional one makes a column whose leading field is empty
+    fail with "There's no line here to end", so this asserts both that the
+    render succeeds and that the value reaches the page."""
+    data = {
+        "lang": "sv",
+        "page_template": {
+            "header": {"variant": "letterhead", "org_name": "Föreningen X", **contact}
+        },
+        "body": _two_page_body("Kallelse"),
+    }
+    pages = _pages(render(BLOCK_ENGINE_TEMPLATE, data))
+    assert "Föreningen X" in pages[0]
+    for value in contact.values():
+        assert value in pages[0]

@@ -19,11 +19,10 @@
     \end{minipage}%
     \begin{minipage}[t]{0.22\textwidth}
         \fontsize{6pt}{9pt}\selectfont
-        \orgwebsite%
-        \ifdefempty{\orgemail}{}{\\
-        \orgemail}%
-        \ifdefempty{\orgphone}{}{\\
-        \orgphone}%
+        \kx@hdrsepfalse
+        \kx@hdrline{\orgwebsite}%
+        \kx@hdrline{\orgemail}%
+        \kx@hdrline{\orgphone}%
     \end{minipage}%
     }%
 }

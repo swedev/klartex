@@ -91,6 +91,15 @@
 \providecommand{\orgphone}{}
 \providecommand{\brandlogo}{}
 
+% Stacked contact lines for a header column. \kx@hdrline skips an empty macro
+% and emits the line separator only between lines that actually render, so a
+% column whose leading fields are empty does not start with a \\ (which would
+% raise "There's no line here to end"). \kx@hdrsepfalse resets the state at
+% the top of each column; the flag is set inside the column's group, so
+% columns do not affect each other.
+\newif\ifkx@hdrsep
+\newcommand{\kx@hdrline}[1]{\ifdefempty{#1}{}{\ifkx@hdrsep\\\fi#1\kx@hdrseptrue}}
+
 % Document metadata
 \newcommand{\doctitle}{}
 \newcommand{\setdoctitle}[1]{\renewcommand{\doctitle}{#1}}

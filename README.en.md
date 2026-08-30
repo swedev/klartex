@@ -137,6 +137,8 @@ The three names `formal`, `clean` and `none` are aliases for ready-made combinat
 
 An alias can be combined with a slot that replaces that side of the combination: `{"name": "clean", "footer": null}` gives the logo header with no footer.
 
+The object form of `letterhead` requires `org_name` — the name is what the header is built around, and without it the other details would not be printed. A header with no details at all is written as the variant name on its own (`"header": "letterhead"`). `logo` is a filename free of LaTeX-special characters (`\ # $ % & _ { } ~ ^`).
+
 Beside the slots there are document-level settings — `font`, `header_font` and `diff_style` — which apply whether or not a slot has its own LaTeX, plus `page_numbers` and `first_page_header`.
 
 ### Custom page template

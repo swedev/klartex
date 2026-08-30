@@ -1863,8 +1863,16 @@ def golden_preamble(tex: str) -> list[str]:
 
 
 class TestPageTemplateGoldens:
-    """The three aliases must still emit the preamble they emitted before the
-    slot model existed. The goldens were captured from `main`."""
+    r"""The three aliases must still emit the preamble they emitted before the
+    slot model existed. The goldens were captured from `main`.
+
+    One region is not `main`'s text: the letterhead's right-hand contact
+    column, where the unconditional `\\` separator was replaced by
+    `\kx@hdrline` so a column with empty leading fields compiles. The alias
+    output is unaffected — the whole block sits inside `\ifdefempty{\orgname}`,
+    which is false for every payload that names an alias and supplies no
+    header settings. Every other line is still `main`'s, verbatim.
+    """
 
     @pytest.mark.parametrize("alias", ["formal", "clean", "none"])
     def test_alias_preamble_unchanged(self, alias):

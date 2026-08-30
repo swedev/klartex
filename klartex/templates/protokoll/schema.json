@@ -75,7 +75,8 @@
                   "type": "object",
                   "description": "Organisationsuppgifter till vänster och logotyp till höger. Utelämnade uppgifter skrivs inte ut; utan uppgifter och logotyp återtas sidhuvudets utrymme.",
                   "required": [
-                    "variant"
+                    "variant",
+                    "org_name"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -104,7 +105,8 @@
                     },
                     "logo": {
                       "type": "string",
-                      "description": "Filnamn för logotypen längst upp till höger i sidhuvudet. Filnamnet får inte innehålla LaTeX-specialtecken (t.ex. _ eller &) och letas upp i asset_dir eller arbetskatalogen."
+                      "description": "Filnamn för logotypen längst upp till höger i sidhuvudet. Filnamnet får inte innehålla LaTeX-specialtecken (\\ # $ % & _ { } ~ ^) och letas upp i asset_dir eller arbetskatalogen.",
+                      "pattern": "^[^\\\\#$%&_{}~^]+$"
                     }
                   }
                 },
@@ -121,7 +123,8 @@
                     },
                     "logo": {
                       "type": "string",
-                      "description": "Filnamn för logotypen längst upp till höger i sidhuvudet. Filnamnet får inte innehålla LaTeX-specialtecken (t.ex. _ eller &) och letas upp i asset_dir eller arbetskatalogen."
+                      "description": "Filnamn för logotypen längst upp till höger i sidhuvudet. Filnamnet får inte innehålla LaTeX-specialtecken (\\ # $ % & _ { } ~ ^) och letas upp i asset_dir eller arbetskatalogen.",
+                      "pattern": "^[^\\\\#$%&_{}~^]+$"
                     }
                   }
                 }

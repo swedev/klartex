@@ -355,3 +355,31 @@ class TestSlotSources:
     def test_unknown_fragment_raises(self):
         with pytest.raises(FileNotFoundError):
             read_slot_source("header", "nonexistent")
+
+
+class TestLetterheadRequiresOrgName:
+    """The letterhead is built around the organisation name: the fragment and
+    the reclaim test both key off \\orgname, so contact details supplied
+    without it would be silently dropped."""
+
+    @pytest.mark.parametrize(
+        "settings",
+        [
+            {"email": "info@x.se"},
+            {"address": "Storgatan 1"},
+            {"web": "x.se", "phone": "070-1234567"},
+            {"logo": "logo.pdf"},
+            {"org_name": ""},
+        ],
+    )
+    def test_object_form_without_org_name_raises(self, settings):
+        with pytest.raises(ValueError, match="org_name"):
+            load_page_template(
+                {"header": {"variant": "letterhead", **settings}}, default="none"
+            )
+
+    def test_variant_name_alone_is_still_allowed(self):
+        """`"letterhead"` and the `formal` alias carry no settings at all, and
+        must keep resolving — that is what every existing payload sends."""
+        assert load_page_template({"header": "letterhead"}, default="none").header.variant == "letterhead"
+        assert load_page_template("formal").header.variant == "letterhead"

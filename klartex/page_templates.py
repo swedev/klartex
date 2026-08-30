@@ -59,6 +59,11 @@ HEADER_VARIANTS: dict[str, dict] = {
             "i sidhuvudet"
         ),
         "settings": ("org_name", "address", "web", "email", "phone", "logo"),
+        # The letterhead is built around the organisation name: the fragment
+        # renders the whole details block only when \orgname is set, and the
+        # header-space reclaim tests the same macro. Requiring it in the
+        # object form keeps supplied contact details from being dropped.
+        "required": ("org_name",),
     },
     "logo": {
         "description": "Endast logotyp till höger i sidhuvudet",
@@ -229,7 +234,15 @@ def _check_variant(slot: str, variant: str) -> None:
 
 
 def _check_settings(slot: str, variant: str, settings: dict) -> None:
-    allowed = _VARIANTS[slot][variant]["settings"]
+    spec = _VARIANTS[slot][variant]
+    allowed = spec["settings"]
+    for key in spec.get("required", ()):
+        if not settings.get(key):
+            raise ValueError(
+                f"The {variant} {slot} variant requires '{key}' when given as "
+                f"an object. Use the variant name on its own for an empty "
+                f"{variant} {slot}."
+            )
     for key in settings:
         if slot == "footer" and key == "page_numbers":
             raise ValueError(

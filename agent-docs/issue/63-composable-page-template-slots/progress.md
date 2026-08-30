@@ -25,4 +25,4 @@
 ## Open items for the PR body
 
 - Agent-judgment design calls D1–D10 from the plan (slot JSON shape, footer fields directly on the footer slot, the header field names `org_name` / `address` / `web` / `email` / `phone` / `logo`, sources as kwargs/flags, document-level settings applying alongside a custom source).
-- Pre-existing defect, out of scope here: the `letterhead` fragment emits `\\` before `\orgemail` / `\orgphone` unconditionally, so a header with `org_name` set but `web` empty and `email` set fails to compile ("There's no line here to end"). Reproducible on `main` with the documented custom-template idiom. Fixing it changes the fragment and would break the alias goldens, so it belongs with #64 (header presentation).
+- Review round 1 (PR #77) fixed three findings: the `letterhead` contact column now stacks lines with `\kx@hdrline` so an empty leading field no longer breaks the compile; the `letterhead` object form requires `org_name` so contact details cannot be silently dropped; and the `logo` filename carries a `pattern` so LaTeX-special characters fail validation instead of xelatex.

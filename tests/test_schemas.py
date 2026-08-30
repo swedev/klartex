@@ -178,3 +178,33 @@ def test_recipe_slot_definitions_match_block_engine(template_name, slot):
         )
     )["properties"][slot]
     assert _strip_descriptions(recipe_slot) == _strip_descriptions(block_slot)
+
+
+@pytest.mark.parametrize(
+    "page_template",
+    [
+        {"header": {"variant": "letterhead", "email": "a@b.se"}},
+        {"header": {"variant": "letterhead", "address": "Storgatan 1"}},
+        {"header": {"variant": "letterhead", "org_name": "X", "logo": "my_logo.pdf"}},
+        {"header": {"variant": "letterhead", "org_name": "X", "logo": "a&b.pdf"}},
+        {"header": {"variant": "logo", "logo": "my_logo.pdf"}},
+    ],
+)
+def test_block_schema_rejects_unrenderable_headers(page_template):
+    """A letterhead needs its org name, and a logo filename that escape_data()
+    would rewrite must fail validation rather than xelatex."""
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(_with_body(page_template), _block_schema())
+
+
+@pytest.mark.parametrize(
+    "logo",
+    ["logo.pdf", "../delat/logo.pdf", "branding/logo.pdf", "logotyp-åäö.pdf"],
+)
+def test_block_schema_accepts_safe_logo_names(logo):
+    """The pattern must not reject ordinary paths or non-ASCII names, which
+    need no escaping."""
+    jsonschema.validate(
+        _with_body({"header": {"variant": "letterhead", "org_name": "X", "logo": logo}}),
+        _block_schema(),
+    )

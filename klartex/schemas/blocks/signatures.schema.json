@@ -9,10 +9,10 @@
   "properties": {
     "type": { "type": "string", "const": "signatures" },
     "new_page": { "type": "boolean", "default": true, "description": "Start signatures on a new page" },
-    "contract_intro": { "type": "boolean", "default": false, "description": "Rendera standardingressen 'Detta avtal har upprättats i två (2) likalydande exemplar, av vilka parterna tagit var sitt.' ovanför signaturerna. Sätt true för avtal; utelämna för dokument som inte är avtal." },
+    "contract_intro": { "type": "boolean", "default": false, "description": "Render the standard contract preamble ('Detta avtal har upprättats i två (2) likalydande exemplar, av vilka parterna tagit var sitt.') above the signatures. Set true for contracts; omit for documents that are not contracts." },
     "header": {
       "type": "string",
-      "description": "Optional section header text shown above the signatures (e.g. 'Underskrifter'). Omit for no header. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} / [-struken text-]. Radbrytning blir mellanslag — fältet är enradigt."
+      "description": "Optional section header text shown above the signatures (e.g. 'Underskrifter'). Omit for no header. Inline markup applies: **bold**, *italic*, `code`, \"quotes\", and the change markers {+added text+} (green) / [-removed text-] (red strikethrough). A newline becomes a space — the field is single-line."
     },
     "columns": {
       "type": "integer",
@@ -31,9 +31,9 @@
       "items": {
         "type": "object",
         "properties": {
-          "name": { "type": "string", "description": "Party/company name (omit to suppress the bold header above the signature). Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} / [-struken text-]. Radbrytning blir mellanslag — fältet är enradigt." },
-          "signatory": { "type": "string", "description": "Name of person signing (defaults to name if omitted). Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} / [-struken text-]. Radbrytning blir mellanslag — fältet är enradigt." },
-          "title": { "type": "string", "description": "Signatory title, e.g. 'Verkställande Direktör, Acme AB'. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} / [-struken text-]. Radbrytning blir mellanslag — fältet är enradigt." }
+          "name": { "type": "string", "description": "Party/company name (omit to suppress the bold header above the signature). Inline markup applies: **bold**, *italic*, `code`, \"quotes\", and the change markers {+added text+} (green) / [-removed text-] (red strikethrough). A newline becomes a space — the field is single-line." },
+          "signatory": { "type": "string", "description": "Name of person signing (defaults to name if omitted). Inline markup applies: **bold**, *italic*, `code`, \"quotes\", and the change markers {+added text+} (green) / [-removed text-] (red strikethrough). A newline becomes a space — the field is single-line." },
+          "title": { "type": "string", "description": "Signatory title, e.g. 'Verkställande Direktör, Acme AB'. Inline markup applies: **bold**, *italic*, `code`, \"quotes\", and the change markers {+added text+} (green) / [-removed text-] (red strikethrough). A newline becomes a space — the field is single-line." }
         }
       },
       "minItems": 1

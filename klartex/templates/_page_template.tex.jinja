@@ -2,13 +2,11 @@
 %# document class's chrome setup. Emission order is fixed:
 %#   1. document-level settings (font, header font, diff style)
 %#   2. header slot — custom source, or variant fragment preceded by the
-%#      \renewcommand's for its settings
-%#   3. footer slot — custom source, \kxfooter for a fields footer, or the
-%#      variant fragment
+%#      \renewcommand's for its fields
+%#   3. footer slot — custom source or the variant fragment
 %#   4. header-space reclaim — after both slots, so its \ifdefempty test sees
 %#      the final value of the contract macros
 %#   5. first-page style
-\BLOCK{from '_footer_macros.tex.jinja' import emit_kxfooter}
 \BLOCK{if page_template.font}
 \setmainfont{\VAR{page_template.font}}
 \BLOCK{endif}
@@ -23,9 +21,8 @@
 \BLOCK{if page_template.header.is_custom}
 \VAR{page_template.header.source}
 \BLOCK{elif page_template.header.is_predefined}
-\BLOCK{set _macros = {'org_name': 'orgname', 'address': 'orgaddress', 'web': 'orgwebsite', 'email': 'orgemail', 'phone': 'orgphone', 'logo': 'brandlogo'} }
-\BLOCK{for key, macro in _macros.items() if page_template.header.settings.get(key)}
-\renewcommand{\VAR{'\\' ~ macro}}{\VAR{page_template.header.settings[key]}}
+\BLOCK{for macro, value in page_template.header_macros}
+\renewcommand{\VAR{'\\' ~ macro}}{\VAR{value}}
 \BLOCK{endfor}
 \VAR{page_template.header_fragment}
 \BLOCK{endif}
@@ -33,18 +30,14 @@
 %# A template-level footer (e.g. faktura's own footer field, emitted by the
 %# recipe base after this include) takes precedence over the page template's.
 \BLOCK{if page_template.footer.is_custom}
-\BLOCK{if not page_template.footer.shared_source}
 \VAR{page_template.footer.source}
-\BLOCK{endif}
 \BLOCK{elif page_template.footer.is_predefined}
-\BLOCK{if page_template.footer.has_fields and not (data is defined and data.get('footer'))}
-\VAR{emit_kxfooter(page_template.footer.fields, page_template.page_numbers)}
-\BLOCK{elif not page_template.footer.has_fields}
-\BLOCK{if page_template.page_numbers}
-\VAR{page_template.footer_fragment}
-\BLOCK{else}
+\BLOCK{if page_template.footer.variant == 'columns' and data is defined and data.get('footer')}
+%# The template-level footer is emitted by the recipe base instead.
+\BLOCK{elif page_template.footer.variant == 'pagenumber' and not page_template.page_numbers}
 \fancyfoot[C]{}
-\BLOCK{endif}
+\BLOCK{else}
+\VAR{page_template.footer_fragment}
 \BLOCK{endif}
 \BLOCK{endif}
 %# --- Header-space reclaim ---

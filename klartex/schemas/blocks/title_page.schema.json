@@ -8,8 +8,8 @@
   "additionalProperties": false,
   "properties": {
     "type": { "type": "string", "const": "title_page" },
-    "party1": { "type": "string", "description": "First party name. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} / [-struken text-]. Radbrytning blir mellanslag — fältet är enradigt." },
-    "party2": { "type": "string", "description": "Second party name. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} / [-struken text-]. Radbrytning blir mellanslag — fältet är enradigt." },
-    "title": { "type": "string", "description": "Document title. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} / [-struken text-]. Radbrytning blir mellanslag — fältet är enradigt." }
+    "party1": { "type": "string", "description": "First party name. Inline markup applies: **bold**, *italic*, `code`, \"quotes\", and the change markers {+added text+} (green) / [-removed text-] (red strikethrough). A newline becomes a space — the field is single-line." },
+    "party2": { "type": "string", "description": "Second party name. Inline markup applies: **bold**, *italic*, `code`, \"quotes\", and the change markers {+added text+} (green) / [-removed text-] (red strikethrough). A newline becomes a space — the field is single-line." },
+    "title": { "type": "string", "description": "Document title. Inline markup applies: **bold**, *italic*, `code`, \"quotes\", and the change markers {+added text+} (green) / [-removed text-] (red strikethrough). A newline becomes a space — the field is single-line." }
   }
 }

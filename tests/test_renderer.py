@@ -74,13 +74,13 @@ def test_render_resolves_asset_dir(tmp_path):
 
     # With asset_dir: \input resolves, render succeeds
     pdf = render(
-        "_block", data, page_template_source=page_template, asset_dir=tmp_path
+        "_block", data, header_source=page_template, asset_dir=tmp_path
     )
     assert pdf[:5] == b"%PDF-"
 
     # Without asset_dir: \input cannot find brand-colors.tex, xelatex halts
     with pytest.raises(RuntimeError, match="xelatex failed"):
-        render("_block", data, page_template_source=page_template)
+        render("_block", data, header_source=page_template)
 
 
 @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
@@ -107,7 +107,7 @@ def test_render_resolves_relative_asset_dir(tmp_path, monkeypatch):
 
     monkeypatch.chdir(tmp_path)
     pdf = render(
-        "_block", data, page_template_source=page_template, asset_dir=Path("branding")
+        "_block", data, header_source=page_template, asset_dir=Path("branding")
     )
     assert pdf[:5] == b"%PDF-"
 
@@ -153,7 +153,7 @@ def test_explicitly_relative_asset_path_resolves_via_asset_dir(tmp_path):
     pdf = render(
         "_block",
         data,
-        page_template_source=_color_page_template("brand-colors"),
+        header_source=_color_page_template("brand-colors"),
         asset_dir=tmp_path,
     )
     assert pdf[:5] == b"%PDF-"
@@ -162,7 +162,7 @@ def test_explicitly_relative_asset_path_resolves_via_asset_dir(tmp_path):
     pdf = render(
         "_block",
         data,
-        page_template_source=_color_page_template("./brand-colors"),
+        header_source=_color_page_template("./brand-colors"),
         asset_dir=tmp_path,
     )
     assert pdf[:5] == b"%PDF-"
@@ -185,7 +185,7 @@ def test_parent_relative_asset_path_resolves_above_asset_dir(tmp_path):
     pdf = render(
         "_block",
         data,
-        page_template_source=_color_page_template("../shared/brand-colors"),
+        header_source=_color_page_template("../shared/brand-colors"),
         asset_dir=branding,
     )
     assert pdf[:5] == b"%PDF-"
@@ -205,7 +205,7 @@ def test_explicitly_relative_path_falls_back_to_cwd_without_asset_dir(
 
     monkeypatch.chdir(tmp_path)
     pdf = render(
-        "_block", data, page_template_source=_color_page_template("./brand-colors")
+        "_block", data, header_source=_color_page_template("./brand-colors")
     )
     assert pdf[:5] == b"%PDF-"
 
@@ -220,7 +220,7 @@ def test_render_writes_no_artifacts_into_asset_dir(tmp_path):
     pdf = render(
         "_block",
         data,
-        page_template_source=_color_page_template("./brand-colors"),
+        header_source=_color_page_template("./brand-colors"),
         asset_dir=tmp_path,
     )
     assert pdf[:5] == b"%PDF-"
@@ -236,7 +236,7 @@ def test_render_writes_no_artifacts_into_cwd(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     before = _dir_snapshot(tmp_path)
     pdf = render(
-        "_block", data, page_template_source=_color_page_template("./brand-colors")
+        "_block", data, header_source=_color_page_template("./brand-colors")
     )
     assert pdf[:5] == b"%PDF-"
     assert _dir_snapshot(tmp_path) == before
@@ -264,7 +264,7 @@ def test_asset_dir_cannot_shadow_bundled_sty(tmp_path):
     pdf = render(
         "_block",
         data,
-        page_template_source="\\fancyfoot[C]{\\thepage}\n",
+        header_source="\\fancyfoot[C]{\\thepage}\n",
         asset_dir=tmp_path,
     )
     assert pdf[:5] == b"%PDF-"
@@ -414,8 +414,8 @@ class TestDiscovery:
 def _render_recipe_tex(template_name: str, data: dict, **sources: str) -> str:
     """Helper: run the recipe pre-compile pipeline, return the LaTeX source.
 
-    ``sources`` forwards ``page_template_source`` / ``header_source`` /
-    ``footer_source`` to the recipe renderer.
+    ``sources`` forwards ``header_source`` / ``footer_source`` to the recipe
+    renderer.
     """
     from klartex.renderer import _render_recipe
     from klartex.tex_escape import escape_data
@@ -424,7 +424,6 @@ def _render_recipe_tex(template_name: str, data: dict, **sources: str) -> str:
     return _render_recipe(
         info,
         escape_data(data),
-        sources.get("page_template_source"),
         header_source=sources.get("header_source"),
         footer_source=sources.get("footer_source"),
     )
@@ -629,12 +628,14 @@ def test_faktura_page_template_dict_emits_footer():
     data = _minimal_faktura(
         bankgiro="9999-9999",
         page_template={
-            "name": "formal",
             "footer": {
-                "company": "Bolaget AB",
-                "address": "Storgatan 1, 123 45 Stad",
-                "bankgiro": "1234-5678",
-                "f_tax": True,
+                "variant": "columns",
+                "fields": {
+                    "company": "Bolaget AB",
+                    "address": "Storgatan 1, 123 45 Stad",
+                    "bankgiro": "1234-5678",
+                    "f_tax": True,
+                }
             },
         },
     )
@@ -654,8 +655,7 @@ def test_faktura_footer_address_lines_joined_with_newlines():
     address in the footer."""
     data = _minimal_faktura(
         page_template={
-            "name": "formal",
-            "footer": {"address": ["Storgatan 1", "123 45 Stad"]},
+            "footer": {"variant": "columns", "fields": {"address": ["Storgatan 1", "123 45 Stad"]}},
         }
     )
     tex = _render_recipe_tex("faktura", data)
@@ -718,7 +718,7 @@ def test_faktura_top_level_footer_emitted_and_suppresses_payment_info():
 def test_faktura_data_footer_wins_over_page_template_footer():
     data = _minimal_faktura(
         footer={"bankgiro": "1111-1111"},
-        page_template={"name": "formal", "footer": {"bankgiro": "2222-2222"}},
+        page_template={"footer": {"variant": "columns", "fields": {"bankgiro": "2222-2222"}}},
     )
     tex = _render_recipe_tex("faktura", data)
     assert "bankgiro={1111-1111}" in tex
@@ -739,7 +739,7 @@ def test_faktura_payment_info_skipped_when_no_payment_fields():
 
 def test_faktura_font_options_emitted():
     data = _minimal_faktura(
-        page_template={"name": "formal", "font": "Futura", "header_font": "Georgia"}
+        page_template={"font": "Futura", "header_font": "Georgia"}
     )
     tex = _render_recipe_tex("faktura", data)
     assert r"\setmainfont{Futura}" in tex
@@ -758,7 +758,7 @@ def test_header_font_georgia_renders():
     are genuinely absent.
     """
     data = _minimal_faktura(
-        page_template={"name": "formal", "header_font": "Georgia"}
+        page_template={"header_font": "Georgia"}
     )
     pdf_bytes = render("faktura", data)
     assert pdf_bytes[:5] == b"%PDF-"
@@ -766,8 +766,8 @@ def test_header_font_georgia_renders():
 
 
 def test_faktura_preamble_unchanged_from_golden():
-    """The recipe path's `formal` preamble, captured from `main` before the
-    slot model existed."""
+    """The recipe path's default preamble (letterhead header, page-number
+    footer with the title), captured from `main` before the slot model existed."""
     from tests.test_block_engine import golden_preamble
 
     data = json.loads((FIXTURES / "faktura.json").read_text())
@@ -781,11 +781,11 @@ def test_faktura_preamble_unchanged_from_golden():
 
 class TestRecipePageTemplateSlots:
     """The slot model on the recipe path, where the recipe supplies the
-    default alias and a template-level footer outranks the footer slot."""
+    default slots and a template-level footer outranks the footer slot."""
 
     def test_slot_form_on_faktura(self):
         data = _minimal_faktura(
-            page_template={"header": "logo", "footer": {"company": "Bolaget AB"}}
+            page_template={"header": "logo", "footer": {"variant": "columns", "fields": {"company": "Bolaget AB"}}}
         )
         tex = _render_recipe_tex("faktura", data)
         assert r"\usepackage{klartex-footer}" in tex
@@ -796,7 +796,7 @@ class TestRecipePageTemplateSlots:
     def test_data_footer_still_wins_over_the_footer_slot(self):
         data = _minimal_faktura(
             footer={"company": "Från data"},
-            page_template={"footer": {"company": "Från sidmallen"}},
+            page_template={"footer": {"variant": "columns", "fields": {"company": "Från sidmallen"}}},
         )
         tex = _render_recipe_tex("faktura", data)
         assert "company={Från data}" in tex
@@ -810,9 +810,9 @@ class TestRecipePageTemplateSlots:
         assert r"\fancyfoot[C]{Egen}" in tex
         assert tex.index(r"\fancyfoot[C]{Egen}") < tex.index("company={Från data}")
 
-    def test_dict_without_name_keeps_the_recipe_default(self):
-        """protokoll's recipe defaults to `formal`, so a slot object that only
-        touches the footer must still get the letterhead header."""
+    def test_partial_object_keeps_the_recipe_default(self):
+        """The recipe default is the letterhead header, so a slot object that
+        only touches the footer must still get it."""
         data = json.loads((FIXTURES / "protokoll.json").read_text())
         data["page_template"] = {"footer": None}
         tex = _render_recipe_tex("protokoll", data)
@@ -821,7 +821,7 @@ class TestRecipePageTemplateSlots:
 
     def test_header_slot_settings_reach_the_recipe_path(self):
         data = _minimal_faktura(
-            page_template={"header": {"variant": "letterhead", "org_name": "Bolaget AB"}}
+            page_template={"header": {"variant": "letterhead", "fields": {"org_name": "Bolaget AB"}}}
         )
         tex = _render_recipe_tex("faktura", data)
         assert r"\renewcommand{\orgname}{Bolaget AB}" in tex

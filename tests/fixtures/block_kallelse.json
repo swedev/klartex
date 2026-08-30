@@ -3,12 +3,14 @@
   "page_template": {
     "header": {
       "variant": "letterhead",
-      "org_name": "Bostadsrättsföreningen Eken",
-      "address": "Storgatan 1, 123 45 Stad",
-      "web": "brfeken.se",
-      "email": "styrelsen@brfeken.se"
+      "fields": {
+        "org_name": "Bostadsrättsföreningen Eken",
+        "address": "Storgatan 1, 123 45 Stad",
+        "web": "brfeken.se",
+        "email": "styrelsen@brfeken.se"
+      }
     },
-    "footer": { "title": true }
+    "footer": { "variant": "pagenumber", "title": true }
   },
   "body": [
     { "type": "heading", "text": "Kallelse till årsmöte" },

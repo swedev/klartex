@@ -78,8 +78,7 @@ cat data.json | klartex
 # Med explicit mall
 klartex -d data.json -t protokoll
 
-# Med extern sidmall (hela sidan, eller en slot i taget)
-klartex -d data.json --page-template minforening.tex.jinja
+# Med egen sidmall (en slot i taget)
 klartex -d data.json --header-template sidhuvud.tex.jinja
 
 # Lista mallar
@@ -98,35 +97,31 @@ En sidmall består av två oberoende delar: **header** (sidhuvud) och **footer**
 | `header` | `letterhead` | Organisationsuppgifter till vänster, logotyp till höger |
 | `header` | `logo` | Enbart logotyp till höger |
 | `header` | `null` | Tomt sidhuvud — sidhuvudets utrymme återtas |
-| `footer` | `standard` | Sidnummer centrerat; med kontaktuppgifter en flerkolumnsfot |
+| `footer` | `pagenumber` | Sidnummer centrerat, valfritt med dokumenttiteln före (`title`) |
+| `footer` | `columns` | Flerkolumnsfot med företags-, kontakt- och betalningsuppgifter (`fields`) |
 | `footer` | `null` | Tom sidfot |
 
-De tre namnen `formal`, `clean` och `none` är alias för färdiga kombinationer:
-
-| Alias | Motsvarar |
-|-------|-----------|
-| `formal` | `header: "letterhead"` + `footer: {"title": true}` |
-| `clean` | `header: "logo"` + `footer: "standard"` |
-| `none` | `header: null` + `footer: "standard"` |
-
-```json
-"page_template": "formal"
-```
+En del som utelämnas får ytans default: blockmotorn har tomt sidhuvud och sidnummerfoten, recepten letterhead-sidhuvudet och sidnummerfoten med dokumenttiteln före sidnumret (`footer: {"variant": "pagenumber", "title": true}`).
 
 ```json
 "page_template": {
   "header": {
     "variant": "letterhead",
-    "org_name": "Min Förening",
-    "address": "Storgatan 1, 123 45 Stad",
-    "web": "minforening.se",
-    "email": "styrelsen@minforening.se",
-    "logo": "logo.pdf"
+    "fields": {
+      "org_name": "Min Förening",
+      "address": "Storgatan 1, 123 45 Stad",
+      "web": "minforening.se",
+      "email": "styrelsen@minforening.se",
+      "logo": "logo.pdf"
+    }
   },
   "footer": {
-    "company": "Min Förening",
-    "org_number": "802000-0000",
-    "bankgiro": "1234-5678"
+    "variant": "columns",
+    "fields": {
+      "company": "Min Förening",
+      "org_number": "802000-0000",
+      "bankgiro": "1234-5678"
+    }
   }
 }
 ```
@@ -135,9 +130,7 @@ De tre namnen `formal`, `clean` och `none` är alias för färdiga kombinationer
 "page_template": { "header": "logo", "footer": null }
 ```
 
-Ett alias kan kombineras med en slot som ersätter den sidan av kombinationen: `{"name": "clean", "footer": null}` ger logotypsidhuvudet utan sidfot.
-
-Objektformen av `letterhead` kräver `org_name` — namnet är det som sidhuvudet byggs runt, och utan det skulle övriga uppgifter inte skrivas ut. Ett sidhuvud helt utan uppgifter anges som variantnamnet självt (`"header": "letterhead"`). `logo` är ett filnamn utan LaTeX-specialtecken (`\ # $ % & _ { } ~ ^`).
+Objektformen av `letterhead` kräver `fields.org_name` — namnet är det som sidhuvudet byggs runt, och utan det skulle övriga uppgifter inte skrivas ut. Ett sidhuvud helt utan uppgifter anges som variantnamnet självt (`"header": "letterhead"`). `logo` är ett filnamn utan LaTeX-specialtecken (`\ # $ % & _ { } ~ ^`).
 
 Utöver sloten finns inställningar på dokumentnivå — `font`, `header_font` och `diff_style` — som gäller oavsett om en slot har egen LaTeX, plus `page_numbers` och `first_page_header`.
 
@@ -154,7 +147,7 @@ klartex -d data.json --header-template sidhuvud.tex.jinja --footer-template sidf
 render("_block", data, header_source=Path("sidhuvud.tex.jinja").read_text())
 ```
 
-Båda filerna måste ligga i samma katalog — den katalogen blir mallkatalogen som filer hittas relativt till. `--page-template` (och `"page_template_source"` i API-anrop) tar i stället över **båda** sloten med en enda fil, och kan inte kombineras med slot-flaggorna.
+Båda filerna måste ligga i samma katalog — den katalogen blir mallkatalogen som filer hittas relativt till.
 
 En slot-fil definierar sin egen del av chromet:
 
@@ -182,8 +175,8 @@ Delarna skrivs ut i fast ordning: inställningar på dokumentnivå, sidhuvud, si
 
 Var logotyper och andra filer hittas skiljer sig mellan de två ytorna:
 
-- **CLI med filbaserad sidmall** (`--page-template`, `--header-template`, `--footer-template`, eller autodetekterad `<data-stem>.tex.jinja` / `page_template.tex.jinja`): filer hittas relativt till sidmallens egen katalog, med arbetsmappen som fallback. En mall och dess logotyper kan därmed ligga samlade i t.ex. en `Branding/`-mapp och användas från vilken arbetsmapp som helst. För en symlänkad mall gäller målets katalog. Autodetektering hoppas över när en slot-flagga anges.
-- **API med `page_template_source`, `header_source` eller `footer_source`**: parametrarna tar rå text utan sökväg, så det finns ingen mallkatalog att utgå från. Anropare som vill hitta filer utanför arbetsmappen skickar `asset_dir=<katalog>` till `render()`; annars gäller arbetsmappen.
+- **CLI med filbaserad sidmall** (`--header-template`, `--footer-template`): filer hittas relativt till slot-filernas egen katalog, med arbetsmappen som fallback. En mall och dess logotyper kan därmed ligga samlade i t.ex. en `Branding/`-mapp och användas från vilken arbetsmapp som helst. För en symlänkad fil gäller målets katalog.
+- **API med `header_source` eller `footer_source`**: parametrarna tar rå text utan sökväg, så det finns ingen mallkatalog att utgå från. Anropare som vill hitta filer utanför arbetsmappen skickar `asset_dir=<katalog>` till `render()`; annars gäller arbetsmappen.
 
 > **Både `\includegraphics{logo.pdf}` och `\includegraphics{./logo.pdf}` fungerar**, liksom `\input{../delat/farger.tex}` — relativa referenser utgår från mallens katalog (eller `asset_dir`, i annat fall arbetsmappen). En skillnad finns dock: namn med `./` eller `../` faller **inte** tillbaka på arbetsmappen. TeX:s filsökning (Kpathsea) söker aldrig upp sådana namn, utan provar dem rakt av mot xelatex arbetskatalog — och den katalogen är just mallens katalog. Namn utan prefix söks däremot i hela kedjan och hittas även om filen bara ligger i arbetsmappen.
 
@@ -212,7 +205,6 @@ template:
 
 document:
   title: "{{ data.title }}"
-  page_template: formal
   metadata:
     - label: "Datum:"
       field: date

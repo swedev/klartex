@@ -1,0 +1,7 @@
+%# Multi-column footer (klartex-footer.sty): company | contact | payment
+%# columns from `fields` (as \kxfooter keyvals, computed by
+%# page_templates.footer_keyvals), page numbers per `page_numbers`.
+\usepackage{klartex-footer}
+\kxfooter{%
+\BLOCK{for kv in keyvals}\VAR{kv},\BLOCK{endfor}
+pagenumbers=\BLOCK{if page_numbers}true\BLOCK{else}false\BLOCK{endif}}

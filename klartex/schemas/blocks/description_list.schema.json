@@ -18,11 +18,11 @@
         "properties": {
           "label": {
             "type": "string",
-            "description": "Etikett. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} / [-struken text-]. Radbrytning blir mellanslag — etikettkolumnen är enradig."
+            "description": "Label. Inline markup applies: **bold**, *italic*, `code`, \"quotes\", and the change markers {+added text+} (green) / [-removed text-] (red strikethrough). A newline becomes a space — the label column is single-line."
           },
           "value": {
             "type": "string",
-            "description": "Värde. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} (grön) och [-struken text-] (röd genomstruken). Radbrytning blir radbrytning inuti cellen."
+            "description": "Value. Inline markup applies: **bold**, *italic*, `code`, \"quotes\", and the change markers {+added text+} (green) / [-removed text-] (red strikethrough). A newline becomes a line break inside the cell."
           }
         }
       },

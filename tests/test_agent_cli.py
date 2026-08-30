@@ -85,7 +85,8 @@ def test_block_schema_exposes_slot_variants():
     page_template = registry["_block"].schema["properties"]["page_template"]
     printed = json.dumps(page_template, ensure_ascii=False)
     assert "letterhead" in printed
-    assert "standard" in printed
+    assert "pagenumber" in printed
+    assert "columns" in printed
 
 
 def test_block_example_uses_the_slot_form():
@@ -99,4 +100,4 @@ def test_block_example_uses_the_slot_form():
     )
     data = json.loads(example_path.read_text())
     assert data["page_template"]["header"]["variant"] == "letterhead"
-    assert data["page_template"]["header"]["org_name"]
+    assert data["page_template"]["header"]["fields"]["org_name"]

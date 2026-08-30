@@ -1,6 +1,6 @@
 {
   "lang": "sv",
-  "page_template": "formal",
+  "page_template": {"header": "letterhead", "footer": {"variant": "pagenumber", "title": true}},
   "body": [
     { "type": "heading", "text": "Motion: Anläggning av gemensam odlingslott" },
     {

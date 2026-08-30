@@ -78,8 +78,7 @@ cat data.json | klartex
 # With explicit template
 klartex -d data.json -t protokoll
 
-# With an external page template (whole page, or one slot at a time)
-klartex -d data.json --page-template myorg.tex.jinja
+# With a custom page template (one slot at a time)
 klartex -d data.json --header-template header.tex.jinja
 
 # List templates
@@ -98,35 +97,31 @@ A page template is composed of two independent slots: **header** and **footer**.
 | `header` | `letterhead` | Organisation details on the left, logo on the right |
 | `header` | `logo` | Logo only, on the right |
 | `header` | `null` | Empty header — the header's space is reclaimed |
-| `footer` | `standard` | Centered page numbers; a multi-column footer when contact details are given |
+| `footer` | `pagenumber` | Centered page numbers, optionally preceded by the document title (`title`) |
+| `footer` | `columns` | Multi-column footer with company, contact and payment details (`fields`) |
 | `footer` | `null` | Empty footer |
 
-The three names `formal`, `clean` and `none` are aliases for ready-made combinations:
-
-| Alias | Equivalent to |
-|-------|---------------|
-| `formal` | `header: "letterhead"` + `footer: {"title": true}` |
-| `clean` | `header: "logo"` + `footer: "standard"` |
-| `none` | `header: null` + `footer: "standard"` |
-
-```json
-"page_template": "formal"
-```
+A slot that is left out takes the surface's default: the block engine has an empty header and the page-number footer, recipes the letterhead header and the page-number footer with the document title before the page number (`footer: {"variant": "pagenumber", "title": true}`).
 
 ```json
 "page_template": {
   "header": {
     "variant": "letterhead",
-    "org_name": "My Organization",
-    "address": "Storgatan 1, 123 45 Stad",
-    "web": "myorg.se",
-    "email": "board@myorg.se",
-    "logo": "logo.pdf"
+    "fields": {
+      "org_name": "My Organization",
+      "address": "Storgatan 1, 123 45 Stad",
+      "web": "myorg.se",
+      "email": "board@myorg.se",
+      "logo": "logo.pdf"
+    }
   },
   "footer": {
-    "company": "My Organization",
-    "org_number": "802000-0000",
-    "bankgiro": "1234-5678"
+    "variant": "columns",
+    "fields": {
+      "company": "My Organization",
+      "org_number": "802000-0000",
+      "bankgiro": "1234-5678"
+    }
   }
 }
 ```
@@ -135,9 +130,7 @@ The three names `formal`, `clean` and `none` are aliases for ready-made combinat
 "page_template": { "header": "logo", "footer": null }
 ```
 
-An alias can be combined with a slot that replaces that side of the combination: `{"name": "clean", "footer": null}` gives the logo header with no footer.
-
-The object form of `letterhead` requires `org_name` — the name is what the header is built around, and without it the other details would not be printed. A header with no details at all is written as the variant name on its own (`"header": "letterhead"`). `logo` is a filename free of LaTeX-special characters (`\ # $ % & _ { } ~ ^`).
+The object form of `letterhead` requires `fields.org_name` — the name is what the header is built around, and without it the other details would not be printed. A header with no details at all is written as the variant name on its own (`"header": "letterhead"`). `logo` is a filename free of LaTeX-special characters (`\ # $ % & _ { } ~ ^`).
 
 Beside the slots there are document-level settings — `font`, `header_font` and `diff_style` — which apply whether or not a slot has its own LaTeX, plus `page_numbers` and `first_page_header`.
 
@@ -154,7 +147,7 @@ klartex -d data.json --header-template header.tex.jinja --footer-template footer
 render("_block", data, header_source=Path("header.tex.jinja").read_text())
 ```
 
-Both files must live in the same directory — that directory becomes the template directory files resolve against. `--page-template` (and `"page_template_source"` in API calls) instead takes over **both** slots with a single file, and cannot be combined with the slot flags.
+Both files must live in the same directory — that directory becomes the template directory files resolve against.
 
 A slot file defines its own part of the chrome:
 
@@ -182,8 +175,8 @@ The parts are emitted in a fixed order: document-level settings, header, footer,
 
 Where logos and other files are resolved differs between the two surfaces:
 
-- **CLI with a file-based page template** (`--page-template`, `--header-template`, `--footer-template`, or an auto-detected `<data-stem>.tex.jinja` / `page_template.tex.jinja`): files are resolved relative to the template file's own directory, with the working directory as fallback. A template and its logos can therefore live together in e.g. a `Branding/` folder and be used from any working directory. For a symlinked template, the target's directory applies. Auto-detection is skipped when a slot flag is given.
-- **API with `page_template_source`, `header_source` or `footer_source`**: the parameters take raw text with no path, so there is no template directory to work from. Callers who need files outside the working directory pass `asset_dir=<directory>` to `render()`; otherwise the working directory applies.
+- **CLI with a file-based page template** (`--header-template`, `--footer-template`): files are resolved relative to the slot files' own directory, with the working directory as fallback. A template and its logos can therefore live together in e.g. a `Branding/` folder and be used from any working directory. For a symlinked file, the target's directory applies.
+- **API with `header_source` or `footer_source`**: the parameters take raw text with no path, so there is no template directory to work from. Callers who need files outside the working directory pass `asset_dir=<directory>` to `render()`; otherwise the working directory applies.
 
 > **Both `\includegraphics{logo.pdf}` and `\includegraphics{./logo.pdf}` work**, as does `\input{../shared/colors.tex}` — relative references resolve against the template's directory (or `asset_dir`, otherwise the working directory). One asymmetry remains: names starting with `./` or `../` do **not** fall back to the working directory. TeX's file lookup (Kpathsea) never searches for such names; it tries them as-is against xelatex's working directory — which is precisely the template's directory. Plain names, by contrast, go through the full search chain and are found even if the file only exists in the working directory.
 
@@ -212,7 +205,6 @@ template:
 
 document:
   title: "{{ data.title }}"
-  page_template: formal
   metadata:
     - label: "Date:"
       field: date

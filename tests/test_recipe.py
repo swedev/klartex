@@ -34,7 +34,9 @@ class TestLoadRecipe:
 
     def test_recipe_document_section(self):
         recipe = load_recipe(TEMPLATES_DIR / "protokoll" / "recipe.yaml")
-        assert "formal" in recipe.document.page_template
+        from klartex.page_templates import RECIPE_DEFAULT_SLOTS
+
+        assert recipe.document.page_template == RECIPE_DEFAULT_SLOTS
         assert len(recipe.document.metadata) > 0
 
     def test_recipe_component_specs_resolved(self):

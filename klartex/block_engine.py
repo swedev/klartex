@@ -9,7 +9,7 @@ Usage via the API: ``POST /render`` with ``template: "_block"``.
 Data shape::
 
     {
-        "page_template": "formal",       # or {"header": "logo", "footer": {"company": "AB"}}
+        "page_template": {"header": "logo", "footer": {"fields": {"company": "AB"}}},
         "lang": "sv",
         "body": [
             {"type": "heading", "text": "My Document"},
@@ -22,7 +22,7 @@ Data shape::
 from typing import Any
 
 from klartex.components import _COMPONENTS
-from klartex.page_templates import load_page_template
+from klartex.page_templates import BLOCK_DEFAULT_SLOTS, load_page_template
 
 # Block types recognized by the block engine template
 KNOWN_BLOCK_TYPES = {
@@ -35,7 +35,6 @@ BLOCK_ENGINE_TEMPLATE = "_block"
 
 def prepare_block_context(
     data: dict,
-    page_template_source: str | None = None,
     *,
     header_source: str | None = None,
     footer_source: str | None = None,
@@ -46,8 +45,6 @@ def prepare_block_context(
         data: User data with ``page_template``, ``lang``, and ``body[]``.
               Data should already be escaped via ``escape_data()`` before
               calling this function.
-        page_template_source: Optional raw .tex.jinja content owning both
-              slots. When set, the payload's chrome keys are ignored.
         header_source: Optional raw .tex.jinja content owning the header slot.
         footer_source: Optional raw .tex.jinja content owning the footer slot.
 
@@ -61,14 +58,13 @@ def prepare_block_context(
     if "body" not in data:
         raise ValueError("Block engine data must include a 'body' array")
 
-    # Resolve page template. The loader owns the slot model, the aliases and
-    # the monolithic-source tolerance for an unknown or missing name.
+    # Resolve page template. The loader owns the slot model; a slot the
+    # payload leaves out gets the block engine's default.
     page_tmpl = load_page_template(
         data.get("page_template"),
-        default="none",
+        defaults=BLOCK_DEFAULT_SLOTS,
         header_source=header_source,
         footer_source=footer_source,
-        page_template_source=page_template_source,
     )
 
     # Extract document title from body blocks (first heading or title_page)

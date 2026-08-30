@@ -17,7 +17,7 @@
     "decisionLabel": {
       "type": "string",
       "default": "Beslut:",
-      "description": "Label for the decision line. Default is Swedish \"Beslut:\". Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} / [-struken text-]. Radbrytning blir mellanslag — etiketten är enradig."
+      "description": "Label for the decision line. Default is Swedish \"Beslut:\". Inline markup applies: **bold**, *italic*, `code`, \"quotes\", and the change markers {+added text+} (green) / [-removed text-] (red strikethrough). A newline becomes a space — the label is single-line."
     },
     "items": {
       "type": "array",
@@ -27,13 +27,13 @@
         "required": ["title"],
         "additionalProperties": false,
         "properties": {
-          "title": { "type": "string", "description": "Agenda item title. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} (grön) och [-struken text-] (röd genomstruken). Radbrytning blir radbrytning." },
-          "discussion": { "type": "string", "description": "Discussion text. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} (grön) och [-struken text-] (röd genomstruken). Radbrytning blir radbrytning." },
-          "decision": { "type": "string", "description": "Decision text. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} (grön) och [-struken text-] (röd genomstruken). Radbrytning blir radbrytning." },
+          "title": { "type": "string", "description": "Agenda item title. Inline markup applies: **bold**, *italic*, `code`, \"quotes\", and the change markers {+added text+} (green) / [-removed text-] (red strikethrough). A newline becomes a line break." },
+          "discussion": { "type": "string", "description": "Discussion text. Inline markup applies: **bold**, *italic*, `code`, \"quotes\", and the change markers {+added text+} (green) / [-removed text-] (red strikethrough). A newline becomes a line break." },
+          "decision": { "type": "string", "description": "Decision text. Inline markup applies: **bold**, *italic*, `code`, \"quotes\", and the change markers {+added text+} (green) / [-removed text-] (red strikethrough). A newline becomes a line break." },
           "subItems": {
             "type": "array",
             "items": { "type": "string" },
-            "description": "Optional flat sub-items rendered with decimal sub-numbering (1.1., 1.2., …). Only meaningful with `numberingStyle: \"decimal\"`. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} (grön) och [-struken text-] (röd genomstruken). Radbrytning blir radbrytning."
+            "description": "Optional flat sub-items rendered with decimal sub-numbering (1.1., 1.2., …). Only meaningful with `numberingStyle: \"decimal\"`. Inline markup applies: **bold**, *italic*, `code`, \"quotes\", and the change markers {+added text+} (green) / [-removed text-] (red strikethrough). A newline becomes a line break."
           }
         }
       },

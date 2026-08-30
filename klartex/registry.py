@@ -6,6 +6,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from klartex.block_engine import BLOCK_ENGINE_TEMPLATE
+from klartex.page_templates import (
+    BLOCK_DEFAULT_TEXT,
+    RECIPE_DEFAULT_TEXT,
+    page_template_schema,
+)
 
 
 @dataclass
@@ -31,6 +36,13 @@ class TemplateInfo:
 _SCHEMAS_DIR = Path(__file__).resolve().parent / "schemas"
 
 
+def _inject_page_template(schema: dict, default_text: str) -> None:
+    """Replace the schema file's ``page_template`` placeholder with the
+    subtree generated from the slot model, so every template validates and
+    documents the same page-template surface."""
+    schema.setdefault("properties", {})["page_template"] = page_template_schema(default_text)
+
+
 def discover_templates(templates_dir: Path) -> dict[str, TemplateInfo]:
     """Scan templates/ for subdirectories containing schema.json + recipe.yaml.
 
@@ -42,6 +54,7 @@ def discover_templates(templates_dir: Path) -> dict[str, TemplateInfo]:
         if name.startswith("_"):
             continue
         schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        _inject_page_template(schema, RECIPE_DEFAULT_TEXT)
 
         recipe_yaml = schema_path.parent / "recipe.yaml"
         if not recipe_yaml.exists():
@@ -58,6 +71,7 @@ def discover_templates(templates_dir: Path) -> dict[str, TemplateInfo]:
     block_schema_path = _SCHEMAS_DIR / "block_engine.schema.json"
     if block_schema_path.exists():
         block_schema = json.loads(block_schema_path.read_text(encoding="utf-8"))
+        _inject_page_template(block_schema, BLOCK_DEFAULT_TEXT)
 
         # Build discriminated union from per-block schemas for CLI/API display
         from klartex.components import _COMPONENTS

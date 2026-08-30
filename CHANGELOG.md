@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.17.0 — 2026-08-30
+
+### Breaking changes
+- **Sidmallsytan är helt omgjord — inga alias, inga platta fält, ingen helsideskälla.** `page_template` är enbart ett objekt: `formal`/`clean`/`none` och `name`-nyckeln är borttagna (en utelämnad slot får ytans default — blockmotorn tomt sidhuvud + `pagenumber`-fot, recepten `letterhead` + `pagenumber` med dokumenttiteln). Slot-innehåll ligger under `fields` och ett slot-objekt kräver `variant`; `letterhead`-objektformen kräver `fields.org_name`, och `logo`-filnamn valideras mot ett mönster utan LaTeX-specialtecken. Sidfoten är två varianter: `pagenumber` (inställning `title` — dokumenttiteln före sidnumret) och `columns` (flerkolumnsfoten, `fields` med företags-, kontakt- och betalningsuppgifter). Helsideskällan är borta: `page_template_source` (API), `--page-template` (CLI) och autodetekteringen av `<stem>.tex.jinja`/`page_template.tex.jinja` — egen LaTeX är alltid per slot (`header_source`/`footer_source`, `--header-template`/`--footer-template`). Slot-modellen är typad och definierad på ett ställe i `page_templates.py`; `page_template`-subträdet i alla mallscheman genereras därifrån. Schemabeskrivningarna är nu på engelska (schemat är agentens upptäcktsyta); svenska domäntermer och PDF-strängar står kvar. Ett partiellt `document.page_template` i en recipe.yaml faller tillbaka per slot i stället för att krascha. (#80)
+
+### New features
+- **`klartex serve` och `ghcr.io/swedev/klartex-render:X.Y.Z`.** Det interna kompileringslagret bor nu i kärnan: `klartex/server/` (FastAPI, flyttad från klartex.se och anpassad till slot-API:t) exponeras som `klartex serve` bakom nya extran `serve`. Kontrakt (internt v1): `POST /render` med `template`, `data`, valfria `header_source`/`footer_source` och base64-`assets` → PDF; strukturerade fel (`400 input_error`/`validation_error` med block-path, `413`, `500`, `503` med `Retry-After`); `GET /health` med kärnans version; konfiguration enbart via env (`KLARTEX_MAX_CONCURRENT`, `KLARTEX_MAX_BODY_MB`). Varje release publicerar `docker/Dockerfile.render` som `ghcr.io/swedev/klartex-render:<version>` (multi-arch, byggd på den pinnade basimagen, aldrig `latest`) via ett nytt `image`-jobb i release-workflowen. Imagen kör som icke-root och tål `read_only: true` med tmpfs `/tmp` och tmpfs-HOME. (#81)
+
 ## 0.16.0 — 2026-08-30
 
 ### Breaking changes

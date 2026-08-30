@@ -79,6 +79,18 @@
 % template or the header_font page-template option selects a separate font.
 \newcommand{\kxheaderfont}{}
 
+% Page-template contract macros. A page-template slot — predefined or custom,
+% either render path — redefines these at preamble top level. The predefined
+% header fragments read them at shipout; the header-space reclaim block tests
+% \orgname and \brandlogo at the end of the preamble, so a definition made
+% later (e.g. inside \AtBeginDocument) is not seen by that test.
+\providecommand{\orgname}{}
+\providecommand{\orgaddress}{}
+\providecommand{\orgwebsite}{}
+\providecommand{\orgemail}{}
+\providecommand{\orgphone}{}
+\providecommand{\brandlogo}{}
+
 % Document metadata
 \newcommand{\doctitle}{}
 \newcommand{\setdoctitle}[1]{\renewcommand{\doctitle}{#1}}

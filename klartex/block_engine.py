@@ -9,7 +9,7 @@ Usage via the API: ``POST /render`` with ``template: "_block"``.
 Data shape::
 
     {
-        "page_template": "formal",       # or {"name": "formal", "page_numbers": false}
+        "page_template": "formal",       # or {"header": "logo", "footer": {"company": "AB"}}
         "lang": "sv",
         "body": [
             {"type": "heading", "text": "My Document"},
@@ -22,7 +22,7 @@ Data shape::
 from typing import Any
 
 from klartex.components import _COMPONENTS
-from klartex.page_templates import load_page_template, read_page_template_source
+from klartex.page_templates import load_page_template
 
 # Block types recognized by the block engine template
 KNOWN_BLOCK_TYPES = {
@@ -36,6 +36,9 @@ BLOCK_ENGINE_TEMPLATE = "_block"
 def prepare_block_context(
     data: dict,
     page_template_source: str | None = None,
+    *,
+    header_source: str | None = None,
+    footer_source: str | None = None,
 ) -> dict[str, Any]:
     """Build the Jinja context for the block engine meta-template.
 
@@ -43,8 +46,10 @@ def prepare_block_context(
         data: User data with ``page_template``, ``lang``, and ``body[]``.
               Data should already be escaped via ``escape_data()`` before
               calling this function.
-        page_template_source: Optional raw .tex.jinja content. When set,
-              overrides the built-in page template lookup.
+        page_template_source: Optional raw .tex.jinja content owning both
+              slots. When set, the payload's chrome keys are ignored.
+        header_source: Optional raw .tex.jinja content owning the header slot.
+        footer_source: Optional raw .tex.jinja content owning the footer slot.
 
     Returns:
         Context dict for rendering ``_block_engine.tex.jinja``.
@@ -56,16 +61,15 @@ def prepare_block_context(
     if "body" not in data:
         raise ValueError("Block engine data must include a 'body' array")
 
-    # Resolve page template
-    page_template_spec = data.get("page_template", "none")
-    external_page_template = page_template_source is not None
-    if external_page_template:
-        # Caller provided raw source — it owns header/footer entirely. No
-        # built-in metadata, no post-template overrides.
-        page_tmpl = load_page_template("none")
-    else:
-        page_tmpl = load_page_template(page_template_spec)
-        page_template_source = read_page_template_source(page_tmpl.name)
+    # Resolve page template. The loader owns the slot model, the aliases and
+    # the monolithic-source tolerance for an unknown or missing name.
+    page_tmpl = load_page_template(
+        data.get("page_template"),
+        default="none",
+        header_source=header_source,
+        footer_source=footer_source,
+        page_template_source=page_template_source,
+    )
 
     # Extract document title from body blocks (first heading or title_page)
     doc_title = _extract_doc_title(data["body"])
@@ -74,9 +78,7 @@ def prepare_block_context(
         "body": data["body"],
         "lang": data.get("lang", "sv"),
         "block_settings": data.get("block_settings") or {},
-        "page_template_source": page_template_source,
         "page_template": page_tmpl,
-        "external_page_template": external_page_template,
         "doc_title": doc_title,
     }
 

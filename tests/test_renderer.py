@@ -411,13 +411,23 @@ class TestDiscovery:
         assert registry["_block"].is_block_engine
 
 
-def _render_recipe_tex(template_name: str, data: dict) -> str:
-    """Helper: run the recipe pre-compile pipeline, return the LaTeX source."""
+def _render_recipe_tex(template_name: str, data: dict, **sources: str) -> str:
+    """Helper: run the recipe pre-compile pipeline, return the LaTeX source.
+
+    ``sources`` forwards ``page_template_source`` / ``header_source`` /
+    ``footer_source`` to the recipe renderer.
+    """
     from klartex.renderer import _render_recipe
     from klartex.tex_escape import escape_data
 
     info = get_registry()[template_name]
-    return _render_recipe(info, escape_data(data))
+    return _render_recipe(
+        info,
+        escape_data(data),
+        sources.get("page_template_source"),
+        header_source=sources.get("header_source"),
+        footer_source=sources.get("footer_source"),
+    )
 
 
 def test_faktura_missing_currency_defaults_to_sek():
@@ -753,3 +763,65 @@ def test_header_font_georgia_renders():
     pdf_bytes = render("faktura", data)
     assert pdf_bytes[:5] == b"%PDF-"
     assert len(pdf_bytes) > 1000
+
+
+def test_faktura_preamble_unchanged_from_golden():
+    """The recipe path's `formal` preamble, captured from `main` before the
+    slot model existed."""
+    from tests.test_block_engine import golden_preamble
+
+    data = json.loads((FIXTURES / "faktura.json").read_text())
+    golden = (FIXTURES / "golden" / "page_template_faktura.tex").read_text(
+        encoding="utf-8"
+    )
+    assert golden_preamble(_render_recipe_tex("faktura", data)) == golden_preamble(
+        golden
+    )
+
+
+class TestRecipePageTemplateSlots:
+    """The slot model on the recipe path, where the recipe supplies the
+    default alias and a template-level footer outranks the footer slot."""
+
+    def test_slot_form_on_faktura(self):
+        data = _minimal_faktura(
+            page_template={"header": "logo", "footer": {"company": "Bolaget AB"}}
+        )
+        tex = _render_recipe_tex("faktura", data)
+        assert r"\usepackage{klartex-footer}" in tex
+        assert "company={Bolaget AB}" in tex
+        assert r"\fancyhead[R]" in tex
+        assert r"\fancyhead[L]" not in tex
+
+    def test_data_footer_still_wins_over_the_footer_slot(self):
+        data = _minimal_faktura(
+            footer={"company": "Från data"},
+            page_template={"footer": {"company": "Från sidmallen"}},
+        )
+        tex = _render_recipe_tex("faktura", data)
+        assert "company={Från data}" in tex
+        assert "company={Från sidmallen}" not in tex
+
+    def test_data_footer_still_wins_over_a_custom_footer_source(self):
+        data = _minimal_faktura(footer={"company": "Från data"})
+        tex = _render_recipe_tex(
+            "faktura", data, footer_source=r"\fancyfoot[C]{Egen}"
+        )
+        assert r"\fancyfoot[C]{Egen}" in tex
+        assert tex.index(r"\fancyfoot[C]{Egen}") < tex.index("company={Från data}")
+
+    def test_dict_without_name_keeps_the_recipe_default(self):
+        """protokoll's recipe defaults to `formal`, so a slot object that only
+        touches the footer must still get the letterhead header."""
+        data = json.loads((FIXTURES / "protokoll.json").read_text())
+        data["page_template"] = {"footer": None}
+        tex = _render_recipe_tex("protokoll", data)
+        assert r"\fancyhead[L]" in tex
+        assert r"\fancyfoot" not in tex
+
+    def test_header_slot_settings_reach_the_recipe_path(self):
+        data = _minimal_faktura(
+            page_template={"header": {"variant": "letterhead", "org_name": "Bolaget AB"}}
+        )
+        tex = _render_recipe_tex("faktura", data)
+        assert r"\renewcommand{\orgname}{Bolaget AB}" in tex

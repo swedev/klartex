@@ -2,10 +2,8 @@
 \BLOCK{from '_block_macros.tex.jinja' import render_agenda, render_heading, render_description_list with context}
 \documentclass{klartex-base}
 
-\VAR{page_template_source}
-
-%# --- Apply page template overrides (skipped when external template is self-contained) ---
-\BLOCK{include '_page_template_overrides.tex.jinja'}
+%# --- Compose the page template from its header and footer slots ---
+\BLOCK{include '_page_template.tex.jinja'}
 
 \BLOCK{if lang == 'en'}
 \setdoclang{en}

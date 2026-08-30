@@ -178,3 +178,59 @@ def test_widow_and_orphan_penalties_keep_the_two_line_policy():
     assert "C1=10000." in text
     assert "C2=10000." in text
     assert "C3=0." in text
+
+
+def _two_page_body(heading: str) -> list[dict]:
+    """A body long enough to be paginated, so `Sida 1 av 2` is meaningful."""
+    return [
+        {"type": "heading", "text": heading},
+        {"type": "text", "text": LOREM * 30},
+    ]
+
+
+@requires_tools
+def test_formal_footer_carries_the_title_and_page_count():
+    data = {
+        "lang": "sv",
+        "page_template": "formal",
+        "body": _two_page_body("Kallelse till stämma"),
+    }
+    pages = _pages(render(BLOCK_ENGINE_TEMPLATE, data))
+    assert len(pages) >= 2, f"expected a multi-page render, got {len(pages)}"
+    assert "Kallelse till stämma • Sida 1 av 2" in pages[0]
+
+
+@requires_tools
+def test_letterhead_settings_reach_the_printed_page():
+    """Structured header content is what the slot model adds: no custom LaTeX,
+    and the organisation still ends up in the header's text layer."""
+    data = {
+        "lang": "sv",
+        "page_template": {
+            "header": {
+                "variant": "letterhead",
+                "org_name": "Föreningen Klartex",
+                "address": "Storgatan 1, 123 45 Stad",
+                "web": "klartex.se",
+                "email": "info@klartex.se",
+            }
+        },
+        "body": _two_page_body("Kallelse"),
+    }
+    pages = _pages(render(BLOCK_ENGINE_TEMPLATE, data))
+    assert "Föreningen Klartex" in pages[0]
+    assert "Storgatan 1, 123 45 Stad" in pages[0]
+    assert "info@klartex.se" in pages[0]
+
+
+@requires_tools
+def test_both_slots_empty_leaves_no_chrome():
+    data = {
+        "lang": "sv",
+        "page_template": {"header": None, "footer": None},
+        "body": _two_page_body("Kallelse"),
+    }
+    pages = _pages(render(BLOCK_ENGINE_TEMPLATE, data))
+    assert len(pages) >= 2
+    for page in pages:
+        assert "Sida" not in page

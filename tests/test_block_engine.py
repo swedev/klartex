@@ -24,7 +24,7 @@ class TestPrepareBlockContext:
         ctx = prepare_block_context(data)
         assert "body" in ctx
         assert "lang" in ctx
-        assert "page_template_source" in ctx
+        assert "page_template" in ctx
         assert "doc_title" in ctx
 
     def test_missing_body_raises(self):
@@ -34,8 +34,9 @@ class TestPrepareBlockContext:
     def test_default_page_template(self):
         data = {"body": [{"type": "heading", "text": "Test"}]}
         ctx = prepare_block_context(data)
-        # page_template_source is now the raw file content
-        assert "fancyhead" in ctx["page_template_source"] or "fancyfoot" in ctx["page_template_source"]
+        # The block engine defaults to an empty header and the standard footer
+        assert ctx["page_template"].header.is_empty
+        assert "fancyfoot" in ctx["page_template"].footer_fragment
 
     def test_page_template_object(self):
         data = {
@@ -43,15 +44,17 @@ class TestPrepareBlockContext:
             "body": [{"type": "heading", "text": "Test"}],
         }
         ctx = prepare_block_context(data)
-        assert isinstance(ctx["page_template_source"], str)
-        assert len(ctx["page_template_source"]) > 0
+        assert ctx["page_template"].header.variant == "logo"
+        assert "fancyhead" in ctx["page_template"].header_fragment
         assert ctx["page_template"].page_numbers is False
 
     def test_caller_provided_source_overrides(self):
         data = {"body": [{"type": "heading", "text": "Test"}]}
         custom_source = "% custom page template"
         ctx = prepare_block_context(data, page_template_source=custom_source)
-        assert ctx["page_template_source"] == custom_source
+        assert ctx["page_template"].header.source == custom_source
+        assert ctx["page_template"].footer.source == custom_source
+        assert ctx["page_template"].footer.shared_source is True
 
     def test_doc_title_from_heading(self):
         data = {
@@ -1064,15 +1067,24 @@ class TestRecipeTemplatesStillWork:
 
 
 
-def _render_tex(data: dict) -> str:
+def _render_tex(data: dict, **sources: str) -> str:
     """Module helper: run the renderer's pre-compile pipeline and return the
-    rendered LaTeX source (no xelatex needed)."""
+    rendered LaTeX source (no xelatex needed).
+
+    ``sources`` forwards ``page_template_source`` / ``header_source`` /
+    ``footer_source`` to the block-engine renderer.
+    """
     from klartex.renderer import _render_block_engine, _restore_block_types
     from klartex.tex_escape import escape_data
 
     escaped = escape_data(data)
     _restore_block_types(data["body"], escaped["body"])
-    return _render_block_engine(escaped)
+    return _render_block_engine(
+        escaped,
+        sources.get("page_template_source"),
+        header_source=sources.get("header_source"),
+        footer_source=sources.get("footer_source"),
+    )
 
 
 class TestCellSafeLineBreaks:
@@ -1823,3 +1835,214 @@ class TestHeaderFieldsInlineMarkup:
         ]}
         pdf = render(BLOCK_ENGINE_TEMPLATE, data)
         assert pdf[:5] == b"%PDF-"
+
+
+GOLDEN = FIXTURES / "golden"
+
+
+def golden_preamble(tex: str) -> list[str]:
+    """The preamble of `tex` as a sorted list of significant lines.
+
+    Normalised so the comparison survives the composition's emission order
+    without losing any line: blank lines go, the `\\providecommand` contract
+    lines go (they live in `klartex-base.cls`), and `\\makeatletter` /
+    `\\makeatother` go (each fragment carries its own pair). Every other line
+    must survive verbatim.
+    """
+    preamble = tex.split(r"\begin{document}")[0]
+    kept = []
+    for line in preamble.splitlines():
+        if not line.strip():
+            continue
+        if line.startswith(r"\providecommand"):
+            continue
+        if line.strip() in (r"\makeatletter", r"\makeatother"):
+            continue
+        kept.append(line)
+    return sorted(kept)
+
+
+class TestPageTemplateGoldens:
+    """The three aliases must still emit the preamble they emitted before the
+    slot model existed. The goldens were captured from `main`."""
+
+    @pytest.mark.parametrize("alias", ["formal", "clean", "none"])
+    def test_alias_preamble_unchanged(self, alias):
+        data = {
+            "page_template": alias,
+            "body": [
+                {"type": "heading", "text": "Golden"},
+                {"type": "text", "text": "x"},
+            ],
+        }
+        golden = (GOLDEN / f"page_template_{alias}.tex").read_text(encoding="utf-8")
+        assert golden_preamble(_render_tex(data)) == golden_preamble(golden)
+
+    @pytest.mark.parametrize("alias", ["formal", "clean"])
+    def test_header_precedes_footer_and_reclaim_is_last(self, alias):
+        """Line-set equality is order-blind, so lock the order that matters."""
+        tex = _render_tex(
+            {
+                "page_template": alias,
+                "body": [{"type": "heading", "text": "Golden"}],
+            }
+        ).split(r"\begin{document}")[0]
+        assert tex.index(r"\fancyhead") < tex.index(r"\fancyfoot")
+        assert tex.index(r"\fancyfoot") < tex.index("includehead=false")
+
+    def test_none_reclaims_unconditionally(self):
+        tex = _render_tex(
+            {"page_template": "none", "body": [{"type": "heading", "text": "G"}]}
+        )
+        assert r"\geometry{top=2cm, headheight=0pt, headsep=0pt, includehead=false}" in tex
+        assert r"\ifdefempty{\orgname}" not in tex
+
+
+#: Sentinel for "no page_template key at all" in the slot helper below.
+_MISSING_PT = object()
+
+
+class TestPageTemplateSlots:
+    """Tex-level composition locks for the header/footer slot model."""
+
+    @staticmethod
+    def _tex(page_template=None, **sources):
+        data = {"body": [{"type": "heading", "text": "Rubrik"}]}
+        if page_template is not _MISSING_PT:
+            data["page_template"] = page_template
+        return _render_tex(data, **sources)
+
+    # --- alias equivalence -------------------------------------------------
+
+    @pytest.mark.parametrize(
+        "alias,slots",
+        [
+            ("formal", {"header": "letterhead", "footer": {"title": True}}),
+            ("clean", {"header": "logo"}),
+            ("none", {"header": None}),
+        ],
+    )
+    def test_alias_and_slot_spelling_agree(self, alias, slots):
+        assert self._tex(alias) == self._tex(slots)
+
+    def test_only_formal_prints_the_title_in_the_footer(self):
+        assert r"\doctitle\ \textbullet\ " in self._tex("formal")
+        assert r"\doctitle\ \textbullet\ " not in self._tex("clean")
+        assert r"\doctitle\ \textbullet\ " not in self._tex("none")
+
+    # --- header-space reclaim ----------------------------------------------
+
+    def test_empty_header_reclaims_unconditionally(self):
+        tex = self._tex({"header": None})
+        assert "includehead=false" in tex
+        assert r"\ifdefempty{\orgname}" not in tex
+
+    def test_letterhead_reclaims_only_when_empty(self):
+        tex = self._tex({"header": "letterhead"})
+        assert (
+            "\\ifdefempty{\\orgname}{\\ifdefempty{\\brandlogo}{%\n"
+            "  \\geometry{top=2cm, headheight=0pt, headsep=0pt, includehead=false}%"
+        ) in tex
+
+    def test_logo_header_reclaims_only_when_the_logo_is_empty(self):
+        tex = self._tex({"header": "logo"})
+        assert "\\ifdefempty{\\brandlogo}{%\n  \\geometry{top=2cm" in tex
+        assert "\\ifdefempty{\\orgname}{\\ifdefempty" not in tex
+
+    def test_custom_header_owns_its_geometry(self):
+        tex = self._tex("formal", header_source=r"\fancyhead[L]{Egen}")
+        assert "includehead=false" not in tex
+
+    # --- structured header settings ----------------------------------------
+
+    def test_header_settings_emit_contract_macros(self):
+        tex = self._tex(
+            {
+                "header": {
+                    "variant": "letterhead",
+                    "org_name": "Föreningen X",
+                    "logo": "logo.pdf",
+                }
+            }
+        )
+        assert r"\renewcommand{\orgname}{Föreningen X}" in tex
+        assert r"\renewcommand{\brandlogo}{logo.pdf}" in tex
+        assert tex.index(r"\renewcommand{\orgname}") < tex.index(r"\fancyhead[L]")
+
+    def test_unset_header_settings_are_not_emitted(self):
+        tex = self._tex({"header": {"variant": "letterhead", "org_name": "X"}})
+        assert r"\renewcommand{\orgphone}" not in tex
+
+    # --- footer fields vs. settings ----------------------------------------
+
+    def test_title_alone_is_not_a_fields_footer(self):
+        tex = self._tex({"footer": {"title": True}})
+        assert r"\usepackage{klartex-footer}" not in tex
+        assert r"\fancyfoot[C]" in tex
+
+    def test_footer_fields_emit_kxfooter(self):
+        tex = self._tex({"footer": {"company": "Bolaget AB"}})
+        assert r"\usepackage{klartex-footer}" in tex
+        assert "company={Bolaget AB}" in tex
+
+    def test_custom_header_keeps_the_predefined_fields_footer(self):
+        tex = self._tex(
+            {"footer": {"company": "Bolaget AB"}},
+            header_source=r"\fancyhead[L]{Egen}",
+        )
+        assert r"\fancyhead[L]{Egen}" in tex
+        assert r"\usepackage{klartex-footer}" in tex
+        assert r"\fancyhead[L]{%" not in tex
+
+    def test_custom_footer_keeps_the_predefined_header(self):
+        tex = self._tex(
+            {"header": "letterhead", "first_page_header": False},
+            footer_source=r"\fancyfoot[C]{\thepage}",
+        )
+        assert r"\fancyhead[L]{%" in tex
+        assert r"\fancyfoot[C]{\thepage}" in tex
+        assert r"\thispagestyle{plain}" in tex
+
+    def test_custom_footer_owns_page_numbers(self):
+        tex = self._tex(
+            {"header": "letterhead", "page_numbers": False},
+            footer_source=r"\fancyfoot[C]{\thepage}",
+        )
+        assert r"\fancyfoot[C]{}" not in tex
+
+    # --- monolithic source: the 0.2.1 tolerance ----------------------------
+
+    @pytest.mark.parametrize(
+        "page_template", [_MISSING_PT, "bogus", {"name": "bogus"}]
+    )
+    def test_monolithic_source_tolerates_any_name(self, page_template):
+        tex = self._tex(page_template, page_template_source="% monolithic")
+        assert "% monolithic" in tex
+
+    def test_monolithic_source_is_emitted_once(self):
+        tex = self._tex("formal", page_template_source="% monolithic")
+        assert tex.count("% monolithic") == 1
+
+    def test_monolithic_source_keeps_document_level_settings(self):
+        tex = self._tex(
+            {"name": "bogus", "font": "Futura"}, page_template_source="% monolithic"
+        )
+        assert r"\setmainfont{Futura}" in tex
+
+    def test_monolithic_source_suppresses_first_page_style(self):
+        tex = self._tex(
+            {"first_page_header": False}, page_template_source="% monolithic"
+        )
+        assert r"\thispagestyle{plain}" not in tex
+
+
+def test_page_template_source_conflicts_with_slot_source():
+    from klartex.renderer import render
+
+    with pytest.raises(ValueError, match="page_template_source"):
+        render(
+            "_block",
+            {"body": [{"type": "heading", "text": "x"}]},
+            page_template_source="% m",
+            header_source="% h",
+        )

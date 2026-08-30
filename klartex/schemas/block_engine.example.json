@@ -1,6 +1,14 @@
 {
   "lang": "sv",
-  "page_template": "formal",
+  "page_template": {
+    "header": {
+      "variant": "letterhead",
+      "org_name": "Företaget AB",
+      "address": "Storgatan 1, 123 45 Stad",
+      "email": "info@foretaget.se"
+    },
+    "footer": { "title": true }
+  },
   "body": [
     {
       "type": "title_page",

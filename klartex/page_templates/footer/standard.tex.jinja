@@ -1,0 +1,7 @@
+\makeatletter
+\fancyfoot[C]{%
+    \kx@setlang%
+    \fontsize{6pt}{9pt}\selectfont\color{brandsecondary}\kxheaderfont
+    \BLOCK{+ if title}\ifdefempty{\doctitle}{}{\doctitle\ \textbullet\ }\BLOCK{endif}\kx@page\ \thepage\ \kx@of\ \pageref{LastPage}%
+}
+\makeatother

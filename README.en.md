@@ -78,8 +78,9 @@ cat data.json | klartex
 # With explicit template
 klartex -d data.json -t protokoll
 
-# With external page template
+# With an external page template (whole page, or one slot at a time)
 klartex -d data.json --page-template myorg.tex.jinja
+klartex -d data.json --header-template header.tex.jinja
 
 # List templates
 klartex templates
@@ -90,26 +91,81 @@ klartex schema protokoll
 
 ## Page Templates
 
-Page templates control headers, footers, colors, and logos. Three built-in templates are available:
+A page template is composed of two independent slots: **header** and **footer**. Each is chosen on its own — a predefined variant, an object carrying the content that goes there, or `null` for empty. Structured settings keep applying to whichever slot stays predefined, even when the other slot has its own LaTeX.
 
-| Page Template | Description |
-|---------------|-------------|
-| `formal` | Org name and contact info in header, logo, page numbers in footer |
-| `clean` | Logo only in header, page numbers in footer |
-| `none` | No header, page numbers only in footer |
+| Slot | Variant | Content |
+|------|---------|---------|
+| `header` | `letterhead` | Organisation details on the left, logo on the right |
+| `header` | `logo` | Logo only, on the right |
+| `header` | `null` | Empty header — the header's space is reclaimed |
+| `footer` | `standard` | Centered page numbers; a multi-column footer when contact details are given |
+| `footer` | `null` | Empty footer |
+
+The three names `formal`, `clean` and `none` are aliases for ready-made combinations:
+
+| Alias | Equivalent to |
+|-------|---------------|
+| `formal` | `header: "letterhead"` + `footer: {"title": true}` |
+| `clean` | `header: "logo"` + `footer: "standard"` |
+| `none` | `header: null` + `footer: "standard"` |
+
+```json
+"page_template": "formal"
+```
+
+```json
+"page_template": {
+  "header": {
+    "variant": "letterhead",
+    "org_name": "My Organization",
+    "address": "Storgatan 1, 123 45 Stad",
+    "web": "myorg.se",
+    "email": "board@myorg.se",
+    "logo": "logo.pdf"
+  },
+  "footer": {
+    "company": "My Organization",
+    "org_number": "802000-0000",
+    "bankgiro": "1234-5678"
+  }
+}
+```
+
+```json
+"page_template": { "header": "logo", "footer": null }
+```
+
+An alias can be combined with a slot that replaces that side of the combination: `{"name": "clean", "footer": null}` gives the logo header with no footer.
+
+Beside the slots there are document-level settings — `font`, `header_font` and `diff_style` — which apply whether or not a slot has its own LaTeX, plus `page_numbers` and `first_page_header`.
 
 ### Custom page template
 
-Create a `.tex.jinja` file that defines `\fancyhead`/`\fancyfoot`:
+Raw LaTeX is supplied per slot, not in the JSON:
+
+```bash
+klartex -d data.json --header-template header.tex.jinja
+klartex -d data.json --header-template header.tex.jinja --footer-template footer.tex.jinja
+```
+
+```python
+render("_block", data, header_source=Path("header.tex.jinja").read_text())
+```
+
+Both files must live in the same directory — that directory becomes the template directory files resolve against. `--page-template` (and `"page_template_source"` in API calls) instead takes over **both** slots with a single file, and cannot be combined with the slot flags.
+
+A slot file defines its own part of the chrome:
 
 ```latex
 \definecolor{brandprimary}{HTML}{2E5A1C}
 \definecolor{brandsecondary}{HTML}{555555}
-\providecommand{\orgname}{}
 \renewcommand{\orgname}{My Organization}
-\makeatletter
 \fancyhead[L]{\fontsize{6pt}{9pt}\selectfont\textbf{\orgname}}
 \fancyhead[R]{\includegraphics[height=0.855cm]{logo.pdf}}
+```
+
+```latex
+\makeatletter
 \fancyfoot[C]{%
     \kx@setlang%
     \fontsize{6pt}{9pt}\selectfont\color{brandsecondary}%
@@ -118,12 +174,14 @@ Create a `.tex.jinja` file that defines `\fancyhead`/`\fancyfoot`:
 \makeatother
 ```
 
-Then use `--page-template myorg.tex.jinja` in CLI or `"page_template_source": "..."` in API calls.
+These macros are the contract between a page template and the document class, and may be redefined at the top level of the preamble: `\orgname`, `\orgaddress`, `\orgwebsite`, `\orgemail`, `\orgphone`, `\brandlogo`. The class defines them empty, so use `\renewcommand`. The header's space is reclaimed at the end of the preamble when `\orgname` and `\brandlogo` are both empty — a value set later (e.g. inside `\AtBeginDocument`) is too late for that test.
+
+The parts are emitted in a fixed order: document-level settings, header, footer, space reclaim. A custom slot should therefore leave the other slot's `\fancyhead`/`\fancyfoot` cells alone.
 
 Where logos and other files are resolved differs between the two surfaces:
 
-- **CLI with a file-based page template** (`--page-template <path>`, or an auto-detected `<data-stem>.tex.jinja` / `page_template.tex.jinja`): files are resolved relative to the template file's own directory, with the working directory as fallback. A template and its logos can therefore live together in e.g. a `Branding/` folder and be used from any working directory. For a symlinked template, the target's directory applies.
-- **API with `page_template_source`**: the parameter takes raw text with no path, so there is no template directory to work from. Callers who need files outside the working directory pass `asset_dir=<directory>` to `render()`; otherwise the working directory applies.
+- **CLI with a file-based page template** (`--page-template`, `--header-template`, `--footer-template`, or an auto-detected `<data-stem>.tex.jinja` / `page_template.tex.jinja`): files are resolved relative to the template file's own directory, with the working directory as fallback. A template and its logos can therefore live together in e.g. a `Branding/` folder and be used from any working directory. For a symlinked template, the target's directory applies. Auto-detection is skipped when a slot flag is given.
+- **API with `page_template_source`, `header_source` or `footer_source`**: the parameters take raw text with no path, so there is no template directory to work from. Callers who need files outside the working directory pass `asset_dir=<directory>` to `render()`; otherwise the working directory applies.
 
 > **Both `\includegraphics{logo.pdf}` and `\includegraphics{./logo.pdf}` work**, as does `\input{../shared/colors.tex}` — relative references resolve against the template's directory (or `asset_dir`, otherwise the working directory). One asymmetry remains: names starting with `./` or `../` do **not** fall back to the working directory. TeX's file lookup (Kpathsea) never searches for such names; it tries them as-is against xelatex's working directory — which is precisely the template's directory. Plain names, by contrast, go through the full search chain and are found even if the file only exists in the working directory.
 

@@ -78,8 +78,9 @@ cat data.json | klartex
 # Med explicit mall
 klartex -d data.json -t protokoll
 
-# Med extern sidmall
+# Med extern sidmall (hela sidan, eller en slot i taget)
 klartex -d data.json --page-template minforening.tex.jinja
+klartex -d data.json --header-template sidhuvud.tex.jinja
 
 # Lista mallar
 klartex templates
@@ -90,26 +91,81 @@ klartex schema protokoll
 
 ## Sidmallar (Page Templates)
 
-Sidmallar styr sidhuvud, sidfot, färger och logotyp. Tre inbyggda finns:
+En sidmall består av två oberoende delar: **header** (sidhuvud) och **footer** (sidfot). Varje del väljs för sig — en färdig variant, ett objekt med uppgifterna som ska stå där, eller `null` för tomt. Strukturerade inställningar fortsätter gälla för den del som är fördefinierad, även när den andra delen har egen LaTeX.
 
-| Sidmall | Beskrivning |
-|---------|-------------|
-| `formal` | Organisationsnamn och kontaktinfo i sidhuvud, logotyp, sidnummer i sidfot |
-| `clean` | Enbart logotyp i sidhuvud, sidnummer i sidfot |
-| `none` | Inget sidhuvud, enbart sidnummer i sidfot |
+| Slot | Variant | Innehåll |
+|------|---------|----------|
+| `header` | `letterhead` | Organisationsuppgifter till vänster, logotyp till höger |
+| `header` | `logo` | Enbart logotyp till höger |
+| `header` | `null` | Tomt sidhuvud — sidhuvudets utrymme återtas |
+| `footer` | `standard` | Sidnummer centrerat; med kontaktuppgifter en flerkolumnsfot |
+| `footer` | `null` | Tom sidfot |
+
+De tre namnen `formal`, `clean` och `none` är alias för färdiga kombinationer:
+
+| Alias | Motsvarar |
+|-------|-----------|
+| `formal` | `header: "letterhead"` + `footer: {"title": true}` |
+| `clean` | `header: "logo"` + `footer: "standard"` |
+| `none` | `header: null` + `footer: "standard"` |
+
+```json
+"page_template": "formal"
+```
+
+```json
+"page_template": {
+  "header": {
+    "variant": "letterhead",
+    "org_name": "Min Förening",
+    "address": "Storgatan 1, 123 45 Stad",
+    "web": "minforening.se",
+    "email": "styrelsen@minforening.se",
+    "logo": "logo.pdf"
+  },
+  "footer": {
+    "company": "Min Förening",
+    "org_number": "802000-0000",
+    "bankgiro": "1234-5678"
+  }
+}
+```
+
+```json
+"page_template": { "header": "logo", "footer": null }
+```
+
+Ett alias kan kombineras med en slot som ersätter den sidan av kombinationen: `{"name": "clean", "footer": null}` ger logotypsidhuvudet utan sidfot.
+
+Utöver sloten finns inställningar på dokumentnivå — `font`, `header_font` och `diff_style` — som gäller oavsett om en slot har egen LaTeX, plus `page_numbers` och `first_page_header`.
 
 ### Egen sidmall
 
-Skapa en `.tex.jinja`-fil som definierar `\fancyhead`/`\fancyfoot`:
+Rå LaTeX skickas per slot, inte i JSON:
+
+```bash
+klartex -d data.json --header-template sidhuvud.tex.jinja
+klartex -d data.json --header-template sidhuvud.tex.jinja --footer-template sidfot.tex.jinja
+```
+
+```python
+render("_block", data, header_source=Path("sidhuvud.tex.jinja").read_text())
+```
+
+Båda filerna måste ligga i samma katalog — den katalogen blir mallkatalogen som filer hittas relativt till. `--page-template` (och `"page_template_source"` i API-anrop) tar i stället över **båda** sloten med en enda fil, och kan inte kombineras med slot-flaggorna.
+
+En slot-fil definierar sin egen del av chromet:
 
 ```latex
 \definecolor{brandprimary}{HTML}{2E5A1C}
 \definecolor{brandsecondary}{HTML}{555555}
-\providecommand{\orgname}{}
 \renewcommand{\orgname}{Min Förening}
-\makeatletter
 \fancyhead[L]{\fontsize{6pt}{9pt}\selectfont\textbf{\orgname}}
 \fancyhead[R]{\includegraphics[height=0.855cm]{logo.pdf}}
+```
+
+```latex
+\makeatletter
 \fancyfoot[C]{%
     \kx@setlang%
     \fontsize{6pt}{9pt}\selectfont\color{brandsecondary}%
@@ -118,12 +174,14 @@ Skapa en `.tex.jinja`-fil som definierar `\fancyhead`/`\fancyfoot`:
 \makeatother
 ```
 
-Använd sedan `--page-template minforening.tex.jinja` i CLI eller `"page_template_source": "..."` i API-anrop.
+Dessa makron är kontraktet mellan sidmallen och dokumentklassen och kan skrivas om i preamblens toppnivå: `\orgname`, `\orgaddress`, `\orgwebsite`, `\orgemail`, `\orgphone`, `\brandlogo`. Klassen definierar dem tomma, så använd `\renewcommand`. Sidhuvudets utrymme återtas i slutet av preamblen om `\orgname` och `\brandlogo` båda är tomma — ett värde som sätts senare (t.ex. i `\AtBeginDocument`) hinner inte med det testet.
+
+Delarna skrivs ut i fast ordning: inställningar på dokumentnivå, sidhuvud, sidfot, återtaget utrymme. En egen slot bör därför inte röra den andra slotens `\fancyhead`/`\fancyfoot`-celler.
 
 Var logotyper och andra filer hittas skiljer sig mellan de två ytorna:
 
-- **CLI med filbaserad sidmall** (`--page-template <sökväg>`, eller autodetekterad `<data-stem>.tex.jinja` / `page_template.tex.jinja`): filer hittas relativt till sidmallens egen katalog, med arbetsmappen som fallback. En mall och dess logotyper kan därmed ligga samlade i t.ex. en `Branding/`-mapp och användas från vilken arbetsmapp som helst. För en symlänkad mall gäller målets katalog.
-- **API med `page_template_source`**: parametern tar rå text utan sökväg, så det finns ingen mallkatalog att utgå från. Anropare som vill hitta filer utanför arbetsmappen skickar `asset_dir=<katalog>` till `render()`; annars gäller arbetsmappen.
+- **CLI med filbaserad sidmall** (`--page-template`, `--header-template`, `--footer-template`, eller autodetekterad `<data-stem>.tex.jinja` / `page_template.tex.jinja`): filer hittas relativt till sidmallens egen katalog, med arbetsmappen som fallback. En mall och dess logotyper kan därmed ligga samlade i t.ex. en `Branding/`-mapp och användas från vilken arbetsmapp som helst. För en symlänkad mall gäller målets katalog. Autodetektering hoppas över när en slot-flagga anges.
+- **API med `page_template_source`, `header_source` eller `footer_source`**: parametrarna tar rå text utan sökväg, så det finns ingen mallkatalog att utgå från. Anropare som vill hitta filer utanför arbetsmappen skickar `asset_dir=<katalog>` till `render()`; annars gäller arbetsmappen.
 
 > **Både `\includegraphics{logo.pdf}` och `\includegraphics{./logo.pdf}` fungerar**, liksom `\input{../delat/farger.tex}` — relativa referenser utgår från mallens katalog (eller `asset_dir`, i annat fall arbetsmappen). En skillnad finns dock: namn med `./` eller `../` faller **inte** tillbaka på arbetsmappen. TeX:s filsökning (Kpathsea) söker aldrig upp sådana namn, utan provar dem rakt av mot xelatex arbetskatalog — och den katalogen är just mallens katalog. Namn utan prefix söks däremot i hela kedjan och hittas även om filen bara ligger i arbetsmappen.
 

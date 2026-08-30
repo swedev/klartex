@@ -60,6 +60,27 @@ def main(
             "For a symlinked template the target's directory applies."
         ),
     ),
+    header_template: Optional[str] = typer.Option(
+        None,
+        "--header-template",
+        help=(
+            "Page-template file owning the header slot. The footer slot still "
+            "comes from data.page_template. Assets resolve the same way as for "
+            "--page-template, against the file's own directory. Cannot be "
+            "combined with --page-template; when a header or footer template "
+            "is given, auto-detection is skipped. A --header-template and a "
+            "--footer-template must live in the same directory."
+        ),
+    ),
+    footer_template: Optional[str] = typer.Option(
+        None,
+        "--footer-template",
+        help=(
+            "Page-template file owning the footer slot. The header slot still "
+            "comes from data.page_template. Same asset resolution and the same "
+            "restrictions as --header-template."
+        ),
+    ),
     version: Optional[bool] = typer.Option(None, "--version", "-V", help="Show version and exit.", callback=_version_callback, is_eager=True),
 ):
     """Render JSON data to PDF. Reads from stdin if no --data is given."""
@@ -87,8 +108,46 @@ def main(
     # Assets referenced from a file-based page template resolve against the
     # template's own directory (asset_dir), with cwd kept as fallback.
     page_template_source = None
+    header_source = None
+    footer_source = None
     asset_dir: Optional[Path] = None
-    if page_template is not None:
+    slot_flags = {
+        "--header-template": header_template,
+        "--footer-template": footer_template,
+    }
+    given_slots = {flag: value for flag, value in slot_flags.items() if value}
+
+    if page_template is not None and given_slots:
+        names = " and ".join(sorted(given_slots))
+        typer.echo(
+            f"Error: --page-template owns both slots and cannot be combined "
+            f"with {names}.",
+            err=True,
+        )
+        raise typer.Exit(1)
+
+    if given_slots:
+        slot_paths = {}
+        for flag, value in given_slots.items():
+            path = Path(value)
+            if not path.is_file():
+                typer.echo(f"Error: page template file not found: {value}", err=True)
+                raise typer.Exit(1)
+            slot_paths[flag] = path.resolve()
+        parents = {path.parent for path in slot_paths.values()}
+        if len(parents) > 1:
+            typer.echo(
+                "Error: --header-template and --footer-template must live in "
+                "the same directory (assets resolve against one directory).",
+                err=True,
+            )
+            raise typer.Exit(1)
+        asset_dir = parents.pop()
+        if "--header-template" in slot_paths:
+            header_source = slot_paths["--header-template"].read_text(encoding="utf-8")
+        if "--footer-template" in slot_paths:
+            footer_source = slot_paths["--footer-template"].read_text(encoding="utf-8")
+    elif page_template is not None:
         pt_path = Path(page_template)
         if not pt_path.is_file():
             typer.echo(f"Error: page template file not found: {page_template}", err=True)
@@ -114,7 +173,12 @@ def main(
 
     try:
         pdf_bytes = render(
-            template, raw, page_template_source=page_template_source, asset_dir=asset_dir
+            template,
+            raw,
+            page_template_source=page_template_source,
+            asset_dir=asset_dir,
+            header_source=header_source,
+            footer_source=footer_source,
         )
     except Exception as e:
         typer.echo(f"Error: {e}", err=True)

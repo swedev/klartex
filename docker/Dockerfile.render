@@ -1,0 +1,60 @@
+# The published render process: klartex plus its HTTP compile endpoint,
+# built on the same base image the release gate tests in. Published as
+# ghcr.io/swedev/klartex-render:X.Y.Z by the `image` job in
+# .github/workflows/publish.yml, one tag per release, never `latest`.
+#
+# The FROM below and `container.image` in .github/workflows/publish.yml
+# must name the same pinned base — the release gate would otherwise test in
+# one environment and ship another. The image job compares the two lines
+# and fails when they diverge, so a base bump moves both in one commit.
+#
+# The image installs the release wheel from the build context (dist/), not
+# from PyPI: the image can then be built before, or independently of, the
+# PyPI publish, and both artifacts come from the same bytes.
+#
+# The container writes nothing outside /tmp and $HOME, so a consumer can
+# run it with `--read-only --tmpfs /tmp --tmpfs /home/render`. Nothing here
+# authenticates or rate-limits; put it behind a caller that does, on a
+# network that is not the public internet.
+FROM ghcr.io/swedev/klartex-base:20260828-3@sha256:b011056413d449bdc41b893ff1bd538a2be46d78d3794698eb134f45936d6ff2
+
+LABEL org.opencontainers.image.source="https://github.com/swedev/klartex"
+LABEL org.opencontainers.image.licenses="MIT"
+LABEL org.opencontainers.image.description="klartex render service — JSON in, PDF out over HTTP"
+
+# Filename of the wheel under dist/, e.g. klartex-0.17.0-py3-none-any.whl.
+ARG KLARTEX_WHEEL
+
+# Only the wheel is copied in: the rest of the build context never reaches
+# a layer, so the image carries no repository source, tests or history.
+COPY dist/${KLARTEX_WHEEL} /tmp/
+
+# --only-binary=:all: fails the build when a dependency has no wheel for
+# the target architecture, instead of compiling it under QEMU emulation.
+RUN python3 -m venv /opt/venv \
+    && /opt/venv/bin/pip install --no-cache-dir --only-binary=:all: \
+        "/tmp/${KLARTEX_WHEEL}[serve]" \
+    && rm -f "/tmp/${KLARTEX_WHEEL}"
+
+# The base leaves PATH alone (it is layer substrate), so both the TeX
+# binaries and the venv go on it here. `shutil.which("xelatex")` is how the
+# renderer locates xelatex.
+ENV PATH=/usr/local/texlive-bin:/opt/venv/bin:$PATH \
+    PYTHONUNBUFFERED=1
+
+# Unprivileged, with a real HOME: fontconfig wants somewhere writable, and
+# a tmpfs mounted there works because the base ran fc-cache at build time.
+RUN useradd --create-home --shell /usr/sbin/nologin render
+USER render
+ENV HOME=/home/render
+
+EXPOSE 8000
+
+# urllib rather than curl: the probe then depends only on the interpreter
+# the service itself runs on, not on a tool the base happens to ship.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD python3 -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"
+
+# 0.0.0.0 only here: the CLI default stays 127.0.0.1, so a bare
+# `klartex serve` never opens a port beyond the host it runs on.
+CMD ["klartex", "serve", "--host", "0.0.0.0"]

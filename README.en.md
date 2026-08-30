@@ -88,6 +88,47 @@ klartex templates
 klartex schema protokoll
 ```
 
+### As an HTTP service (`klartex serve`)
+
+The same renderer behind a small HTTP surface: `POST /render` (JSON in, PDF out) and `GET /health`. It lives behind the `serve` extra.
+
+```bash
+pip install 'klartex[serve]'
+klartex serve --host 127.0.0.1 --port 8000
+```
+
+Template, data and any slot sources travel in one JSON object. Assets come along as base64 and are written to a temporary directory that lives exactly as long as the call does.
+
+```json
+{
+  "template": "_block",
+  "data": {"body": [{"type": "heading", "text": "Hello"}]},
+  "header_source": "\\fancyhead[R]{\\includegraphics[height=1cm]{logo.png}}",
+  "assets": {"logo.png": "<base64>"}
+}
+```
+
+The answer is `application/pdf`, or an error whose `detail.type` is `input_error`, `validation_error`, `payload_too_large`, `render_error` or `overloaded`. Schema and block errors additionally carry `detail.path` — a list like `["body", 1, "items", 0, "text"]` addressing the node that failed.
+
+| Environment variable | Default | Meaning |
+|----------------------|---------|---------|
+| `KLARTEX_MAX_CONCURRENT` | `2` | Concurrent xelatex runs. Further concurrent calls get `503` with `Retry-After`. |
+| `KLARTEX_MAX_BODY_MB` | `80` | Largest request read. The check happens on `Content-Length` before the body is read, so the limit applies to the size the caller declares. |
+
+The service owns neither authentication nor rate limiting — it is a compile layer and belongs behind a caller that owns both. That is why it binds to `127.0.0.1` unless told otherwise. A `latex` block in the input runs arbitrary LaTeX in the render process; run the service isolated from anything that cannot take that.
+
+### The render service as an image
+
+Every release also publishes `ghcr.io/swedev/klartex-render:X.Y.Z` — the same pinned base the release gate tests in, with the release wheel installed. The tag always equals the klartex version and there is no `latest`: pin the version that matches your `klartex==` pin.
+
+```bash
+docker run --rm -p 127.0.0.1:8000:8000 \
+  --read-only --tmpfs /tmp --tmpfs /home/render \
+  ghcr.io/swedev/klartex-render:X.Y.Z
+```
+
+The image runs as non-root and binds to `0.0.0.0` inside the container — publish the port only on the network the caller is on.
+
 ## Page Templates
 
 A page template is composed of two independent slots: **header** and **footer**. Each is chosen on its own — a predefined variant, an object carrying the content that goes there, or `null` for empty. Structured settings keep applying to whichever slot stays predefined, even when the other slot has its own LaTeX.

@@ -185,5 +185,41 @@ def show_example(
     typer.echo(example_path.read_text(encoding="utf-8").rstrip())
 
 
+@app.command("serve")
+def serve(
+    host: str = typer.Option("127.0.0.1", "--host", help="Address to bind to."),
+    port: int = typer.Option(8000, "--port", help="Port to listen on."),
+):
+    """Run the HTTP compile endpoint (requires the `serve` extra).
+
+    Serves `POST /render` (JSON in, PDF out) and `GET /health`. The server
+    owns no authentication or rate limiting — put it behind a caller that
+    does, which is why it binds to localhost unless told otherwise.
+    """
+    try:
+        import uvicorn
+
+        from klartex.server.app import app as fastapi_app
+    except ImportError as e:
+        root = (e.name or "").split(".")[0]
+        if root not in {"fastapi", "uvicorn", "httpx"}:
+            raise
+        typer.echo(
+            "Error: the serve extra is not installed. "
+            "Install with: pip install 'klartex[serve]'",
+            err=True,
+        )
+        raise typer.Exit(1)
+    except ValueError as e:
+        # Configuration is read from the environment when the server
+        # modules are imported.
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(1)
+
+    # One worker: the concurrency cap is a semaphore inside the process,
+    # so a second worker would silently double it.
+    uvicorn.run(fastapi_app, host=host, port=port, workers=1)
+
+
 if __name__ == "__main__":
     app()

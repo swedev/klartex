@@ -1,0 +1,8 @@
+# The render image copies only dist/*.whl, so this is about context size
+# and cache stability, not about what ends up in a layer.
+.git
+.github
+.claude
+.vscode
+agent-docs
+tests

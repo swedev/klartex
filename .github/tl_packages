@@ -1,0 +1,29 @@
+# TeX Live packages CI installs (zauguin/install-texlive, cached between
+# runs). tlmgr resolves only the dependencies declared in the TeX Live
+# database, which are incomplete, so this list must be transitively
+# complete: every package whose files xelatex opens while rendering.
+#
+# Derived by rendering every tests/fixtures/*.json with `xelatex -recorder`
+# and mapping each file in the .fls records to its package via
+# tlpkg/texlive.tlpdb. Re-derive the same way after adding a
+# \RequirePackage — a missing package fails CI loudly, never silently.
+scheme-basic
+xetex
+
+booktabs
+enumitem
+environ
+fontspec
+lastpage
+listings
+parskip
+pdfcol
+pgf
+setspace
+siunitx
+tcolorbox
+tikzfill
+titlesec
+trimspaces
+ulem
+xcolor

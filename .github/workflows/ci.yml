@@ -23,13 +23,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Minimal TeX Live from CTAN, cached under ~/texlive between runs.
+      # Actions caches are branch-scoped: a pull request can read its own
+      # branch's cache and main's, so texlive-cache.yml keeps main's warm.
       - name: Install TeX Live
+        uses: zauguin/install-texlive@v4
+        with:
+          package_file: .github/tl_packages
+
+      # pdftotext for the text-layer round-trip tests.
+      - name: Install poppler-utils
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            texlive-xetex texlive-fonts-recommended texlive-latex-extra \
-            texlive-latex-recommended texlive-science texlive-plain-generic \
-            poppler-utils
+          sudo apt-get install -y --no-install-recommends poppler-utils
 
       - name: Install project
         run: pip install --break-system-packages .[dev]

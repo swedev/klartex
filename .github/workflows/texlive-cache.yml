@@ -1,0 +1,29 @@
+# Keeps a TeX Live cache on main. Actions caches are branch-scoped — a
+# pull request can read its own branch's cache and main's — and CI runs
+# only on pull requests, so nothing else ever writes a main-scoped cache.
+# Runs when the package list changes, weekly so the entry is not evicted
+# for inactivity, and on demand. On an exact cache hit the job is a no-op.
+name: TeX Live cache
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/tl_packages"
+      - ".github/workflows/texlive-cache.yml"
+  schedule:
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  warm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: zauguin/install-texlive@v4
+        with:
+          package_file: .github/tl_packages

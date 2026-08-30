@@ -42,7 +42,7 @@ sudo apt install texlive-xetex texlive-fonts-recommended \
   texlive-latex-extra texlive-latex-recommended texlive-science texlive-plain-generic
 ```
 
-Paketuppsättningen för Debian/Ubuntu är densamma som CI installerar vid varje push — en snabb approximation av renderingsmiljön. `texlive-xetex` ensamt räcker inte — bland annat `ulem` (i `texlive-plain-generic`), `tcolorbox` och `siunitx` behövs för att rendera.
+Paketuppsättningen för Debian/Ubuntu är en snabb approximation av renderingsmiljön. Den exakta listan över TeX Live-paket som behövs finns i `.github/tl_packages` — det är vad CI installerar, och med BasicTeX eller en minimal TeX Live räcker `tlmgr install $(grep -v '^#' .github/tl_packages)`. `texlive-xetex` ensamt räcker inte — bland annat `ulem` (i `texlive-plain-generic`), `tcolorbox` och `siunitx` behövs för att rendera.
 
 ### Färdig renderingsmiljö (containerimage)
 

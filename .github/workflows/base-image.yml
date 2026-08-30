@@ -143,10 +143,10 @@ jobs:
               apt-get update
               apt-get install -y --no-install-recommends poppler-utils
               python3 -m venv /tmp/venv
-              /tmp/venv/bin/pip install ".[dev]"
+              /tmp/venv/bin/pip install ".[dev,serve]"
               export PATH=/usr/local/texlive-bin:$PATH
               /tmp/venv/bin/pytest -v -rs --tb=short -n auto 2>&1 | tee /tmp/test-output.txt
-              ! grep -q "SKIPPED.*xelatex" /tmp/test-output.txt'
+              ! grep -qE "SKIPPED.*(xelatex|test_server)" /tmp/test-output.txt'
 
       # The unpacked copy in the Docker store is dead weight once the suite
       # has passed. BuildKit still holds the layers, so the push build

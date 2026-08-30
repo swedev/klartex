@@ -37,8 +37,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends poppler-utils
 
+      # The serve extra is not optional in CI: without it tests/test_server.py
+      # would importorskip itself away and the skip guard below is what
+      # notices.
       - name: Install project
-        run: pip install --break-system-packages .[dev]
+        run: pip install --break-system-packages ".[dev,serve]"
 
       # shell: bash gives the step `-o pipefail`, without which the step
       # would report tee's exit status and a pytest failure could pass.
@@ -47,6 +50,8 @@ jobs:
         run: |
           pytest -v -rs --tb=short -n auto 2>&1 | tee test-output.txt
 
-      - name: Verify no xelatex skips
+      # A skipped render test hides a broken TeX install; a skipped server
+      # test hides a missing serve extra. Neither may pass silently.
+      - name: Verify no xelatex or server skips
         run: |
-          ! grep -q "SKIPPED.*xelatex" test-output.txt
+          ! grep -qE "SKIPPED.*(xelatex|test_server)" test-output.txt

@@ -24,11 +24,14 @@ klartex templates                              # list all templates
 klartex blocks                                 # list block-engine block types
 klartex schema _block                          # full block-engine JSON Schema (with oneOf union)
 klartex example _block                         # canonical example payload
+
+# HTTP surface (needs the serve extra: pip install '.[dev,serve]')
+klartex serve --port 8000
 ```
 
-`xelatex` is required for ~all rendering tests, and `pdftotext` (poppler-utils) for the text-layer round-trip tests in `tests/test_pdf_text_layer.py`. CI explicitly fails if any xelatex-tagged test is skipped (`.github/workflows/ci.yml`), so don't add `pytest.skip` shortcuts to silence local failures — install TeX Live instead: `brew install --cask mactex` on macOS, or on Debian/Ubuntu the package set in `README.md` (`texlive-xetex` alone is missing `ulem`, `tcolorbox` and `siunitx`). CI installs a minimal TeX Live from `.github/tl_packages` (cached via `zauguin/install-texlive`); that list must be transitively complete, so a new `\RequirePackage` may need a new entry there — the file header says how the list is derived.
+`xelatex` is required for ~all rendering tests, and `pdftotext` (poppler-utils) for the text-layer round-trip tests in `tests/test_pdf_text_layer.py`. CI explicitly fails if any xelatex-tagged or `test_server` test is skipped (`.github/workflows/ci.yml`), so don't add `pytest.skip` shortcuts to silence local failures — install TeX Live instead: `brew install --cask mactex` on macOS, or on Debian/Ubuntu the package set in `README.md` (`texlive-xetex` alone is missing `ulem`, `tcolorbox` and `siunitx`). CI installs a minimal TeX Live from `.github/tl_packages` (cached via `zauguin/install-texlive`); that list must be transitively complete, so a new `\RequirePackage` may need a new entry there — the file header says how the list is derived.
 
-The render environment klartex is developed against lives in `docker/Dockerfile.base` and is published as `ghcr.io/swedev/klartex-base` by `.github/workflows/base-image.yml`, which runs the full suite inside the freshly built amd64 image before pushing. `.github/workflows/publish.yml` pins a `tag@digest` from that registry and runs the suite inside it as the release gate, so a version only reaches PyPI after passing in the render environment. Changing the Dockerfile therefore implies a follow-up PR that moves the pin in `publish.yml` and in every external consumer — copy it from the build's step summary.
+The render environment klartex is developed against lives in `docker/Dockerfile.base` and is published as `ghcr.io/swedev/klartex-base` by `.github/workflows/base-image.yml`, which runs the full suite inside the freshly built amd64 image before pushing. `.github/workflows/publish.yml` pins a `tag@digest` from that registry and runs the suite inside it as the release gate, so a version only reaches PyPI after passing in the render environment. Changing the Dockerfile therefore implies a follow-up PR that moves the pin in `publish.yml` **and** `docker/Dockerfile.render` — the release refuses to publish an image when those two diverge — plus every external consumer; copy it from the build's step summary.
 
 ## Releases
 
@@ -37,7 +40,7 @@ The render environment klartex is developed against lives in `docker/Dockerfile.
    1. Bump `version` in `pyproject.toml`.
    2. Add a dated entry at the top of `CHANGELOG.md` (groups: `Breaking changes` / `New features` / `Fixes` / `Spacing`).
    3. Commit as `Release vX.Y.Z: <summary>` and push to `main`.
-   4. `gh release create vX.Y.Z --generate-notes` pushes the tag and creates the release, which triggers `.github/workflows/publish.yml` — runs the suite inside the pinned base image, builds the package and publishes to PyPI.
+   4. `gh release create vX.Y.Z --generate-notes` pushes the tag and creates the release, which triggers `.github/workflows/publish.yml` — runs the suite inside the pinned base image, builds the package, publishes to PyPI and pushes `ghcr.io/swedev/klartex-render:X.Y.Z`.
 
 ## Architecture
 
@@ -110,6 +113,14 @@ Two invariants worth not breaking:
 
 Spacing fixes accumulate in `_block_engine.tex.jinja` as `\kxneedspace` glue tricks and `\nopagebreak[4]` / `\penalty` interactions to manage break points (orphan protection, sibling label-width via `\settowidth{\kxgrouplabelw}{…}`). When changing spacing, read the recent CHANGELOG entries — most fixes have a documented rationale that is easy to undo accidentally.
 
+### HTTP surface (`klartex/server/`)
+
+`klartex serve` runs a small FastAPI app — `POST /render` (JSON in, PDF out) and `GET /health` — behind the optional `serve` extra. `app.py` holds the app, the Content-Length limit and the handlers that keep a malformed envelope inside the documented error contract instead of FastAPI's default 422; `render.py` holds the endpoint: base64 assets written to a per-request tempdir, the `BoundedSemaphore` that caps concurrent xelatex runs, and the mapping from core exceptions to `detail.type` + `detail.path`. Config is environment-only (`KLARTEX_MAX_CONCURRENT`, `KLARTEX_MAX_BODY_MB`), read when the modules are imported. The CLI imports the package lazily, so nothing here loads without the extra — and `tests/test_server.py` `importorskip`s itself away without it, which is why the workflows install `.[dev,serve]` and their skip guard covers `test_server` as well as `xelatex`.
+
+Block-path extraction in `render.py` parses the message text `renderer._validate_blocks` raises. It is a stopgap: when the core grows a structured block-validation exception, that becomes the source and the regex goes.
+
+Every release publishes the service as `ghcr.io/swedev/klartex-render:X.Y.Z` from `docker/Dockerfile.render` — the `image` job in `publish.yml`, multi-arch, one immutable tag per release and no `latest`. It builds `FROM` the same pinned base the release gate tests in, and the job refuses to run when those two pins diverge: **a base bump must move `container.image` in `publish.yml` and `FROM` in `Dockerfile.render` in the same commit.** Retrying a failed image publish means dispatching `publish.yml` from the release tag; a dispatch from a branch runs the gate and stops. The first publish of the package is private — make it public manually, there is no API for it.
+
 ## Tests
 
 `tests/fixtures/*.json` are real-shape payloads that render to PDF via xelatex; they are the canonical examples for each block. When changing block semantics, the fixture is usually the right thing to update first, then assert against. Tests categorise loosely:
@@ -119,6 +130,7 @@ Spacing fixes accumulate in `_block_engine.tex.jinja` as `\kxneedspace` glue tri
 - `test_page_templates.py` / `test_cli_page_template.py` — page-template resolution
 - `test_schemas.py` — schema validity and oneOf coverage of all block types
 - `test_agent_cli.py` — agent-discovery CLI commands (`templates`, `blocks`, `schema`, `example`)
+- `test_server.py` — the `klartex serve` endpoint: error contract, limits, concurrency cap (skipped without the `serve` extra)
 
 ## Languages
 

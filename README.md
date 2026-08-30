@@ -88,6 +88,47 @@ klartex templates
 klartex schema protokoll
 ```
 
+### Som HTTP-tjänst (`klartex serve`)
+
+Samma renderare bakom en liten HTTP-yta: `POST /render` (JSON in, PDF ut) och `GET /health`. Ligger bakom extran `serve`.
+
+```bash
+pip install 'klartex[serve]'
+klartex serve --host 127.0.0.1 --port 8000
+```
+
+Mall, data och eventuella slot-källor går i samma JSON-objekt. Assets följer med som base64 och skrivs till en temporärkatalog som lever precis så länge anropet gör det.
+
+```json
+{
+  "template": "_block",
+  "data": {"body": [{"type": "heading", "text": "Hej"}]},
+  "header_source": "\\fancyhead[R]{\\includegraphics[height=1cm]{logo.png}}",
+  "assets": {"logo.png": "<base64>"}
+}
+```
+
+Svaret är `application/pdf`, eller ett fel vars `detail.type` är `input_error`, `validation_error`, `payload_too_large`, `render_error` eller `overloaded`. Schema- och blockfel bär dessutom `detail.path` — en lista som `["body", 1, "items", 0, "text"]` som pekar ut noden som fallerade.
+
+| Miljövariabel | Default | Betydelse |
+|---------------|---------|-----------|
+| `KLARTEX_MAX_CONCURRENT` | `2` | Samtidiga xelatex-körningar. Fler samtidiga anrop får `503` med `Retry-After`. |
+| `KLARTEX_MAX_BODY_MB` | `80` | Största begäran som läses. Kontrollen sker på `Content-Length` innan kroppen läses, så gränsen gäller den storlek anroparen uppger. |
+
+Tjänsten har varken autentisering eller rate limiting — den är ett kompileringslager och ska stå bakom en anropare som äger båda. Därför binder den till `127.0.0.1` om inget annat anges. Ett `latex`-block i indata kör godtycklig LaTeX i renderingsprocessen; kör tjänsten avskild från allt som inte tål det.
+
+### Renderingstjänsten som image
+
+Varje release publicerar också `ghcr.io/swedev/klartex-render:X.Y.Z` — samma pinnade bas som releasegrinden testar i, med releasens wheel-paket installerat. Taggen är alltid lika med klartex-versionen, och det finns ingen `latest`: pinna den version som motsvarar din `klartex==`-pin.
+
+```bash
+docker run --rm -p 127.0.0.1:8000:8000 \
+  --read-only --tmpfs /tmp --tmpfs /home/render \
+  ghcr.io/swedev/klartex-render:X.Y.Z
+```
+
+Imagen kör som icke-root och binder till `0.0.0.0` inuti containern — publicera porten bara på det nät anroparen finns på.
+
 ## Sidmallar (Page Templates)
 
 En sidmall består av två oberoende delar: **header** (sidhuvud) och **footer** (sidfot). Varje del väljs för sig — en färdig variant, ett objekt med uppgifterna som ska stå där, eller `null` för tomt. Strukturerade inställningar fortsätter gälla för den del som är fördefinierad, även när den andra delen har egen LaTeX.

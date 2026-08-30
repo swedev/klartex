@@ -9,9 +9,16 @@ name: Publish to PyPI
 # means bumping this pin in its own PR; copy tag and digest from the step
 # summary of the `base-image.yml` run that published them.
 #
-# workflow_dispatch runs everything up to and including the package build
-# and then stops: the publish job is guarded on the release event, so the
-# gate can be exercised on demand without touching PyPI.
+# A release also publishes the render process as a container image —
+# ghcr.io/swedev/klartex-render:X.Y.Z, built from the same pinned base and
+# the same wheel. See the `image` job at the bottom.
+#
+# workflow_dispatch from a branch runs everything up to and including the
+# package build and then stops: the publish and image jobs are guarded on
+# the release event and the release tag, so the gate can be exercised on
+# demand without touching PyPI or the registry. Dispatching from a release
+# tag instead re-runs the gate and the build and then retries the image
+# job — the only supported way to retry a failed image publish.
 
 on:
   release:
@@ -27,6 +34,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      wheel: ${{ steps.version.outputs.wheel }}
 
     # Pulling the ~2.75 GB image costs a couple of minutes, which is why
     # the timeout is what it is. The gate runs on amd64 runners while
@@ -61,7 +72,7 @@ jobs:
       - name: Install project
         run: |
           python3 -m venv /tmp/venv
-          /tmp/venv/bin/pip install ".[dev]"
+          /tmp/venv/bin/pip install ".[dev,serve]"
 
       # shell: bash gives the step `-o pipefail`, without which the step
       # would report tee's exit status and a pytest failure could pass.
@@ -76,14 +87,53 @@ jobs:
           export PATH=/usr/local/texlive-bin:$PATH
           /tmp/venv/bin/pytest -v -rs --tb=short -n auto 2>&1 | tee /tmp/test-output.txt
 
-      - name: Verify no xelatex skips
+      # A skipped render test hides a broken TeX install; a skipped server
+      # test hides a missing serve extra. Neither may pass silently.
+      - name: Verify no xelatex or server skips
         run: |
-          ! grep -q "SKIPPED.*xelatex" /tmp/test-output.txt
+          ! grep -qE "SKIPPED.*(xelatex|test_server)" /tmp/test-output.txt
 
       - name: Build package
         run: |
           /tmp/venv/bin/pip install build
           /tmp/venv/bin/python -m build
+
+      # The one place the released version is established. Everything
+      # downstream — the PyPI upload, the image tag — uses this output, so a
+      # mistagged release fails here instead of half-publishing under the
+      # wrong number.
+      - name: Resolve and validate the version
+        id: version
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          TAG_NAME: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          wheels=(dist/*.whl)
+          if [[ ${#wheels[@]} -ne 1 ]]; then
+            echo "expected exactly one wheel in dist/, found ${#wheels[@]}" >&2
+            exit 1
+          fi
+          wheel="$(basename "${wheels[0]}")"
+          version="$(cut -d- -f2 <<<"$wheel")"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "unexpected version '$version' from wheel '$wheel'" >&2
+            exit 1
+          fi
+          declared="$(grep -m1 '^version = ' pyproject.toml \
+            | sed -E 's/^version = "(.*)"$/\1/')"
+          if [[ "$version" != "$declared" ]]; then
+            echo "wheel version $version does not match pyproject.toml $declared" >&2
+            exit 1
+          fi
+          if [[ "$EVENT_NAME" == "release" && "$TAG_NAME" != "v${version}" ]]; then
+            echo "release tag $TAG_NAME does not match version $version" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "wheel=$wheel" >> "$GITHUB_OUTPUT"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -106,3 +156,159 @@ jobs:
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+
+  # The render process as a published artifact:
+  # ghcr.io/swedev/klartex-render:X.Y.Z, multi-arch, one tag per release and
+  # never `latest`. Consumers pin the tag that equals their `klartex==` pin.
+  #
+  # `needs: [build, publish]` with `!cancelled()` rather than a plain needs:
+  # a plainly-needed skipped job skips this one too, and the image must
+  # publish even when the PyPI step failed — the two are retryable
+  # independently.
+  #
+  # Retry is `workflow_dispatch` run **from the release tag**, which is the
+  # only ref that rebuilds exactly the released code; a dispatch from a
+  # branch runs the gate and the build and stops here. The guard below then
+  # refuses if the tag is already in the registry, so a retry can never
+  # overwrite a published image.
+  image:
+    needs: [build, publish]
+    if: ${{ !cancelled() && needs.build.result == 'success' && (github.event_name == 'release' || github.ref_type == 'tag') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    # Pushing needs packages: write; nothing here talks to PyPI, so the
+    # workflow's id-token is deliberately not inherited.
+    permissions:
+      contents: read
+      packages: write
+
+    # Serializes a release run against a concurrent retry of the same
+    # version, so two runs cannot both see an absent tag and race to push.
+    concurrency:
+      group: klartex-render-image-v${{ needs.build.outputs.version }}
+
+    env:
+      IMAGE: ghcr.io/swedev/klartex-render
+      VERSION: ${{ needs.build.outputs.version }}
+      WHEEL: ${{ needs.build.outputs.wheel }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      # Before the guard: an anonymous imagetools inspect against a private
+      # package cannot tell "absent" from "unauthorized", and the guard's
+      # whole job is to tell those apart.
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Guard release identity, base pin and tag absence
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          TAG_NAME: ${{ github.event.release.tag_name }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          # 1. The built code is the released code. A release run is
+          # already pinned to its tag by the build job's version check; a
+          # dispatch builds whatever ref was selected, so only the release
+          # tag itself may produce this version's image.
+          if [[ "$EVENT_NAME" == "release" ]]; then
+            released="$TAG_NAME"
+          elif [[ "$REF_TYPE" == "tag" ]]; then
+            released="$REF_NAME"
+          else
+            echo "refusing: ${REF_TYPE}/${REF_NAME} is not a release tag" >&2
+            exit 1
+          fi
+          if [[ "$released" != "v${VERSION}" ]]; then
+            echo "refusing: ref $released is not tag v${VERSION}" >&2
+            exit 1
+          fi
+
+          # 2. The image is built on the base the release gate tested in.
+          from_pin="$(sed -nE 's|^FROM (ghcr\.io/swedev/klartex-base:.*)$|\1|p' \
+            docker/Dockerfile.render | head -1)"
+          gate_pin="$(sed -nE 's|^ *image: (ghcr\.io/swedev/klartex-base:.*)$|\1|p' \
+            .github/workflows/publish.yml | head -1)"
+          if [[ -z "$from_pin" || "$from_pin" != "$gate_pin" ]]; then
+            echo "refusing: base pin diverged" >&2
+            echo "  Dockerfile.render: ${from_pin:-<none>}" >&2
+            echo "  publish.yml gate:  ${gate_pin:-<none>}" >&2
+            exit 1
+          fi
+
+          # 3. The wheel the image installs is the artifact the gate built.
+          if [[ ! -f "dist/${WHEEL}" ]]; then
+            echo "refusing: dist/${WHEEL} is not in the artifact" >&2
+            exit 1
+          fi
+
+          # 4. Published tags are immutable. Only a manifest-unknown answer
+          # counts as absent; anything else is an error, not a green light.
+          if out="$(docker buildx imagetools inspect "${IMAGE}:${VERSION}" 2>&1)"; then
+            echo "refusing: ${IMAGE}:${VERSION} already exists" >&2
+            exit 1
+          fi
+          case "$out" in
+            *"manifest unknown"*|*MANIFEST_UNKNOWN*|*"not found"*) ;;
+            *)
+              echo "could not determine whether ${IMAGE}:${VERSION} exists:" >&2
+              echo "$out" >&2
+              exit 1
+              ;;
+          esac
+
+      # Two architectures' rootfs under pip do not fit in a standard
+      # runner's free space; ~25 GB of it is toolchains this job never uses.
+      - name: Free runner disk space
+        shell: bash
+        run: |
+          set -euo pipefail
+          df -h /
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          df -h /
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push multi-arch image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.render
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ env.IMAGE }}:${{ needs.build.outputs.version }}
+          build-args: |
+            KLARTEX_WHEEL=${{ needs.build.outputs.wheel }}
+
+      # The full reference is what a consumer pins, so print it where the
+      # follow-up PR can copy it from.
+      - name: Report pin
+        shell: bash
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          {
+            echo "Pin this in the services that render with klartex:"
+            echo
+            echo '```'
+            echo "${IMAGE}:${VERSION}@${DIGEST}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

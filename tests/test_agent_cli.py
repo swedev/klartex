@@ -1,6 +1,7 @@
 """Tests for agent-friendly CLI features: blocks, example, schema oneOf."""
 
 import json
+from pathlib import Path
 
 import jsonschema
 import pytest
@@ -75,3 +76,27 @@ def test_block_example_covers_all_block_types():
 
     missing = expected - example_types
     assert not missing, f"Example is missing block types: {missing}"
+
+
+def test_block_schema_exposes_slot_variants():
+    """`klartex schema _block` is how an agent discovers the surface, so the
+    slot variant names must be in the schema it prints."""
+    registry = get_registry()
+    page_template = registry["_block"].schema["properties"]["page_template"]
+    printed = json.dumps(page_template, ensure_ascii=False)
+    assert "letterhead" in printed
+    assert "standard" in printed
+
+
+def test_block_example_uses_the_slot_form():
+    """The canonical example demonstrates structured header content, which is
+    the whole point of the slot model."""
+    example_path = (
+        Path(__file__).resolve().parent.parent
+        / "klartex"
+        / "schemas"
+        / "block_engine.example.json"
+    )
+    data = json.loads(example_path.read_text())
+    assert data["page_template"]["header"]["variant"] == "letterhead"
+    assert data["page_template"]["header"]["org_name"]

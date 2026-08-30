@@ -1,0 +1,25 @@
+\makeatletter
+\fancyhead[L]{%
+    \ifdefempty{\orgname}{}{%
+    \color{brandsecondary}\kxheaderfont
+    \begin{minipage}[t]{0.20\textwidth}
+        \fontsize{6pt}{9pt}\selectfont
+        \textbf{\orgname}%
+        \ifdefempty{\orgaddress}{}{\\
+        \orgaddress}%
+    \end{minipage}%
+    \begin{minipage}[t]{0.22\textwidth}
+        \fontsize{6pt}{9pt}\selectfont
+        \kx@hdrsepfalse
+        \kx@hdrline{\orgwebsite}%
+        \kx@hdrline{\orgemail}%
+        \kx@hdrline{\orgphone}%
+    \end{minipage}%
+    }%
+}
+\fancyhead[R]{%
+    \ifdefempty{\brandlogo}{}{%
+        \raisebox{-0.6cm}[0pt][0pt]{\includegraphics[height=0.855cm]{\brandlogo}}%
+    }%
+}
+\makeatother

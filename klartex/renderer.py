@@ -11,6 +11,7 @@ import jinja2
 import jsonschema
 
 from klartex.inline_markup import render_inline
+from klartex.jinja_env import make_env
 from klartex.registry import discover_templates
 from klartex.tex_escape import escape_data
 from klartex.block_engine import BLOCK_ENGINE_TEMPLATE
@@ -32,20 +33,7 @@ def get_registry():
 
 
 # Jinja2 environment with LaTeX-safe delimiters
-_jinja_env = jinja2.Environment(
-    block_start_string=r"\BLOCK{",
-    block_end_string=r"}",
-    variable_start_string=r"\VAR{",
-    variable_end_string=r"}",
-    comment_start_string=r"\#{",
-    comment_end_string=r"}",
-    line_statement_prefix="%%",
-    line_comment_prefix="%#",
-    trim_blocks=True,
-    lstrip_blocks=True,
-    autoescape=False,
-    loader=jinja2.FileSystemLoader([str(TEMPLATES_DIR)]),
-)
+_jinja_env = make_env(jinja2.FileSystemLoader([str(TEMPLATES_DIR)]))
 
 
 @jinja2.pass_context
@@ -122,15 +110,25 @@ def render(
     data: dict,
     page_template_source: str | None = None,
     asset_dir: Path | str | None = None,
+    *,
+    header_source: str | None = None,
+    footer_source: str | None = None,
 ) -> bytes:
     """Render a template with data to PDF bytes.
 
     Args:
         template_name: Name of the template (e.g. "protokoll")
         data: Template data as a dict (validated against schema)
-        page_template_source: Optional raw .tex.jinja content for the page
-            template. When set, this is used directly instead of looking up
-            the built-in page template from data["page_template"].
+        page_template_source: Optional raw .tex.jinja content owning both
+            page-template slots. When set, it is used instead of the header
+            and footer variants from data["page_template"], whose slot and
+            chrome keys are then ignored; the document-level keys (`font`,
+            `header_font`, `diff_style`) still apply. Cannot be combined with
+            `header_source` or `footer_source`.
+        header_source: Optional raw .tex.jinja content owning the header slot.
+            The footer slot still resolves from data["page_template"].
+        footer_source: Optional raw .tex.jinja content owning the footer slot.
+            The header slot still resolves from data["page_template"].
         asset_dir: Optional directory that assets (`\\includegraphics`,
             `\\input`, custom fonts, …) resolve against. Useful when callers
             (e.g. a server) keep page-template bundles in a known location
@@ -165,6 +163,14 @@ def render(
     Returns:
         PDF file contents as bytes
     """
+    if page_template_source is not None and (
+        header_source is not None or footer_source is not None
+    ):
+        raise ValueError(
+            "page_template_source owns both slots and cannot be combined with "
+            "header_source or footer_source"
+        )
+
     registry = get_registry()
 
     if template_name not in registry:
@@ -190,11 +196,22 @@ def render(
         # (escaping turns "description_list" into "description\_list", which then
         # fails to match the dispatch). Also restore raw source on latex blocks.
         _restore_block_types(data.get("body", []), escaped_data["body"])
-        tex_source = _render_block_engine(escaped_data, page_template_source)
+        tex_source = _render_block_engine(
+            escaped_data,
+            page_template_source,
+            header_source=header_source,
+            footer_source=footer_source,
+        )
         return _compile_tex(tex_source, asset_dir=asset_dir)
 
     # Recipe path
-    tex_source = _render_recipe(template_info, escaped_data, page_template_source)
+    tex_source = _render_recipe(
+        template_info,
+        escaped_data,
+        page_template_source,
+        header_source=header_source,
+        footer_source=footer_source,
+    )
     return _compile_tex(tex_source, asset_dir=asset_dir)
 
 
@@ -280,24 +297,44 @@ def _restore_block_types(orig_blocks: list, esc_blocks: list) -> None:
 
 
 def _render_block_engine(
-    escaped_data: dict, page_template_source: str | None = None
+    escaped_data: dict,
+    page_template_source: str | None = None,
+    *,
+    header_source: str | None = None,
+    footer_source: str | None = None,
 ) -> str:
     """Render using the universal block engine path."""
     from klartex.block_engine import prepare_block_context
 
-    context = prepare_block_context(escaped_data, page_template_source)
+    context = prepare_block_context(
+        escaped_data,
+        page_template_source,
+        header_source=header_source,
+        footer_source=footer_source,
+    )
     template = _jinja_env.get_template("_block_engine.tex.jinja")
     return template.render(context)
 
 
 def _render_recipe(
-    template_info, escaped_data: dict, page_template_source: str | None = None
+    template_info,
+    escaped_data: dict,
+    page_template_source: str | None = None,
+    *,
+    header_source: str | None = None,
+    footer_source: str | None = None,
 ) -> str:
     """Render using the YAML recipe path."""
     from klartex.recipe import load_recipe, prepare_recipe_context
 
     recipe = load_recipe(template_info.recipe_path)
-    context = prepare_recipe_context(recipe, escaped_data, page_template_source)
+    context = prepare_recipe_context(
+        recipe,
+        escaped_data,
+        page_template_source,
+        header_source=header_source,
+        footer_source=footer_source,
+    )
     template = _jinja_env.get_template("_recipe_base.tex.jinja")
     return template.render(context)
 

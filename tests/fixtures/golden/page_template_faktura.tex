@@ -1,0 +1,61 @@
+\documentclass{klartex-base}
+\providecommand{\orgname}{}
+
+\providecommand{\orgname}{}
+\providecommand{\orgaddress}{}
+\providecommand{\orgwebsite}{}
+\providecommand{\orgemail}{}
+\providecommand{\orgphone}{}
+\providecommand{\brandlogo}{}
+\makeatletter
+\fancyhead[L]{%
+    \ifdefempty{\orgname}{}{%
+    \color{brandsecondary}\kxheaderfont
+    \begin{minipage}[t]{0.20\textwidth}
+        \fontsize{6pt}{9pt}\selectfont
+        \textbf{\orgname}%
+        \ifdefempty{\orgaddress}{}{\\
+        \orgaddress}%
+    \end{minipage}%
+    \begin{minipage}[t]{0.22\textwidth}
+        \fontsize{6pt}{9pt}\selectfont
+        \kx@hdrsepfalse
+        \kx@hdrline{\orgwebsite}%
+        \kx@hdrline{\orgemail}%
+        \kx@hdrline{\orgphone}%
+    \end{minipage}%
+    }%
+}
+\fancyhead[R]{%
+    \ifdefempty{\brandlogo}{}{%
+        \raisebox{-0.6cm}[0pt][0pt]{\includegraphics[height=0.855cm]{\brandlogo}}%
+    }%
+}
+\fancyfoot[C]{%
+    \kx@setlang%
+    \fontsize{6pt}{9pt}\selectfont\color{brandsecondary}\kxheaderfont
+    \ifdefempty{\doctitle}{}{\doctitle\ \textbullet\ }\kx@page\ \thepage\ \kx@of\ \pageref{LastPage}%
+}
+\makeatother
+\ifdefempty{\orgname}{\ifdefempty{\brandlogo}{%
+  \geometry{top=2cm, headheight=0pt, headsep=0pt, includehead=false}%
+  \fancyhead{}%
+}{}}{}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\setdoctitle{Faktura 2026-001}
+

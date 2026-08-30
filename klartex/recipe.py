@@ -19,7 +19,7 @@ from klartex.components import (
     extract_component_data,
     get_component,
 )
-from klartex.page_templates import load_page_template, read_page_template_source
+from klartex.page_templates import load_page_template
 
 # Path to the recipe format schema
 _SCHEMA_PATH = Path(__file__).resolve().parent / "schemas" / "recipe.schema.json"
@@ -135,6 +135,9 @@ def prepare_recipe_context(
     recipe: Recipe,
     data: dict,
     page_template_source: str | None = None,
+    *,
+    header_source: str | None = None,
+    footer_source: str | None = None,
 ) -> dict[str, Any]:
     """Build a template context dict for the Jinja meta-template.
 
@@ -145,6 +148,10 @@ def prepare_recipe_context(
     Args:
         recipe: Parsed recipe
         data: Template data (already escaped for LaTeX)
+        page_template_source: Optional raw .tex.jinja content owning both
+            page-template slots.
+        header_source: Optional raw .tex.jinja content owning the header slot.
+        footer_source: Optional raw .tex.jinja content owning the footer slot.
 
     Returns:
         Context dict for rendering _recipe_base.tex.jinja
@@ -162,17 +169,27 @@ def prepare_recipe_context(
     except jinja2.TemplateError:
         rendered_title = recipe.document.title
 
-    # Resolve page template. A dict in the data (name + overrides such as
-    # font/footer) is passed through as-is; a string goes through the
-    # recipe's Jinja expression (e.g. {{ data.page_template | default('formal') }}).
-    if isinstance(data.get("page_template"), dict):
+    # Resolve page template. A string in the data goes through the recipe's
+    # own expression (e.g. {{ data.page_template | default('formal') }}); a
+    # dict is passed through as-is, and the alias it is layered on comes from
+    # the same expression evaluated without it, so the recipe's default
+    # applies to whichever slot the dict leaves alone.
+    is_slot_object = isinstance(data.get("page_template"), dict)
+    expression_data = (
+        {k: v for k, v in data.items() if k != "page_template"}
+        if is_slot_object
+        else data
+    )
+    try:
+        pt_template = title_env.from_string(recipe.document.page_template)
+        recipe_page_template = pt_template.render(data=expression_data)
+    except jinja2.TemplateError:
+        recipe_page_template = recipe.document.page_template
+
+    if is_slot_object:
         rendered_page_template: str | dict = data["page_template"]
     else:
-        try:
-            pt_template = title_env.from_string(recipe.document.page_template)
-            rendered_page_template = pt_template.render(data=data)
-        except jinja2.TemplateError:
-            rendered_page_template = recipe.document.page_template
+        rendered_page_template = recipe_page_template
 
     # Resolve metadata fields
     resolved_metadata = []
@@ -228,20 +245,19 @@ def prepare_recipe_context(
             seen.add(comp.spec.sty_package)
 
     # Resolve page template
-    external_page_template = page_template_source is not None
-    if external_page_template:
-        page_tmpl = load_page_template("none")
-    else:
-        page_tmpl = load_page_template(rendered_page_template)
-        page_template_source = read_page_template_source(page_tmpl.name)
+    page_tmpl = load_page_template(
+        rendered_page_template,
+        default=recipe_page_template,
+        header_source=header_source,
+        footer_source=footer_source,
+        page_template_source=page_template_source,
+    )
 
     return {
         "recipe": recipe,
         "data": data,
         "title": rendered_title,
-        "page_template_source": page_template_source,
         "page_template": page_tmpl,
-        "external_page_template": external_page_template,
         "metadata": resolved_metadata,
         "components": resolved_components,
         "sty_packages": sty_packages,

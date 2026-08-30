@@ -287,3 +287,136 @@ class TestAssetDirEndToEnd:
         )
         assert result.exit_code == 0, result.output
         assert out.read_bytes()[:5] == b"%PDF-"
+
+
+class TestSlotTemplateFlags:
+    """--header-template / --footer-template own one slot each."""
+
+    @pytest.fixture
+    def captured(self, monkeypatch):
+        calls = {}
+
+        def fake_render(template_name, data, **kwargs):
+            calls.update(kwargs)
+            calls["template_name"] = template_name
+            return b"%PDF-1.5 fake"
+
+        monkeypatch.setattr("klartex.cli.render", fake_render)
+        return calls
+
+    @staticmethod
+    def _bundle(cwd, header="% header", footer="% footer"):
+        branding = cwd / "branding"
+        branding.mkdir()
+        (branding / "head.tex.jinja").write_text(header)
+        (branding / "foot.tex.jinja").write_text(footer)
+        data = cwd / "report.json"
+        data.write_text(json.dumps(BLOCK_DATA))
+        return branding, data
+
+    def test_both_slot_flags_reach_render(self, cwd, captured):
+        branding, data = self._bundle(cwd)
+        result = runner.invoke(
+            app,
+            [
+                "-d", str(data),
+                "--header-template", str(branding / "head.tex.jinja"),
+                "--footer-template", str(branding / "foot.tex.jinja"),
+            ],
+        )
+        assert result.exit_code == 0
+        assert captured["header_source"] == "% header"
+        assert captured["footer_source"] == "% footer"
+        assert captured["page_template_source"] is None
+        assert captured["asset_dir"] == branding.resolve()
+
+    def test_header_flag_alone_leaves_the_footer_slot_to_the_data(self, cwd, captured):
+        branding, data = self._bundle(cwd)
+        result = runner.invoke(
+            app, ["-d", str(data), "--header-template", str(branding / "head.tex.jinja")]
+        )
+        assert result.exit_code == 0
+        assert captured["header_source"] == "% header"
+        assert captured["footer_source"] is None
+
+    def test_slot_flag_suppresses_autodetection(self, cwd, captured):
+        branding, data = self._bundle(cwd)
+        (cwd / DEFAULT_PAGE_TEMPLATE_FILENAME).write_text("% monolithic")
+        result = runner.invoke(
+            app, ["-d", str(data), "--header-template", str(branding / "head.tex.jinja")]
+        )
+        assert result.exit_code == 0
+        assert "Using page template:" not in result.output
+        assert captured["page_template_source"] is None
+
+    def test_page_template_and_slot_flag_conflict(self, cwd, captured):
+        branding, data = self._bundle(cwd)
+        (branding / "mall.tex.jinja").write_text("% mall")
+        result = runner.invoke(
+            app,
+            [
+                "-d", str(data),
+                "--page-template", str(branding / "mall.tex.jinja"),
+                "--header-template", str(branding / "head.tex.jinja"),
+            ],
+        )
+        assert result.exit_code == 1
+        assert "--page-template" in result.output
+        assert "--header-template" in result.output
+
+    def test_slot_files_in_different_directories_are_rejected(self, cwd, captured):
+        branding, data = self._bundle(cwd)
+        other = cwd / "other"
+        other.mkdir()
+        (other / "foot.tex.jinja").write_text("% footer")
+        result = runner.invoke(
+            app,
+            [
+                "-d", str(data),
+                "--header-template", str(branding / "head.tex.jinja"),
+                "--footer-template", str(other / "foot.tex.jinja"),
+            ],
+        )
+        assert result.exit_code == 1
+        assert "same directory" in result.output
+
+    def test_missing_slot_file_is_reported(self, cwd, captured):
+        _, data = self._bundle(cwd)
+        result = runner.invoke(
+            app, ["-d", str(data), "--header-template", "nope.tex.jinja"]
+        )
+        assert result.exit_code == 1
+        assert "not found" in result.output
+
+
+@pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+class TestSlotTemplateFlagsRender:
+    """End-to-end: a custom footer replaces only the footer."""
+
+    def test_footer_template_replaces_only_the_footer(self, cwd):
+        branding = cwd / "branding"
+        branding.mkdir()
+        (branding / "foot.tex.jinja").write_text(
+            "\\fancyfoot[C]{EGEN SIDFOT}\n"
+        )
+        data = cwd / "report.json"
+        data.write_text(
+            json.dumps(
+                {
+                    "page_template": {
+                        "header": {"variant": "letterhead", "org_name": "Föreningen X"}
+                    },
+                    "body": [{"type": "heading", "text": "Rubrik"}],
+                }
+            )
+        )
+        result = runner.invoke(
+            app,
+            [
+                "-d", str(data),
+                "--footer-template", str(branding / "foot.tex.jinja"),
+                "-o", str(cwd / "out.pdf"),
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        assert (cwd / "out.pdf").read_bytes()[:5] == b"%PDF-"

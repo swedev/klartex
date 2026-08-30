@@ -79,6 +79,27 @@
 % template or the header_font page-template option selects a separate font.
 \newcommand{\kxheaderfont}{}
 
+% Page-template contract macros. A page-template slot — predefined or custom,
+% either render path — redefines these at preamble top level. The predefined
+% header fragments read them at shipout; the header-space reclaim block tests
+% \orgname and \brandlogo at the end of the preamble, so a definition made
+% later (e.g. inside \AtBeginDocument) is not seen by that test.
+\providecommand{\orgname}{}
+\providecommand{\orgaddress}{}
+\providecommand{\orgwebsite}{}
+\providecommand{\orgemail}{}
+\providecommand{\orgphone}{}
+\providecommand{\brandlogo}{}
+
+% Stacked contact lines for a header column. \kx@hdrline skips an empty macro
+% and emits the line separator only between lines that actually render, so a
+% column whose leading fields are empty does not start with a \\ (which would
+% raise "There's no line here to end"). \kx@hdrsepfalse resets the state at
+% the top of each column; the flag is set inside the column's group, so
+% columns do not affect each other.
+\newif\ifkx@hdrsep
+\newcommand{\kx@hdrline}[1]{\ifdefempty{#1}{}{\ifkx@hdrsep\\\fi#1\kx@hdrseptrue}}
+
 % Document metadata
 \newcommand{\doctitle}{}
 \newcommand{\setdoctitle}[1]{\renewcommand{\doctitle}{#1}}

@@ -86,22 +86,27 @@ Single source of truth for block types: `_COMPONENTS` maps each name to its `.st
 
 ### Page templates (`klartex/page_templates.py`)
 
-A page template is a `.tex.jinja` fragment that defines `\fancyhead`/`\fancyfoot`, colors, logo. Three built-ins (`formal`, `clean`, `none`) live in `klartex/page_templates/`. Resolution priority in the CLI:
+A page template is composed of two independent slots, **header** and **footer**. Each slot is a predefined variant, a custom `.tex.jinja` source, or empty. The variants live as fragments in `klartex/page_templates/<slot>/<variant>.tex.jinja` — header: `letterhead`, `logo`; footer: `standard` — and `formal` / `clean` / `none` are aliases for slot combinations (`_ALIASES` in `page_templates.py`). `_page_template.tex.jinja` composes them in a fixed order: document-level settings → header → footer → header-space reclaim → first-page style. The reclaim comes after both slots because its `\ifdefempty` test must see the final value of the contract macros.
 
-1. Explicit `--page-template path` flag.
-2. `<data-stem>.tex.jinja` next to the data file (auto-detected).
-3. `./page_template.tex.jinja` in cwd (auto-detected).
-4. Built-in name from `data.page_template` (`"formal"` / `"clean"` / `"none"` / dict with overrides).
-5. Default `"none"`.
+The contract macros (`\orgname`, `\orgaddress`, `\orgwebsite`, `\orgemail`, `\orgphone`, `\brandlogo`) are `\providecommand`-ed in `klartex-base.cls`, so any slot on either path can `\renewcommand` them. The `letterhead` variant's structured settings (`org_name`, `address`, `web`, `email`, `phone`, `logo`) are emitted as `\renewcommand`s before its fragment. Its object form requires `org_name`, since both the fragment and the reclaim test key off `\orgname`; the bare variant name stays the way to ask for an empty letterhead. Contact lines are stacked with `\kx@hdrline` (in `klartex-base.cls`), which emits the `\\` separator only between lines that render — an unconditional one breaks a column whose leading field is empty.
 
-When a caller supplies raw page-template source (CLI flag, auto-detect, or `page_template_source` API field) the loader uses `"none"` defaults so the caller owns header/footer entirely.
+Resolution priority in the CLI:
+
+1. Explicit `--header-template` / `--footer-template` flags (one slot each; both files must share a directory; they suppress auto-detection and cannot be combined with `--page-template`).
+2. Explicit `--page-template path` flag (one file owning both slots).
+3. `<data-stem>.tex.jinja` next to the data file (auto-detected, monolithic).
+4. `./page_template.tex.jinja` in cwd (auto-detected, monolithic).
+5. Slots and alias from `data.page_template`.
+6. Default: block engine `"none"`, recipes their own `document.page_template` expression.
+
+A custom slot owns its own chrome; the other slot and the document-level settings (`font`, `header_font`, `diff_style`) still come from `data.page_template`. A monolithic `page_template_source` owns both slots and ignores everything in `data.page_template` but those document-level keys — which is also what keeps its tolerance for a missing or unknown `name` on the block path (the recipe schemas `enum` the name and reject it earlier).
 
 Assets referenced from a page template (`\includegraphics{logo.pdf}`, `\input{…}`, fonts) resolve through **two** mechanisms, because Kpathsea treats the two name shapes differently:
 
 - **Plain names** (`logo.pdf`) go through `TEXINPUTS=<tmpdir>:cls:[asset_dir:]cwd:<inherited>` — a real search chain, so a plain name found in neither `asset_dir` nor cwd still falls back.
 - **Explicitly relative names** (`./logo.pdf`, `../shared/x.tex`) are never looked up on `TEXINPUTS`; Kpathsea tries them as-is against xelatex's process cwd. `_compile_tex` therefore runs xelatex with `cwd=<asset root>` — the resolved `asset_dir`, else the caller's cwd — and redirects every build artifact to the tempdir with `-output-directory`. There is no fallback chain here (a process has one cwd), so a `./` reference missing from `asset_dir` fails even if the file exists in cwd. A `./` inside a *nested* included file also resolves against that same single root, not the including file's directory.
 
-`asset_dir` is the optional `render(asset_dir=…)` directory. For the CLI's three file-based branches, `cli.py::main` sets it to the resolved page-template file's parent, so a template and its assets can live together in one directory and be used from any cwd. `.resolve()` is deliberate — assets follow a symlinked template to its target's directory (canonical template bundles), and the path must be absolute since it is both a `TEXINPUTS` entry and the subprocess cwd. A non-directory `asset_dir` raises `ValueError` (validated before the `shutil.which("xelatex")` check, so it is testable without TeX). The API's `page_template_source` is raw text with no path, so API callers must pass `asset_dir` themselves.
+`asset_dir` is the optional `render(asset_dir=…)` directory. For the CLI's file-based branches, `cli.py::main` sets it to the resolved page-template file's parent (the shared parent of the two slot files), so a template and its assets can live together in one directory and be used from any cwd. `.resolve()` is deliberate — assets follow a symlinked template to its target's directory (canonical template bundles), and the path must be absolute since it is both a `TEXINPUTS` entry and the subprocess cwd. A non-directory `asset_dir` raises `ValueError` (validated before the `shutil.which("xelatex")` check, so it is testable without TeX). The API's `page_template_source` / `header_source` / `footer_source` are raw text with no path, so API callers must pass `asset_dir` themselves.
 
 Two invariants worth not breaking:
 

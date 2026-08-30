@@ -100,7 +100,9 @@ def load_recipe(path: Path) -> Recipe:
     doc_raw = raw.get("document", {})
     document = RecipeDocument(
         title=doc_raw.get("title", ""),
-        page_template=doc_raw.get("page_template") or dict(RECIPE_DEFAULT_SLOTS),
+        # A partial slot object (one slot named) falls back to the recipe
+        # default for the other slot, so load_page_template always gets both.
+        page_template={**RECIPE_DEFAULT_SLOTS, **(doc_raw.get("page_template") or {})},
         metadata=doc_raw.get("metadata", []),
     )
 

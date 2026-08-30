@@ -9,7 +9,7 @@ Usage via the API: ``POST /render`` with ``template: "_block"``.
 Data shape::
 
     {
-        "page_template": {"header": "logo", "footer": {"fields": {"company": "AB"}}},
+        "page_template": {"header": "logo", "footer": {"variant": "columns", "fields": {"company": "AB"}}},
         "lang": "sv",
         "body": [
             {"type": "heading", "text": "My Document"},

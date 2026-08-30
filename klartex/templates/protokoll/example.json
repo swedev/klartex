@@ -21,7 +21,8 @@
     {
       "title": "Ekonomisk rapport",
       "discussion": "Kassören presenterade den ekonomiska rapporten för Q4. Föreningen har ett positivt resultat.",
-      "decision": "Styrelsen godkände den ekonomiska rapporten."
+      "decision": "Styrelsen godkände den ekonomiska rapporten.",
+      "subItems": ["Intäkter", "Kostnader", "Prognos för 2026"]
     },
     {
       "title": "Planering av vårevent",

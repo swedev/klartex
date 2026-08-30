@@ -529,6 +529,22 @@ def test_recipe_agenda_items_pass_through_inline_markup():
     assert "**" not in tex
 
 
+def test_recipe_agenda_sub_items_render_with_decimal_numbering():
+    """protokoll renders `decimal`, so agenda_items[].subItems get decimal
+    sub-numbering under the parent via the shared render_agenda (#70)."""
+    import jsonschema
+
+    data = json.loads((FIXTURES / "protokoll.json").read_text())
+    data["agenda_items"][2]["subItems"] = ["Intäkter **ökade**", "Kostnader"]
+    jsonschema.validate(data, get_registry()["protokoll"].get_validation_schema())
+
+    tex = _render_recipe_tex("protokoll", data)
+    assert r"\makebox[1.0cm][l]{\textbf{3.1.}}Intäkter \textbf{ökade}\par" in tex
+    assert r"\makebox[1.0cm][l]{\textbf{3.2.}}Kostnader\par" in tex
+    assert "**" not in tex
+    assert tex.index("3.1.") > tex.index("Styrelsen godkände den ekonomiska rapporten")
+
+
 def test_recipe_metadata_newline_is_cell_safe():
     """Metadata values land in the paragraph-mode X column: a newline must
     become \\newline, never a bare \\\\ that would end the table row."""

@@ -94,7 +94,12 @@
         "properties": {
           "title": { "type": "string", "description": "Punktens rubrik. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} (grön) och [-struken text-] (röd genomstruken). Radbrytning blir radbrytning." },
           "discussion": { "type": "string", "description": "Diskussionstext. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} (grön) och [-struken text-] (röd genomstruken). Radbrytning blir radbrytning." },
-          "decision": { "type": "string", "description": "Beslutstext. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} (grön) och [-struken text-] (röd genomstruken). Radbrytning blir radbrytning." }
+          "decision": { "type": "string", "description": "Beslutstext. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} (grön) och [-struken text-] (röd genomstruken). Radbrytning blir radbrytning." },
+          "subItems": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Valfria underpunkter, numrerade decimalt under punkten (1.1., 1.2., …) och renderade efter punktens diskussion och beslut. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} (grön) och [-struken text-] (röd genomstruken). Radbrytning blir radbrytning."
+          }
         }
       },
       "minItems": 1

@@ -218,6 +218,8 @@ jobs:
           TAG_NAME: ${{ github.event.release.tag_name }}
           REF_TYPE: ${{ github.ref_type }}
           REF_NAME: ${{ github.ref_name }}
+          REPO_FULL: ${{ github.repository }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
 
@@ -228,6 +230,16 @@ jobs:
           if [[ "$EVENT_NAME" == "release" ]]; then
             released="$TAG_NAME"
           elif [[ "$REF_TYPE" == "tag" ]]; then
+            # Dispatch is a retry of a release, so the tag must carry a
+            # published release. A plain tag would otherwise take the
+            # registry tag — which is immutable — with code that was never
+            # released, and the real release's image job would then fail.
+            draft="$(gh api "repos/${REPO_FULL}/releases/tags/${REF_NAME}" \
+              --jq '.draft' 2>/dev/null || true)"
+            if [[ "$draft" != "false" ]]; then
+              echo "refusing: tag ${REF_NAME} carries no published release" >&2
+              exit 1
+            fi
             released="$REF_NAME"
           else
             echo "refusing: ${REF_TYPE}/${REF_NAME} is not a release tag" >&2

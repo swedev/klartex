@@ -270,6 +270,48 @@ def test_malformed_envelope_is_a_400_input_error(payload):
     assert detail["message"]
 
 
+@pytest.mark.parametrize(
+    "payload",
+    [
+        b'{"template":"\\ud800","data":{}}',
+        b'{"template":"_block","data":{"body":[]},"header_source":"\\ud800"}',
+        b'{"template":"_block","data":{"body":[]},"footer_source":"\\ud800"}',
+        b'{"template":"_block","data":{"body":[{"type":"text","text":"\\ud800"}]}}',
+        b'{"template":"_block","data":{"\\ud800":1,"body":[]}}',
+    ],
+    ids=["template", "header-source", "footer-source", "nested-value", "object-key"],
+)
+def test_unpaired_surrogate_is_a_400_input_error(payload):
+    """JSON admits `"\\ud800"`; UTF-8 does not, and the contract has no 500.
+
+    Left to reach the .tex write or the JSON error response that quotes
+    it, such a string fails as a bare `500 Internal Server Error` — a
+    shape no caller of this endpoint is told to expect.
+    """
+    r = client.post(
+        "/render", content=payload, headers={"content-type": "application/json"}
+    )
+    assert r.status_code == 400, r.text
+    detail = r.json()["detail"]
+    assert detail["type"] == "input_error"
+    assert "Unicode" in detail["message"]
+
+
+def test_unpaired_surrogate_is_rejected_before_a_slot_is_taken(render_slots):
+    """Encodability is caller input, so it is checked before the cap."""
+    for _ in range(render_module.MAX_CONCURRENT_RENDERS):
+        assert render_slots.acquire(blocking=False)
+
+    r = client.post(
+        "/render",
+        content=b'{"template":"_block","data":{"body":[]},"header_source":"\\ud800"}',
+        headers={"content-type": "application/json"},
+    )
+
+    assert r.status_code == 400
+    assert r.json()["detail"]["type"] == "input_error"
+
+
 def test_invalid_json_body_is_a_400_input_error():
     r = client.post(
         "/render",
@@ -397,6 +439,9 @@ def test_invalid_asset_filename_is_rejected(filename):
     detail = r.json()["detail"]
     assert detail["type"] == "input_error"
     assert "asset filename" in detail["message"]
+    # The hint quotes the rule that was applied, length cap included — a
+    # name rejected for being too long must not get a hint it satisfies.
+    assert render_module.ASSET_NAME_RE.pattern in detail["message"]
 
 
 def test_asset_write_failure_is_a_500_render_error(monkeypatch):

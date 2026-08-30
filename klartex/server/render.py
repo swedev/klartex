@@ -167,7 +167,7 @@ def _decode_assets(assets: dict[str, str]) -> dict[str, bytes]:
         if not ASSET_NAME_RE.match(filename):
             raise _input_error(
                 f"Invalid asset filename {filename!r}; "
-                "must match [A-Za-z0-9][A-Za-z0-9._-]+"
+                f"must match {ASSET_NAME_RE.pattern}"
             )
         try:
             raw = base64.b64decode(b64, validate=True)
@@ -180,6 +180,33 @@ def _decode_assets(assets: dict[str, str]) -> dict[str, bytes]:
             )
         decoded[filename] = raw
     return decoded
+
+
+def _check_encodable(value: object, where: str) -> None:
+    """Reject text that cannot survive a UTF-8 round trip.
+
+    JSON admits escaped lone surrogates (`"\\ud800"`), and Python parses
+    them into `str` values that no UTF-8 encoder accepts. Left alone, such
+    a string fails much later — while the .tex file is written, or while
+    the JSON error response that quotes it is serialised — and answers
+    with a bare 500 that is outside the documented error contract. Caught
+    here it is what it is: bad input.
+    """
+    if isinstance(value, str):
+        try:
+            value.encode()
+        except UnicodeEncodeError as e:
+            raise _input_error(
+                f"{where}: text is not valid Unicode "
+                f"(unpaired surrogate at position {e.start})"
+            ) from e
+    elif isinstance(value, dict):
+        for key, item in value.items():
+            _check_encodable(key, where)
+            _check_encodable(item, f"{where}.{key}" if isinstance(key, str) else where)
+    elif isinstance(value, list):
+        for i, item in enumerate(value):
+            _check_encodable(item, f"{where}[{i}]")
 
 
 def _check_source_size(field: str, source: str | None) -> None:
@@ -215,6 +242,11 @@ def _check_source_size(field: str, source: str | None) -> None:
 )
 def render(req: RenderRequest) -> Response:
     """Compile a template + data combination to a PDF."""
+    _check_encodable(req.template, "template")
+    _check_encodable(req.header_source, "header_source")
+    _check_encodable(req.footer_source, "footer_source")
+    _check_encodable(req.data, "data")
+
     assets = _decode_assets(req.assets)
     _check_source_size("header_source", req.header_source)
     _check_source_size("footer_source", req.footer_source)

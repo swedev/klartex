@@ -7,7 +7,6 @@ template:
 
 document:
   title: "Faktura {{ data.invoice_number }}"
-  page_template: "{{ data.page_template | default('formal') }}"
 
 components:
   - type: invoice_header

@@ -102,7 +102,7 @@ def test_battery_survives_change_markers():
 def test_battery_survives_underlined_additions():
     data = {
         "lang": "sv",
-        "page_template": {"name": "clean", "diff_style": "underline"},
+        "page_template": {"header": "logo", "diff_style": "underline"},
         "body": [
             {"type": "text", "text": f"före {{+{phrase}+}} efter"} for phrase in BATTERY
         ],
@@ -189,10 +189,10 @@ def _two_page_body(heading: str) -> list[dict]:
 
 
 @requires_tools
-def test_formal_footer_carries_the_title_and_page_count():
+def test_title_footer_carries_the_title_and_page_count():
     data = {
         "lang": "sv",
-        "page_template": "formal",
+        "page_template": {"footer": {"variant": "pagenumber", "title": True}},
         "body": _two_page_body("Kallelse till stämma"),
     }
     pages = _pages(render(BLOCK_ENGINE_TEMPLATE, data))
@@ -209,10 +209,12 @@ def test_letterhead_settings_reach_the_printed_page():
         "page_template": {
             "header": {
                 "variant": "letterhead",
-                "org_name": "Föreningen Klartex",
-                "address": "Storgatan 1, 123 45 Stad",
-                "web": "klartex.se",
-                "email": "info@klartex.se",
+                "fields": {
+                    "org_name": "Föreningen Klartex",
+                    "address": "Storgatan 1, 123 45 Stad",
+                    "web": "klartex.se",
+                    "email": "info@klartex.se",
+                },
             }
         },
         "body": _two_page_body("Kallelse"),
@@ -254,7 +256,7 @@ def test_letterhead_contact_column_survives_empty_leading_fields(contact):
     data = {
         "lang": "sv",
         "page_template": {
-            "header": {"variant": "letterhead", "org_name": "Föreningen X", **contact}
+            "header": {"variant": "letterhead", "fields": {"org_name": "Föreningen X", **contact}}
         },
         "body": _two_page_body("Kallelse"),
     }

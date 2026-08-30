@@ -1,22 +1,9 @@
-%# Shared emission of the \kxfooter preamble call from a footer dict
-%# (page_template.footer or a template's own footer field, e.g. faktura).
-%# Keyval values are wrapped in braces so commas inside values stay intact;
-%# an address given as a list of lines is joined with \\.
+%# \kxfooter preamble call for a template-level footer dict (faktura's and
+%# kvitto's own footer field). The keyvals come from the same field table as
+%# the columns footer variant (page_templates.footer_keyvals).
 \BLOCK{macro emit_kxfooter(footer, page_numbers)}
 \usepackage{klartex-footer}
 \kxfooter{%
-\BLOCK{if footer.get('company')}company={\VAR{footer.company}},\BLOCK{endif}
-\BLOCK{if footer.get('address')}address={\VAR{footer.address | join('\\\\') if footer.address is not string else footer.address}},\BLOCK{endif}
-\BLOCK{if footer.get('seat')}seat={\VAR{footer.seat}},\BLOCK{endif}
-\BLOCK{if footer.get('phone')}phone={\VAR{footer.phone}},\BLOCK{endif}
-\BLOCK{if footer.get('email')}email={\VAR{footer.email}},\BLOCK{endif}
-\BLOCK{if footer.get('web')}web={\VAR{footer.web}},\BLOCK{endif}
-\BLOCK{if footer.get('bankgiro')}bankgiro={\VAR{footer.bankgiro}},\BLOCK{endif}
-\BLOCK{if footer.get('plusgiro')}plusgiro={\VAR{footer.plusgiro}},\BLOCK{endif}
-\BLOCK{if footer.get('iban')}iban={\VAR{footer.iban}},\BLOCK{endif}
-\BLOCK{if footer.get('bic')}bic={\VAR{footer.bic}},\BLOCK{endif}
-\BLOCK{if footer.get('org_number')}orgnr={\VAR{footer.org_number}},\BLOCK{endif}
-\BLOCK{if footer.get('vat_number')}vatnr={\VAR{footer.vat_number}},\BLOCK{endif}
-\BLOCK{if footer.get('f_tax')}ftax=true,\BLOCK{endif}
+\BLOCK{for kv in footer_keyvals(footer)}\VAR{kv},\BLOCK{endfor}
 pagenumbers=\BLOCK{if page_numbers}true\BLOCK{else}false\BLOCK{endif}}
 \BLOCK{endmacro}

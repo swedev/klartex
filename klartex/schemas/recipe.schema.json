@@ -37,9 +37,8 @@
           "description": "Jinja expression for the document title (rendered with data context)"
         },
         "page_template": {
-          "type": "string",
-          "default": "formal",
-          "description": "Page template to use. Can be a literal value (formal, clean, none) or a Jinja expression (e.g. {{ data.page_template | default('formal') }}) resolved at render time."
+          "type": "object",
+          "description": "The recipe's default page template as a slot object ({\"header\": …, \"footer\": …}). Omit for the recipe default (the letterhead header and the page-number footer with the document title). data.page_template overrides per slot at render time."
         },
         "metadata": {
           "type": "array",

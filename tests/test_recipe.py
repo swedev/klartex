@@ -32,9 +32,33 @@ class TestLoadRecipe:
         assert "heading" in component_types
         assert "agenda" in component_types
 
+    def test_partial_page_template_falls_back_per_slot(self, tmp_path):
+        """A recipe.yaml naming only one slot must get the recipe default for
+        the other, not crash at render with a KeyError (PR #80 review)."""
+        import shutil as _shutil
+
+        from klartex.page_templates import RECIPE_DEFAULT_SLOTS
+
+        recipe_dir = tmp_path / "budgetrapport"
+        _shutil.copytree(TEMPLATES_DIR / "budgetrapport", recipe_dir)
+        yaml_path = recipe_dir / "recipe.yaml"
+        text = yaml_path.read_text()
+        assert "\ndocument:\n" in text
+        yaml_path.write_text(text.replace(
+            "\ndocument:\n",
+            "\ndocument:\n  page_template: {header: null}\n",
+        ))
+        recipe = load_recipe(yaml_path)
+        assert recipe.document.page_template == {
+            "header": None,
+            "footer": RECIPE_DEFAULT_SLOTS["footer"],
+        }
+
     def test_recipe_document_section(self):
         recipe = load_recipe(TEMPLATES_DIR / "protokoll" / "recipe.yaml")
-        assert "formal" in recipe.document.page_template
+        from klartex.page_templates import RECIPE_DEFAULT_SLOTS
+
+        assert recipe.document.page_template == RECIPE_DEFAULT_SLOTS
         assert len(recipe.document.metadata) > 0
 
     def test_recipe_component_specs_resolved(self):

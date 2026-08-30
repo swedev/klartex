@@ -7,24 +7,31 @@ supplied by the caller, or empty. Structured settings keep applying to
 whichever slot stays predefined.
 
 Header variants are ``letterhead`` (organisation details and logo) and
-``logo`` (logo only); the footer variant is ``standard``. The names
-``formal``, ``clean`` and ``none`` are aliases for slot combinations.
+``logo`` (logo only); footer variants are ``pagenumber`` (page numbers,
+optionally with the document title) and ``columns`` (the multi-column
+footer with company, contact and payment details). A slot the payload
+leaves out takes the surface's default: the block engine has an empty header
+and the page-number footer, recipes the letterhead header and the
+page-number footer with the document title (``BLOCK_DEFAULT_SLOTS`` /
+``RECIPE_DEFAULT_SLOTS``).
 
-Page template data in the render request can be either a string (an alias)
-or an object::
-
-    "page_template": "formal"
+Page template data in the render request is an object::
 
     "page_template": {
         "header": {
             "variant": "letterhead",
-            "org_name": "Föreningen Klartex",
-            "email": "info@example.org"
+            "fields": {
+                "org_name": "Föreningen Klartex",
+                "email": "info@example.org"
+            }
         },
         "footer": {
-            "company": "Bolaget AB",
-            "org_number": "556123-4567",
-            "bankgiro": "1234-5678"
+            "variant": "columns",
+            "fields": {
+                "company": "Bolaget AB",
+                "org_number": "556123-4567",
+                "bankgiro": "1234-5678"
+            }
         },
         "page_numbers": false,
         "first_page_header": false,
@@ -33,8 +40,7 @@ or an object::
     }
 
 Custom slot sources are not part of the JSON payload; they travel as
-``render(header_source=…)`` / ``render(footer_source=…)`` keyword arguments,
-and ``page_template_source`` supplies one source for both slots.
+``render(header_source=…)`` / ``render(footer_source=…)`` keyword arguments.
 """
 
 from dataclasses import dataclass, field
@@ -51,57 +57,195 @@ PAGE_TEMPLATES_DIR = _ROOT / "page_templates"
 _fragment_env = make_env(jinja2.FileSystemLoader([str(PAGE_TEMPLATES_DIR)]))
 
 
-# Predefined slot variants: name -> description and the settings it accepts.
-HEADER_VARIANTS: dict[str, dict] = {
-    "letterhead": {
-        "description": (
-            "Organisationsuppgifter till vänster och logotyp till höger "
-            "i sidhuvudet"
-        ),
-        "settings": ("org_name", "address", "web", "email", "phone", "logo"),
+# ---------------------------------------------------------------------------
+# The slot model — the single definition of what a page template accepts.
+# A FieldType says how a value validates (JSON Schema); a Field is a named
+# use of a type in a variant: its description, and how it renders — the
+# header contract macro it sets, or the \kxfooter keyval it becomes. A
+# Variant composes named fields and its own settings. The loader validates
+# against the model, the composition include and the fragments render from
+# it, and ``page_template_schema()`` generates the JSON Schema subtree that
+# ``registry.py`` injects into every template schema.
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class FieldType:
+    """How a field value validates — a JSON Schema, composable with
+    ``|`` (union) and ``list_of()`` (array of)."""
+
+    schema: dict
+
+    def __or__(self, other: "FieldType") -> "FieldType":
+        mine = self.schema.get("oneOf", [self.schema])
+        theirs = other.schema.get("oneOf", [other.schema])
+        return FieldType({"oneOf": [*mine, *theirs]})
+
+    @property
+    def is_bool(self) -> bool:
+        return self.schema.get("type") == "boolean"
+
+
+def list_of(item: FieldType) -> FieldType:
+    return FieldType({"type": "array", "items": item.schema})
+
+
+FILENAME_PATTERN = r"^[^\\#$%&_{}~^]+$"
+
+TEXT = FieldType({"type": "string"})
+BOOL = FieldType({"type": "boolean"})
+FILENAME = FieldType({"type": "string", "pattern": FILENAME_PATTERN})
+
+
+@dataclass(frozen=True)
+class Field:
+    """A named, typed field of a variant."""
+
+    type: FieldType
+    description: str
+    #: Header contract macro the value is assigned to (``\renewcommand``).
+    macro: str | None = None
+    #: klartex-footer keyval the value becomes; defaults to the field name.
+    keyval: str | None = None
+
+    @property
+    def schema(self) -> dict:
+        return {**self.type.schema, "description": self.description}
+
+
+@dataclass(frozen=True)
+class Variant:
+    """A predefined slot variant: its settings and its typed fields."""
+
+    description: str
+    settings: dict[str, dict] = field(default_factory=dict)
+    fields: dict[str, Field] = field(default_factory=dict)
+    #: Fields that must be present and non-empty in the object form.
+    required: tuple[str, ...] = ()
+    fields_description: str = ""
+    empty_note: str = ""
+
+
+# One word, one type, one macro, in both header variants.
+LOGO = Field(
+    FILENAME,
+    "Logo file name, placed top right in the header. Must not contain LaTeX "
+    "special characters (\\ # $ % & _ { } ~ ^); looked up in asset_dir or "
+    "the working directory.",
+    macro="brandlogo",
+)
+
+TITLE_SETTING = {
+    "type": "boolean",
+    "default": False,
+    "description": "true prints the document title before the page number.",
+}
+
+HEADER_VARIANTS: dict[str, Variant] = {
+    "letterhead": Variant(
+        description="Organisation details on the left and the logo on the right of the header",
+        fields={
+            "org_name": Field(TEXT, "Organisation name, in bold at the top left.", macro="orgname"),
+            "address": Field(TEXT, "Postal address, under the organisation name.", macro="orgaddress"),
+            "web": Field(TEXT, "Website, in the header's right-hand text column.", macro="orgwebsite"),
+            "email": Field(TEXT, "Email address, in the header's right-hand text column.", macro="orgemail"),
+            "phone": Field(TEXT, "Phone number, in the header's right-hand text column.", macro="orgphone"),
+            "logo": LOGO,
+        },
         # The letterhead is built around the organisation name: the fragment
         # renders the whole details block only when \orgname is set, and the
         # header-space reclaim tests the same macro. Requiring it in the
         # object form keeps supplied contact details from being dropped.
-        "required": ("org_name",),
-    },
-    "logo": {
-        "description": "Endast logotyp till höger i sidhuvudet",
-        "settings": ("logo",),
-    },
+        required=("org_name",),
+        fields_description="The organisation details printed in the header. org_name is required — the header is built around the name.",
+        empty_note="Omitted details are not printed; with neither details nor logo the header's space is reclaimed.",
+    ),
+    "logo": Variant(
+        description="Logo only, on the right of the header",
+        fields={"logo": LOGO},
+        fields_description="The logo printed in the header.",
+        empty_note="Without a logo the header's space is reclaimed.",
+    ),
 }
 
-# Footer fields grouped by footer column, in render order
-FOOTER_COMPANY_FIELDS = ("company", "address", "seat")
-FOOTER_CONTACT_FIELDS = ("phone", "email", "web")
-FOOTER_PAYMENT_FIELDS = ("bankgiro", "plusgiro", "iban", "bic")
-FOOTER_ORG_FIELDS = ("org_number", "vat_number", "f_tax")
-FOOTER_FIELDS = (
-    FOOTER_COMPANY_FIELDS
-    + FOOTER_CONTACT_FIELDS
-    + FOOTER_PAYMENT_FIELDS
-    + FOOTER_ORG_FIELDS
-)
-
-FOOTER_VARIANTS: dict[str, dict] = {
-    "standard": {
-        "description": (
-            "Sidnummer centrerat i sidfoten, med dokumenttiteln före numret "
-            "när title är satt; kontaktfält ger en flerkolumnsfot"
-        ),
-        "settings": ("title",) + FOOTER_FIELDS,
-    },
+FOOTER_VARIANTS: dict[str, Variant] = {
+    "pagenumber": Variant(
+        description="Page number centred in the footer, preceded by the document title when title is set",
+        settings={"title": TITLE_SETTING},
+    ),
+    "columns": Variant(
+        description="Multi-column footer with company, contact and payment details from fields, and page numbers when the document runs past one page",
+        fields={
+            "company": Field(TEXT, "Company name"),
+            "address": Field(
+                TEXT | list_of(TEXT),
+                "Postal address as an array with one line per element, e.g. "
+                "['Storgatan 1', '123 45 Stad'] — line-broken like a postal "
+                "address. A string renders as a single line.",
+            ),
+            "seat": Field(TEXT, "Registered seat of the board, e.g. 'Malmö'"),
+            "phone": Field(TEXT, "Phone"),
+            "email": Field(TEXT, "Email"),
+            "web": Field(TEXT, "Website"),
+            "bankgiro": Field(TEXT, "Bankgiro number"),
+            "plusgiro": Field(TEXT, "Plusgiro number"),
+            "iban": Field(TEXT, "IBAN"),
+            "bic": Field(TEXT, "BIC/SWIFT"),
+            "org_number": Field(TEXT, "Organisation number", keyval="orgnr"),
+            "vat_number": Field(TEXT, "VAT registration number (SExxxxxxxxxx01)", keyval="vatnr"),
+            "f_tax": Field(BOOL, "true shows the line 'Godkänd för F-skatt' (approved for F-tax)", keyval="ftax"),
+        },
+        fields_description="Contact, company and payment details, laid out over the footer's columns.",
+    ),
 }
 
-_VARIANTS: dict[str, dict[str, dict]] = {
+_VARIANTS: dict[str, dict[str, Variant]] = {
     "header": HEADER_VARIANTS,
     "footer": FOOTER_VARIANTS,
 }
 
-# Slot-object keys that configure the slot rather than name a footer field.
-# ``page_numbers`` is reserved for the per-slot page-number policy and is
-# rejected until that policy is defined (#67).
-FOOTER_RESERVED_KEYS = ("variant", "title", "page_numbers")
+#: Footer fields whose presence means "payment details are in the footer".
+FOOTER_PAYMENT_FIELDS = ("bankgiro", "plusgiro", "iban", "bic")
+
+# Slot descriptions for the generated schema.
+_SLOT_TEXT = {
+    "header": {
+        "label": "The header",
+        "empty": "Empty header — nothing is printed at the top of the page.",
+        "bare": "A header variant with no fields",
+    },
+    "footer": {
+        "label": "The footer",
+        "empty": "Empty footer — nothing is printed at the bottom of the page.",
+        "bare": "A footer variant with no settings",
+    },
+}
+
+# Document-level settings on the page_template object.
+DOCUMENT_SETTINGS: dict[str, dict] = {
+    "page_numbers": {"type": "boolean", "description": "Show page numbers in the footer"},
+    "first_page_header": {"type": "boolean", "description": "Show the header on the first page"},
+    "font": {
+        "type": "string",
+        "description": "Document font (fontspec name, e.g. 'Futura'). Must be installed where rendering happens.",
+    },
+    "header_font": {
+        "type": "string",
+        "description": "Font for the header and footer. Default: same as font.",
+    },
+    "diff_style": {
+        "type": "string",
+        "enum": ["color", "underline"],
+        "default": "color",
+        "description": (
+            "How added text is marked: \"color\" (green text, default) or "
+            "\"underline\" (green underlined — the convention in change "
+            "documents, and the signal that survives black-and-white printing). "
+            "Removed text is struck through in both cases."
+        ),
+    },
+}
+
 
 # Header-space reclaim: emitted after both slots, so the \ifdefempty test at
 # preamble end sees the final value of the contract macros.
@@ -114,24 +258,16 @@ _HEADER_RECLAIM: dict[str, str] = {
     "logo": r"\ifdefempty{\brandlogo}{" + _RECLAIM_GUARDED,
 }
 
-# Aliases: legacy page-template names as slot combinations.
-_ALIASES: dict[str, dict] = {
-    "formal": {
-        "description": "Logo top-left, org name in header, page numbers in footer",
-        "header": ("letterhead", {}),
-        "footer": ("standard", {"title": True}),
-    },
-    "clean": {
-        "description": "Logo only in header, page numbers in footer, no org details",
-        "header": ("logo", {}),
-        "footer": ("standard", {}),
-    },
-    "none": {
-        "description": "No header, page numbers only in footer",
-        "header": (None, {}),
-        "footer": ("standard", {}),
-    },
+# Slot defaults per rendering surface, in payload syntax. A slot the payload
+# leaves out resolves to the surface's value here.
+BLOCK_DEFAULT_SLOTS: dict = {"header": None, "footer": "pagenumber"}
+RECIPE_DEFAULT_SLOTS: dict = {
+    "header": "letterhead",
+    "footer": {"variant": "pagenumber", "title": True},
 }
+
+# Top-level keys a page_template object may carry.
+PAGE_TEMPLATE_KEYS = ("header", "footer") + tuple(DOCUMENT_SETTINGS)
 
 _MISSING = object()
 
@@ -143,9 +279,6 @@ class SlotSpec:
     variant: str | None = None
     source: str | None = None
     settings: dict = field(default_factory=dict)
-    #: True when ``source`` is a monolithic source shared with the other slot,
-    #: so the composition emits it once.
-    shared_source: bool = False
 
     @property
     def is_custom(self) -> bool:
@@ -161,12 +294,8 @@ class SlotSpec:
 
     @property
     def fields(self) -> dict:
-        """Settings that are content fields, i.e. not slot configuration."""
-        return {
-            k: v
-            for k, v in self.settings.items()
-            if k not in FOOTER_RESERVED_KEYS
-        }
+        """The slot's content fields (the ``fields`` setting), never None."""
+        return self.settings.get("fields") or {}
 
     @property
     def has_fields(self) -> bool:
@@ -177,8 +306,6 @@ class SlotSpec:
 class PageTemplate:
     """Resolved page template definition."""
 
-    name: str
-    description: str = ""
     header: SlotSpec = field(default_factory=SlotSpec)
     footer: SlotSpec = field(default_factory=SlotSpec)
     page_numbers: bool = True
@@ -195,6 +322,21 @@ class PageTemplate:
         return any(fields.get(f) for f in FOOTER_PAYMENT_FIELDS)
 
     @property
+    def header_macros(self) -> list[tuple[str, str]]:
+        """``(macro, value)`` for every header field that is set, in the
+        field table's order — the ``\\renewcommand``s emitted before the
+        header fragment."""
+        if not self.header.is_predefined:
+            return []
+        fields = self.header.fields
+        variant = HEADER_VARIANTS[self.header.variant]
+        return [
+            (typ.macro, fields[name])
+            for name, typ in variant.fields.items()
+            if typ.macro and fields.get(name)
+        ]
+
+    @property
     def header_fragment(self) -> str:
         """The rendered header variant fragment, empty unless predefined."""
         if not self.header.is_predefined:
@@ -206,7 +348,15 @@ class PageTemplate:
         """The rendered footer variant fragment, empty unless predefined."""
         if not self.footer.is_predefined:
             return ""
-        return render_fragment("footer", self.footer.variant, self.footer.settings)
+        return render_fragment(
+            "footer",
+            self.footer.variant,
+            {
+                **self.footer.settings,
+                "page_numbers": self.page_numbers,
+                "keyvals": footer_keyvals(self.footer.fields),
+            },
+        )
 
     @property
     def header_reclaim(self) -> str:
@@ -235,32 +385,42 @@ def _check_variant(slot: str, variant: str) -> None:
 
 def _check_settings(slot: str, variant: str, settings: dict) -> None:
     spec = _VARIANTS[slot][variant]
-    allowed = spec["settings"]
-    for key in spec.get("required", ()):
-        if not settings.get(key):
-            raise ValueError(
-                f"The {variant} {slot} variant requires '{key}' when given as "
-                f"an object. Use the variant name on its own for an empty "
-                f"{variant} {slot}."
-            )
+    allowed = tuple(spec.settings) + (("fields",) if spec.fields else ())
     for key in settings:
-        if slot == "footer" and key == "page_numbers":
-            raise ValueError(
-                "'page_numbers' on the footer slot is reserved and not "
-                "accepted yet"
-            )
         if key not in allowed:
             raise ValueError(
                 f"Unknown setting '{key}' for the {variant} {slot} variant. "
                 f"Allowed: {', '.join(allowed)}"
             )
+    fields = settings.get("fields")
+    if fields is not None:
+        if not isinstance(fields, dict):
+            raise ValueError(
+                f"'fields' on the {variant} {slot} variant must be an object"
+            )
+        for key in fields:
+            if key not in spec.fields:
+                raise ValueError(
+                    f"Unknown field '{key}' for the {variant} {slot} variant. "
+                    f"Allowed: {', '.join(spec.fields)}"
+                )
+    for key in spec.required:
+        if not (fields or {}).get(key):
+            raise ValueError(
+                f"The {variant} {slot} variant requires fields.{key} when "
+                f"given as an object. Use the variant name on its own for an "
+                f"empty {variant} {slot}."
+            )
 
 
-def _resolve_slot(slot: str, value, default: tuple[str | None, dict]) -> SlotSpec:
-    """Resolve one slot value from the payload into a SlotSpec."""
+def _resolve_slot(slot: str, value, default) -> SlotSpec:
+    """Resolve one slot value from the payload into a SlotSpec.
+
+    ``default`` is the surface's value for the slot, in payload syntax, used
+    when the payload leaves the slot out.
+    """
     if value is _MISSING:
-        variant, settings = default
-        return SlotSpec(variant=variant, settings=dict(settings))
+        value = default
 
     if value is None:
         return SlotSpec()
@@ -272,12 +432,10 @@ def _resolve_slot(slot: str, value, default: tuple[str | None, dict]) -> SlotSpe
     if isinstance(value, dict):
         variant = value.get("variant")
         if variant is None:
-            if slot == "header":
-                raise ValueError(
-                    "A header slot object must include 'variant' "
-                    f"(one of: {_variant_names('header')})"
-                )
-            variant = "standard"
+            raise ValueError(
+                f"A {slot} slot object must include 'variant' "
+                f"(one of: {_variant_names(slot)})"
+            )
         _check_variant(slot, variant)
         settings = {k: v for k, v in value.items() if k != "variant"}
         _check_settings(slot, variant, settings)
@@ -290,38 +448,46 @@ def _resolve_slot(slot: str, value, default: tuple[str | None, dict]) -> SlotSpe
 
 
 def load_page_template(
-    spec: str | dict | None = None,
+    spec: dict | None = None,
     *,
-    default: str = "none",
+    defaults: dict | None = None,
     header_source: str | None = None,
     footer_source: str | None = None,
-    page_template_source: str | None = None,
 ) -> PageTemplate:
     """Resolve a page template from its payload value and any custom sources.
 
     Args:
-        spec: An alias name, a slot object, or None for the engine default.
-        default: Alias whose slot combination is used when ``spec`` names
-                 none — the engine's own default.
+        spec: The ``page_template`` object from the payload, or None.
+        defaults: Slot values, in payload syntax, for the slots ``spec``
+                 leaves out — the rendering surface's own default
+                 (``BLOCK_DEFAULT_SLOTS`` when omitted).
         header_source: Raw ``.tex.jinja`` content owning the header slot.
         footer_source: Raw ``.tex.jinja`` content owning the footer slot.
-        page_template_source: Raw content owning both slots (monolithic).
-                 In this mode the payload's slot and chrome keys are ignored
-                 and an unknown or missing alias name is tolerated; only the
-                 document-level keys are read.
 
     Returns:
         Resolved PageTemplate.
 
     Raises:
-        ValueError: If an alias, variant or setting is unknown.
+        ValueError: If ``spec`` is not an object, or a key, variant or
+                    setting is unknown.
     """
-    if isinstance(spec, dict):
+    if spec is None:
+        overrides: dict = {}
+    elif isinstance(spec, dict):
         overrides = spec
-        name = spec.get("name")
     else:
-        overrides = {}
-        name = spec
+        raise ValueError(
+            "page_template must be an object with header/footer slots, "
+            f"got {type(spec).__name__}"
+        )
+    unknown = [k for k in overrides if k not in PAGE_TEMPLATE_KEYS]
+    if unknown:
+        raise ValueError(
+            f"Unknown page_template key(s): {', '.join(unknown)}. "
+            f"Allowed: {', '.join(PAGE_TEMPLATE_KEYS)}"
+        )
+    if defaults is None:
+        defaults = BLOCK_DEFAULT_SLOTS
 
     # Document-level settings are not chrome, so they apply in every mode,
     # including alongside a custom slot source.
@@ -329,35 +495,15 @@ def load_page_template(
     header_font = overrides.get("header_font") or font
     diff_style = overrides.get("diff_style") or "color"
 
-    if page_template_source is not None:
-        # Monolithic source: it owns both slots, so nothing about the chrome
-        # is read from the payload and an unknown name is tolerated.
-        return PageTemplate(
-            name="custom",
-            header=SlotSpec(source=page_template_source),
-            footer=SlotSpec(source=page_template_source, shared_source=True),
-            font=font,
-            header_font=header_font,
-            diff_style=diff_style,
-        )
-
-    alias_name = name if name is not None else default
-    if alias_name not in _ALIASES:
-        available = ", ".join(sorted(_ALIASES))
-        raise ValueError(
-            f"Unknown page template '{alias_name}'. Available: {available}"
-        )
-    alias = _ALIASES[alias_name]
-
     if header_source is not None:
         header = SlotSpec(source=header_source)
     else:
-        header = _resolve_slot("header", overrides.get("header", _MISSING), alias["header"])
+        header = _resolve_slot("header", overrides.get("header", _MISSING), defaults["header"])
 
     if footer_source is not None:
         footer = SlotSpec(source=footer_source)
     else:
-        footer = _resolve_slot("footer", overrides.get("footer", _MISSING), alias["footer"])
+        footer = _resolve_slot("footer", overrides.get("footer", _MISSING), defaults["footer"])
 
     page_numbers = overrides.get("page_numbers")
     if page_numbers is None:
@@ -369,8 +515,6 @@ def load_page_template(
         first_page_header = not header.is_empty
 
     return PageTemplate(
-        name=alias_name,
-        description=alias["description"],
         header=header,
         footer=footer,
         page_numbers=page_numbers,
@@ -379,6 +523,89 @@ def load_page_template(
         header_font=header_font,
         diff_style=diff_style,
     )
+
+
+def footer_keyvals(fields: dict, variant: str = "columns") -> list[str]:
+    """``key={value}`` strings for ``\\kxfooter``, one per set field of the
+    footer variant, in the variant's field order. Values are expected to be
+    LaTeX-escaped already; a list value (lines) is joined with ``\\\\``."""
+    out = []
+    for name, typ in FOOTER_VARIANTS[variant].fields.items():
+        value = fields.get(name)
+        if not value:
+            continue
+        keyval = typ.keyval or name
+        if typ.type.is_bool:
+            out.append(f"{keyval}=true")
+            continue
+        if isinstance(value, (list, tuple)):
+            value = "\\\\".join(str(v) for v in value)
+        out.append(f"{keyval}={{{value}}}")
+    return out
+
+
+def _slot_schema(slot: str) -> dict:
+    variants = _VARIANTS[slot]
+    text = _SLOT_TEXT[slot]
+    bare = "; ".join(f"'{name}' ({v.description[0].lower() + v.description[1:]})" for name, v in variants.items())
+    forms: list[dict] = [
+        {"type": "null", "description": text["empty"]},
+        {"type": "string", "enum": list(variants), "description": f"{text['bare']}: {bare}."},
+    ]
+    for name, v in variants.items():
+        props: dict = {"variant": {"const": name}}
+        required = ["variant"]
+        for setting, schema in v.settings.items():
+            props[setting] = dict(schema)
+        if v.fields:
+            fields_schema: dict = {
+                "type": "object",
+                "additionalProperties": False,
+                "description": v.fields_description,
+                "properties": {name: dict(typ.schema) for name, typ in v.fields.items()},
+            }
+            if v.required:
+                fields_schema["required"] = list(v.required)
+                required.append("fields")
+            props["fields"] = fields_schema
+        description = v.description + "."
+        if v.empty_note:
+            description += " " + v.empty_note
+        forms.append({
+            "type": "object",
+            "description": description,
+            "required": required,
+            "additionalProperties": False,
+            "properties": props,
+        })
+    return {
+        "description": f"{text['label']} slot: null for empty, a variant name, or an object with variant and the variant's settings.",
+        "oneOf": forms,
+    }
+
+
+def page_template_schema(default_text: str) -> dict:
+    """The JSON Schema subtree for ``page_template``, generated from the slot
+    model. ``default_text`` names the surface's default for the description
+    (what a left-out slot resolves to)."""
+    return {
+        "description": (
+            "Page template as two independent slots, header and footer. Each "
+            "slot is null for empty, a variant name, or an object with variant "
+            f"and settings. A slot left out takes the surface's default — {default_text}."
+        ),
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            **{key: dict(schema) for key, schema in DOCUMENT_SETTINGS.items()},
+            "header": _slot_schema("header"),
+            "footer": _slot_schema("footer"),
+        },
+    }
+
+
+BLOCK_DEFAULT_TEXT = "an empty header and the page-number footer"
+RECIPE_DEFAULT_TEXT = "the letterhead header and the page-number footer with the document title"
 
 
 def read_slot_source(slot: str, variant: str) -> str:
@@ -397,48 +624,6 @@ def render_fragment(slot: str, variant: str, settings: dict | None = None) -> st
     return _fragment_env.from_string(source).render(**(settings or {}))
 
 
-def read_page_template_source(name: str) -> str:
-    """Compose the full ``.tex.jinja`` source for a built-in alias.
-
-    The starting point for "copy a built-in and edit it": the alias's header
-    and footer fragments plus its header-space reclaim block.
-
-    Raises:
-        FileNotFoundError: If the name is not a built-in alias.
-    """
-    if name not in _ALIASES:
-        raise FileNotFoundError(f"No built-in page template named '{name}'")
-    page_template = load_page_template(name)
-    parts = [
-        page_template.header_fragment,
-        page_template.footer_fragment,
-        page_template.header_reclaim,
-    ]
-    return "\n".join(p for p in parts if p)
-
-
-def list_page_templates() -> list[dict]:
-    """Return all built-in page-template aliases with metadata.
-
-    Returns:
-        List of dicts with name, description, and defaults.
-    """
-    listed = []
-    for name, info in sorted(_ALIASES.items()):
-        resolved = load_page_template(name)
-        listed.append(
-            {
-                "name": name,
-                "description": info["description"],
-                "defaults": {
-                    "page_numbers": resolved.page_numbers,
-                    "first_page_header": resolved.first_page_header,
-                },
-            }
-        )
-    return listed
-
-
 def list_slot_variants() -> dict[str, list[dict]]:
     """Return the predefined variants available per slot.
 
@@ -449,8 +634,9 @@ def list_slot_variants() -> dict[str, list[dict]]:
         slot: [
             {
                 "name": variant,
-                "description": info["description"],
-                "settings": list(info["settings"]),
+                "description": info.description,
+                "settings": list(info.settings),
+                "fields": list(info.fields),
             }
             for variant, info in variants.items()
         ]

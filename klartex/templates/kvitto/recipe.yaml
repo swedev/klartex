@@ -7,7 +7,6 @@ template:
 
 document:
   title: "Kvitto {{ data.receipt_number }}"
-  page_template: "{{ data.page_template | default('formal') }}"
   metadata:
     - field: payment_method
       label: "Betalsätt"

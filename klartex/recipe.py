@@ -19,7 +19,7 @@ from klartex.components import (
     extract_component_data,
     get_component,
 )
-from klartex.page_templates import load_page_template
+from klartex.page_templates import RECIPE_DEFAULT_SLOTS, load_page_template
 
 # Path to the recipe format schema
 _SCHEMA_PATH = Path(__file__).resolve().parent / "schemas" / "recipe.schema.json"
@@ -51,7 +51,9 @@ class RecipeDocument:
     """Document-level settings from a recipe."""
 
     title: str = ""
-    page_template: str = "formal"
+    #: Slot object, in payload syntax, for the slots data.page_template
+    #: leaves out.
+    page_template: dict = field(default_factory=lambda: dict(RECIPE_DEFAULT_SLOTS))
     metadata: list[dict[str, Any]] = field(default_factory=list)
 
 
@@ -98,7 +100,9 @@ def load_recipe(path: Path) -> Recipe:
     doc_raw = raw.get("document", {})
     document = RecipeDocument(
         title=doc_raw.get("title", ""),
-        page_template=doc_raw.get("page_template", "formal"),
+        # A partial slot object (one slot named) falls back to the recipe
+        # default for the other slot, so load_page_template always gets both.
+        page_template={**RECIPE_DEFAULT_SLOTS, **(doc_raw.get("page_template") or {})},
         metadata=doc_raw.get("metadata", []),
     )
 
@@ -134,7 +138,6 @@ def load_recipe(path: Path) -> Recipe:
 def prepare_recipe_context(
     recipe: Recipe,
     data: dict,
-    page_template_source: str | None = None,
     *,
     header_source: str | None = None,
     footer_source: str | None = None,
@@ -148,8 +151,6 @@ def prepare_recipe_context(
     Args:
         recipe: Parsed recipe
         data: Template data (already escaped for LaTeX)
-        page_template_source: Optional raw .tex.jinja content owning both
-            page-template slots.
         header_source: Optional raw .tex.jinja content owning the header slot.
         footer_source: Optional raw .tex.jinja content owning the footer slot.
 
@@ -168,28 +169,6 @@ def prepare_recipe_context(
         rendered_title = title_template.render(data=data)
     except jinja2.TemplateError:
         rendered_title = recipe.document.title
-
-    # Resolve page template. A string in the data goes through the recipe's
-    # own expression (e.g. {{ data.page_template | default('formal') }}); a
-    # dict is passed through as-is, and the alias it is layered on comes from
-    # the same expression evaluated without it, so the recipe's default
-    # applies to whichever slot the dict leaves alone.
-    is_slot_object = isinstance(data.get("page_template"), dict)
-    expression_data = (
-        {k: v for k, v in data.items() if k != "page_template"}
-        if is_slot_object
-        else data
-    )
-    try:
-        pt_template = title_env.from_string(recipe.document.page_template)
-        recipe_page_template = pt_template.render(data=expression_data)
-    except jinja2.TemplateError:
-        recipe_page_template = recipe.document.page_template
-
-    if is_slot_object:
-        rendered_page_template: str | dict = data["page_template"]
-    else:
-        rendered_page_template = recipe_page_template
 
     # Resolve metadata fields
     resolved_metadata = []
@@ -245,12 +224,13 @@ def prepare_recipe_context(
             seen.add(comp.spec.sty_package)
 
     # Resolve page template
+    # Resolve page template: the recipe's slot object fills in whatever
+    # data.page_template leaves out.
     page_tmpl = load_page_template(
-        rendered_page_template,
-        default=recipe_page_template,
+        data.get("page_template"),
+        defaults=recipe.document.page_template,
         header_source=header_source,
         footer_source=footer_source,
-        page_template_source=page_template_source,
     )
 
     return {

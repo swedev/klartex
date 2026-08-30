@@ -7,7 +7,6 @@ template:
 
 document:
   title: "{{ data.title }}"
-  page_template: "{{ data.page_template | default('formal') }}"
   metadata:
     - label: "Period:"
       field: period

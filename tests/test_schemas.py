@@ -50,9 +50,9 @@ def test_protokoll_schema_documents_sub_items():
     assert sub_items["type"] == "array"
     assert sub_items["items"] == {"type": "string"}
     description = sub_items["description"]
-    assert "numrerade decimalt" in description
-    assert "diskussion och beslut" in description
-    assert "Inline-markup" in description
+    assert "decimal sub-numbering" in description
+    assert "discussion and decision" in description
+    assert "Inline markup" in description
 
     example_path = (
         Path(__file__).resolve().parent.parent
@@ -110,12 +110,14 @@ def _with_body(page_template):
 @pytest.mark.parametrize(
     "page_template",
     [
-        {"header": "logo", "footer": {"variant": "standard", "company": "X", "title": True}},
+        {"header": "logo", "footer": {"variant": "pagenumber", "title": True}},
+        {"header": "logo", "footer": "columns"},
         {"header": None, "footer": None},
-        {"name": "clean", "footer": {"company": "X"}},
-        {"header": {"variant": "letterhead", "org_name": "Föreningen", "logo": "logo.pdf"}},
-        {"header": {"variant": "logo", "logo": "logo.pdf"}},
-        {"footer": "standard"},
+        {"header": "logo", "footer": {"variant": "columns", "fields": {"company": "X"}}},
+        {"header": {"variant": "letterhead", "fields": {"org_name": "Föreningen", "logo": "logo.pdf"}}},
+        {"header": {"variant": "logo", "fields": {"logo": "logo.pdf"}}},
+        {"header": {"variant": "logo"}},
+        {"footer": "pagenumber"},
     ],
 )
 def test_block_schema_accepts_slot_forms(page_template):
@@ -127,10 +129,17 @@ def test_block_schema_accepts_slot_forms(page_template):
     [
         {"header": "standard"},
         {"header": {"org_name": "X"}},
-        {"header": {"variant": "logo", "org_name": "X"}},
+        {"header": {"variant": "logo", "fields": {"org_name": "X"}}},
+        {"header": {"variant": "letterhead", "org_name": "X"}},
         {"footer": {"variant": "letterhead"}},
-        {"footer": {"page_numbers": True}},
-        {"footer": {"bogus": 1}},
+        {"footer": {"variant": "pagenumber", "page_numbers": True}},
+        {"footer": {"variant": "pagenumber", "bogus": 1}},
+        {"footer": {"variant": "columns", "company": "X"}},
+        {"footer": {"variant": "columns", "fields": {"bogus": 1}}},
+        {"footer": {"variant": "columns", "title": True}},
+        {"footer": {"variant": "pagenumber", "fields": {"company": "X"}}},
+        {"footer": {"title": True}},
+        {"footer": {"fields": {"company": "X"}}},
         {"header": "letterhead", "bogus": 1},
     ],
 )
@@ -152,42 +161,35 @@ def _strip_descriptions(node):
     return node
 
 
-def _object_form(schema):
-    return next(
-        form
-        for form in schema["properties"]["page_template"]["oneOf"]
-        if form.get("type") == "object"
-    )
+@pytest.mark.parametrize("template_name", RECIPE_SCHEMA_NAMES + ("_block",))
+def test_every_template_schema_carries_the_generated_page_template(template_name):
+    """The page_template subtree is generated from the slot model and injected
+    by the registry; the schema files only hold a placeholder."""
+    schema = get_registry()[template_name].schema
+    pt = schema["properties"]["page_template"]
+    assert "$comment" not in pt
+    assert pt["properties"]["header"]["oneOf"][1]["enum"] == ["letterhead", "logo"]
+    assert pt["properties"]["footer"]["oneOf"][1]["enum"] == ["pagenumber", "columns"]
+    assert pt["properties"]["diff_style"]["enum"] == ["color", "underline"]
 
 
-@pytest.mark.parametrize("template_name", RECIPE_SCHEMA_NAMES)
-@pytest.mark.parametrize("slot", ["header", "footer"])
-def test_recipe_slot_definitions_match_block_engine(template_name, slot):
-    """The eight schemas hand-duplicate the slot definitions; they must agree
-    on structure, so a slot added on one path is not missing on the other."""
-    block_slot = _object_form(
-        json.loads(
-            (Path(__file__).parent.parent / "klartex/schemas/block_engine.schema.json").read_text(
-                encoding="utf-8"
-            )
-        )
-    )["properties"][slot]
-    recipe_slot = _object_form(
-        json.loads(
-            (TEMPLATES_DIR / template_name / "schema.json").read_text(encoding="utf-8")
-        )
-    )["properties"][slot]
-    assert _strip_descriptions(recipe_slot) == _strip_descriptions(block_slot)
+def test_schema_files_hold_only_the_placeholder():
+    for path in [Path(__file__).parent.parent / "klartex/schemas/block_engine.schema.json"] + [
+        TEMPLATES_DIR / name / "schema.json" for name in RECIPE_SCHEMA_NAMES
+    ]:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+        assert set(raw["properties"]["page_template"]) == {"$comment"}, path
 
 
 @pytest.mark.parametrize(
     "page_template",
     [
-        {"header": {"variant": "letterhead", "email": "a@b.se"}},
-        {"header": {"variant": "letterhead", "address": "Storgatan 1"}},
-        {"header": {"variant": "letterhead", "org_name": "X", "logo": "my_logo.pdf"}},
-        {"header": {"variant": "letterhead", "org_name": "X", "logo": "a&b.pdf"}},
-        {"header": {"variant": "logo", "logo": "my_logo.pdf"}},
+        {"header": {"variant": "letterhead", "fields": {"email": "a@b.se"}}},
+        {"header": {"variant": "letterhead", "fields": {"address": "Storgatan 1"}}},
+        {"header": {"variant": "letterhead"}},
+        {"header": {"variant": "letterhead", "fields": {"org_name": "X", "logo": "my_logo.pdf"}}},
+        {"header": {"variant": "letterhead", "fields": {"org_name": "X", "logo": "a&b.pdf"}}},
+        {"header": {"variant": "logo", "fields": {"logo": "my_logo.pdf"}}},
     ],
 )
 def test_block_schema_rejects_unrenderable_headers(page_template):
@@ -205,6 +207,6 @@ def test_block_schema_accepts_safe_logo_names(logo):
     """The pattern must not reject ordinary paths or non-ASCII names, which
     need no escaping."""
     jsonschema.validate(
-        _with_body({"header": {"variant": "letterhead", "org_name": "X", "logo": logo}}),
+        _with_body({"header": {"variant": "letterhead", "fields": {"org_name": "X", "logo": logo}}}),
         _block_schema(),
     )

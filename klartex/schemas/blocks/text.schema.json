@@ -10,12 +10,12 @@
     "type": { "type": "string", "const": "text" },
     "text": {
       "type": "string",
-      "description": "Styckets text. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} (grön) och [-struken text-] (röd genomstruken)."
+      "description": "The paragraph text. Inline markup applies: **bold**, *italic*, `code`, \"quotes\", and the change markers {+added text+} (green) / [-removed text-] (red strikethrough)."
     },
     "revision": {
       "type": "string",
       "enum": ["added", "removed"],
-      "description": "Markera hela stycket som tillagt ('added', grön text) eller struket ('removed', röd genomstruken text) i en ändringsmarkering, t.ex. en stadgeändring. För delar av ett stycke, använd inline-markörerna {+…+} / [-…-] i text i stället."
+      "description": "Mark the whole paragraph as added ('added', green text) or removed ('removed', red strikethrough) in a change-marked document, e.g. a bylaw amendment. For parts of a paragraph, use the inline markers {+…+} / [-…-] in text instead."
     },
     "spacing_before": {
       "type": "string",

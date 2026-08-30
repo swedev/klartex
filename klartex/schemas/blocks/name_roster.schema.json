@@ -8,7 +8,7 @@
   "additionalProperties": false,
   "properties": {
     "type": { "type": "string", "const": "name_roster" },
-    "title": { "type": "string", "description": "Table heading. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} / [-struken text-]. Radbrytning blir mellanslag — fältet är enradigt." },
+    "title": { "type": "string", "description": "Table heading. Inline markup applies: **bold**, *italic*, `code`, \"quotes\", and the change markers {+added text+} (green) / [-removed text-] (red strikethrough). A newline becomes a space — the field is single-line." },
     "people": {
       "type": "array",
       "description": "People entries",
@@ -17,9 +17,9 @@
         "required": ["name", "role"],
         "additionalProperties": false,
         "properties": {
-          "name": { "type": "string", "description": "Person name. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} / [-struken text-]. Radbrytning blir mellanslag — fältet är enradigt." },
-          "role": { "type": "string", "description": "Role or title. Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} / [-struken text-]. Radbrytning blir radbrytning inom cellen." },
-          "note": { "type": "string", "description": "Additional note (e.g. term info). Inline-markup gäller: **fet**, *kursiv*, `kod`, \"citat\", samt ändringsmarkering {+tillagd text+} / [-struken text-]. Radbrytning blir mellanslag — fältet är enradigt." }
+          "name": { "type": "string", "description": "Person name. Inline markup applies: **bold**, *italic*, `code`, \"quotes\", and the change markers {+added text+} (green) / [-removed text-] (red strikethrough). A newline becomes a space — the field is single-line." },
+          "role": { "type": "string", "description": "Role or title. Inline markup applies: **bold**, *italic*, `code`, \"quotes\", and the change markers {+added text+} (green) / [-removed text-] (red strikethrough). A newline becomes a line break inside the cell." },
+          "note": { "type": "string", "description": "Additional note (e.g. term info). Inline markup applies: **bold**, *italic*, `code`, \"quotes\", and the change markers {+added text+} (green) / [-removed text-] (red strikethrough). A newline becomes a space — the field is single-line." }
         }
       },
       "minItems": 1

@@ -39,7 +39,7 @@ jobs:
       - name: Run tests
         shell: bash
         run: |
-          pytest -v -rs --tb=short 2>&1 | tee test-output.txt
+          pytest -v -rs --tb=short -n auto 2>&1 | tee test-output.txt
 
       - name: Verify no xelatex skips
         run: |

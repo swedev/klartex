@@ -145,7 +145,7 @@ jobs:
               python3 -m venv /tmp/venv
               /tmp/venv/bin/pip install ".[dev]"
               export PATH=/usr/local/texlive-bin:$PATH
-              /tmp/venv/bin/pytest -v -rs --tb=short 2>&1 | tee /tmp/test-output.txt
+              /tmp/venv/bin/pytest -v -rs --tb=short -n auto 2>&1 | tee /tmp/test-output.txt
               ! grep -q "SKIPPED.*xelatex" /tmp/test-output.txt'
 
       # The unpacked copy in the Docker store is dead weight once the suite

@@ -5,8 +5,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-# Run the full test suite (requires xelatex on PATH)
-pytest
+# Run the full test suite (requires xelatex on PATH); -n auto spreads the ~80
+# xelatex compilations over all cores (pytest-xdist, in the dev extras)
+pytest -n auto
 
 # Run a single test
 pytest tests/test_block_engine.py::TestPrepareBlockContext::test_default_page_template

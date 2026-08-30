@@ -74,7 +74,7 @@ jobs:
         shell: bash
         run: |
           export PATH=/usr/local/texlive-bin:$PATH
-          /tmp/venv/bin/pytest -v -rs --tb=short 2>&1 | tee /tmp/test-output.txt
+          /tmp/venv/bin/pytest -v -rs --tb=short -n auto 2>&1 | tee /tmp/test-output.txt
 
       - name: Verify no xelatex skips
         run: |

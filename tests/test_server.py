@@ -8,6 +8,7 @@ the run if these tests skip.
 
 import base64
 import importlib.metadata
+import re
 import shutil
 import sys
 import threading
@@ -29,6 +30,18 @@ runner = CliRunner()
 
 HAS_XELATEX = shutil.which("xelatex") is not None
 needs_xelatex = pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+
+
+# Typer forces Rich's terminal mode when GITHUB_ACTIONS is set, and Rich's
+# highlighter then splits an option name across escape sequences
+# (`\x1b[1;36m-\x1b[0m\x1b[1;36m-host\x1b[0m`), so a plain substring check
+# passes locally and fails on CI. Assert against the stripped text.
+_ANSI_RE = re.compile(r"\x1b\[[0-9;]*[a-zA-Z]")
+
+
+def plain(text: str) -> str:
+    """The visible characters of a possibly styled terminal output."""
+    return _ANSI_RE.sub("", text)
 
 
 def b64(data: bytes | str) -> str:
@@ -626,8 +639,8 @@ def test_render_third_concurrent_request_gets_503(render_slots, monkeypatch):
 def test_serve_help_lists_the_options():
     result = runner.invoke(cli_app, ["serve", "--help"])
     assert result.exit_code == 0
-    assert "--host" in result.output
-    assert "--port" in result.output
+    assert "--host" in plain(result.output)
+    assert "--port" in plain(result.output)
 
 
 def test_serve_without_the_extra_explains_how_to_install_it(monkeypatch):
@@ -637,7 +650,7 @@ def test_serve_without_the_extra_explains_how_to_install_it(monkeypatch):
     result = runner.invoke(cli_app, ["serve"])
 
     assert result.exit_code == 1
-    assert "klartex[serve]" in result.output
+    assert "klartex[serve]" in plain(result.output)
 
 
 def test_serve_propagates_an_unrelated_import_error(monkeypatch):
@@ -647,4 +660,4 @@ def test_serve_propagates_an_unrelated_import_error(monkeypatch):
     result = runner.invoke(cli_app, ["serve"])
 
     assert result.exit_code != 0
-    assert "klartex[serve]" not in result.output
+    assert "klartex[serve]" not in plain(result.output)

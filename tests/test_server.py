@@ -8,8 +8,10 @@ the run if these tests skip.
 
 import base64
 import importlib.metadata
+import pathlib
 import re
 import shutil
+import subprocess
 import sys
 import threading
 
@@ -485,6 +487,79 @@ def test_oversized_asset_is_rejected():
     detail = r.json()["detail"]
     assert detail["type"] == "input_error"
     assert "exceeds limit" in detail["message"]
+
+
+# --- Font files as assets ---------------------------------------------------
+
+FONT_FILE = "lmroman10-regular.otf"
+
+
+def post_font_document(font, **extra):
+    """POST a block document whose page_template carries `font`."""
+    return client.post(
+        "/render",
+        json={
+            "template": "_block",
+            "data": {
+                "body": [{"type": "text", "text": "Text med **fet** stil."}],
+                "page_template": {"font": font},
+            },
+            **extra,
+        },
+    )
+
+
+@needs_xelatex
+def test_font_file_rides_the_assets_map():
+    """A file-form font compiles from a face sent inline — the designed path
+    for a font the render environment does not install."""
+    located = subprocess.run(
+        ["kpsewhich", FONT_FILE], capture_output=True, text=True
+    ).stdout.strip()
+    assert located, f"kpsewhich could not locate {FONT_FILE}"
+    face = base64.b64encode(pathlib.Path(located).read_bytes()).decode()
+
+    r = post_font_document({"file": FONT_FILE}, assets={FONT_FILE: face})
+    assert r.status_code == 200, r.text
+    assert r.content[:4] == b"%PDF"
+
+
+def test_font_file_absent_from_the_assets_is_a_structured_400():
+    """The core's preflight ValueError reaches the caller as input_error,
+    naming the file — no xelatex needed to say the font never arrived."""
+    r = post_font_document({"file": FONT_FILE}, assets={"logo.png": PNG_1PX})
+    assert r.status_code == 400, r.text
+    detail = r.json()["detail"]
+    assert detail["type"] == "input_error"
+    assert FONT_FILE in detail["message"]
+
+
+def test_font_file_never_comes_from_the_server_working_directory(tmp_path, monkeypatch):
+    """A font is only ever what the request sent.
+
+    A file-form font with no assets beside it would otherwise resolve against
+    the process working directory, so a font file that happens to sit there
+    would be embedded although no caller supplied it. The endpoint gives the
+    request a root of its own instead, and the face is simply missing from it.
+    """
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / FONT_FILE).write_bytes(b"a font file the caller never sent")
+
+    r = post_font_document({"file": FONT_FILE})
+    assert r.status_code == 400, r.text
+    detail = r.json()["detail"]
+    assert detail["type"] == "input_error"
+    assert FONT_FILE in detail["message"]
+
+
+def test_font_file_name_the_schema_rejects_never_reaches_the_assets_rule():
+    """The schema's font-file pattern is stricter than ASSET_NAME_RE, so a
+    name the endpoint would accept as an asset can still be a bad font name."""
+    bad = "lmroman10_regular.otf"
+    assert render_module.ASSET_NAME_RE.match(bad)
+    r = post_font_document({"file": bad}, assets={bad: PNG_1PX})
+    assert r.status_code == 400, r.text
+    assert r.json()["detail"]["type"] == "validation_error"
 
 
 def test_too_many_assets_is_rejected():

@@ -54,6 +54,8 @@ Arial, Courier New, Georgia, Times New Roman, Trebuchet MS, Verdana, EB Garamond
 
 The authoritative list is the `font` / `header_font` schema descriptions (`klartex schema _block`); the image build fails if any family is missing. Other fontspec names work only where that font happens to be installed.
 
+A font outside the list can travel with the call instead: `font` and `header_font` also take an object of file names — `{"file": "Inter-Regular.ttf", "bold": "Inter-Bold.ttf", "italic": "Inter-Italic.ttf", "bold_italic": "Inter-BoldItalic.ttf"}`. The files are looked up in `asset_dir` (over `klartex serve`: in the request's `assets`), and only `file` is required — a face whose file was not sent renders in the regular face. A name is a bare file name ending in `.ttf` or `.otf`, with no underscore or other LaTeX special character.
+
 ```dockerfile
 FROM ghcr.io/swedev/klartex-base:<tag>@sha256:<digest>
 ```

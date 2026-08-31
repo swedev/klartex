@@ -152,6 +152,10 @@ def test_block_schema_accepts_slot_forms(page_template):
         {"margins": {"top": "2.5"}},
         {"margins": {"top": "2.5em"}},
         {"margins": {"top": 2.5}},
+        # The schema must anchor at the absolute end too — Python's `$`
+        # matches before a final newline, and jsonschema uses Python's re.
+        {"margins": {"top": "2.5cm\n"}},
+        {"margins": {"left": "2cm\n"}},
     ],
 )
 def test_block_schema_rejects_bad_slots(page_template):

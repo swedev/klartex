@@ -100,7 +100,12 @@ FILENAME_PATTERN = r"^[^\\#$%&_{}~^]+$"
 #: meaning before \setmainfont resolves. The pattern admits no LaTeX special
 #: character, so a value passes escape_data() untouched and is safe inside
 #: the emitted \geometry call.
-DIMENSION_PATTERN = r"^[0-9]+(\.[0-9]+)?(cm|mm|pt|in)$"
+#:
+#: The trailing lookahead is what makes that true: Python's ``$`` also matches
+#: before a final newline, so ``"2cm\n"`` would otherwise satisfy both this
+#: pattern and jsonschema's ``pattern`` keyword. ``(?![\s\S])`` says "nothing
+#: follows" in every regex flavour a JSON Schema validator may use.
+DIMENSION_PATTERN = r"^[0-9]+(\.[0-9]+)?(cm|mm|pt|in)$(?![\s\S])"
 
 _DIMENSION_RE = re.compile(DIMENSION_PATTERN)
 
@@ -309,7 +314,7 @@ MARGINS_SETTING: dict = {
 
 def _to_points(value: str) -> Fraction:
     """A validated dimension string in TeX points."""
-    match = _DIMENSION_RE.match(value)
+    match = _DIMENSION_RE.fullmatch(value)
     unit = match.group(2)
     return Fraction(value[: -len(unit)]) * _UNIT_IN_PT[unit]
 
@@ -335,7 +340,7 @@ def _check_margins(margins) -> dict:
             raise ValueError(
                 f"Unknown margins key '{key}'. Allowed: {', '.join(MARGIN_KEYS)}"
             )
-        if not isinstance(value, str) or not _DIMENSION_RE.match(value):
+        if not isinstance(value, str) or not _DIMENSION_RE.fullmatch(value):
             raise ValueError(
                 f"margins.{key} must be a LaTeX dimension with an explicit "
                 f"unit (cm, mm, pt, in), e.g. '2.5cm', got {value!r}"

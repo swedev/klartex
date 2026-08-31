@@ -306,7 +306,15 @@ class TestMargins:
         with pytest.raises(ValueError, match="Unknown margins key 'inner'"):
             load_page_template({"margins": {"inner": "2cm"}})
 
-    @pytest.mark.parametrize("value", ["2,5cm", "2.5", "2.5em", "2.5 cm", "-2cm", 2.5, True])
+    @pytest.mark.parametrize(
+        "value",
+        [
+            "2,5cm", "2.5", "2.5em", "2.5 cm", "-2cm", 2.5, True,
+            # Python's `$` also matches before a final newline, so an
+            # unanchored check would let this through into \geometry.
+            "2cm\n", "2cm\r", "2cm\nx", " 2cm", "2cm ",
+        ],
+    )
     def test_values_must_be_latex_dimensions(self, value):
         with pytest.raises(ValueError, match="margins.left must be a LaTeX dimension"):
             load_page_template({"margins": {"left": value}})

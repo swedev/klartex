@@ -93,7 +93,9 @@
 
 \newcommand{\kxfooter}[1]{%
     \setkeys{kxfooter}{#1}%
-    \geometry{bottom=3.6cm, footskip=2.6cm}%
+    % Bottom geometry through the class's macros, so a page template that
+    % sets its own bottom margin renews them before this package loads.
+    \geometry{bottom=\kxfooterbottom, footskip=\kxfooterfootskip}%
     \fancyfoot[L]{}%
     \fancyfoot[R]{}%
     \fancyfoot[C]{%

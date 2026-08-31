@@ -2012,3 +2012,83 @@ class TestPageTemplateSlots:
             footer_source=r"\fancyfoot[C]{\thepage}",
         )
         assert r"\fancyfoot[C]{}" not in tex
+
+    # --- margins -----------------------------------------------------------
+
+    def test_margins_precede_both_slots(self):
+        """Margins are a document-level setting: emitted first, so a custom
+        slot source's own geometry wins — as it does for font."""
+        tex = self._tex({"margins": {"left": "2cm"}}, header_source=r"\geometry{left=5cm}")
+        assert tex.index(r"\geometry{left=2cm}") < tex.index(r"\geometry{left=5cm}")
+
+    def test_side_and_bottom_margins_pass_through_verbatim(self):
+        tex = self._tex({"margins": {"left": "2cm", "right": "25mm", "bottom": "3cm"}})
+        assert r"\geometry{left=2cm, right=25mm, bottom=3cm}" in tex
+        assert r"\setlength{\headwidth}{\textwidth}" in tex
+
+    def test_top_with_a_rendering_header_moves_the_header_text_gap(self):
+        tex = self._tex(
+            {
+                "header": {"variant": "letterhead", "fields": {"org_name": "Föreningen X"}},
+                "margins": {"top": "4cm"},
+            }
+        )
+        assert r"\geometry{headsep=\dimexpr 4cm-2.1cm\relax}" in tex
+        assert tex.index(r"\renewcommand{\kxreclaimtop}{4cm}") < tex.index(r"\ifdefempty{\orgname}")
+
+    def test_top_with_an_empty_header_reclaims_to_the_user_value(self):
+        """The reclaim applies top=\\kxreclaimtop, so renewing the macro is
+        what makes the user's top the reclaimed geometry."""
+        tex = self._tex({"header": None, "margins": {"top": "3cm"}})
+        assert r"\renewcommand{\kxreclaimtop}{3cm}" in tex
+        assert tex.index(r"\renewcommand{\kxreclaimtop}{3cm}") < tex.index(
+            r"\geometry{top=\kxreclaimtop, headheight=0pt"
+        )
+
+    def test_bottom_margin_moves_the_columns_footer_geometry(self):
+        tex = self._tex(
+            {
+                "footer": {"variant": "columns", "fields": {"company": "Bolaget AB"}},
+                "margins": {"bottom": "3cm"},
+            }
+        )
+        assert r"\renewcommand{\kxfooterbottom}{3cm}" in tex
+        assert r"\renewcommand{\kxfooterfootskip}{\dimexpr 3cm-1cm\relax}" in tex
+        assert tex.index(r"\renewcommand{\kxfooterbottom}") < tex.index(r"\usepackage{klartex-footer}")
+
+    def test_no_margins_leaves_the_geometry_untouched(self):
+        tex = self._tex({"footer": {"variant": "columns", "fields": {"company": "Bolaget AB"}}})
+        assert "kxfooterbottom" not in tex
+        assert r"\renewcommand{\kxreclaimtop}" not in tex
+
+    @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+    def test_all_margins_with_a_columns_footer_compile(self):
+        from klartex.renderer import render
+
+        pdf = render(
+            BLOCK_ENGINE_TEMPLATE,
+            {
+                "body": [{"type": "heading", "text": "Rubrik"}, {"type": "text", "text": "Text."}],
+                "page_template": {
+                    "header": {"variant": "letterhead", "fields": {"org_name": "Föreningen X"}},
+                    "footer": {"variant": "columns", "fields": {"company": "Bolaget AB"}},
+                    "margins": {"top": "4cm", "bottom": "4cm", "left": "2cm", "right": "2cm"},
+                },
+            },
+        )
+        assert pdf.startswith(b"%PDF")
+
+    @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+    def test_margins_compile_in_the_reclaim_regime(self):
+        """The empty-header regime emits a negative headsep that the reclaim
+        overrides — it must not stop the compile."""
+        from klartex.renderer import render
+
+        pdf = render(
+            BLOCK_ENGINE_TEMPLATE,
+            {
+                "body": [{"type": "text", "text": "Text."}],
+                "page_template": {"header": None, "margins": {"top": "1.5cm", "left": "1.5cm"}},
+            },
+        )
+        assert pdf.startswith(b"%PDF")

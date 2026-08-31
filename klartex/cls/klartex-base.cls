@@ -13,6 +13,11 @@
 % defaults.
 \newcommand{\kxsidemargin}{3cm}
 \newcommand{\kxreclaimtop}{2cm}
+% Bottom geometry the multi-column footer (klartex-footer) enlarges to for
+% its band. Bound here so a page template's bottom margin can renew them
+% before that package loads.
+\newcommand{\kxfooterbottom}{3.6cm}
+\newcommand{\kxfooterfootskip}{2.6cm}
 \DeclareOption{narrowmargins}{%
     \renewcommand{\kxsidemargin}{2cm}%
     \renewcommand{\kxreclaimtop}{1.7cm}%

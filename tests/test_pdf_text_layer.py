@@ -12,6 +12,7 @@ actually contains: quotation marks (which klartex generates itself, from
 plain ``"``), section signs, dashes, ellipsis, currency, accented letters.
 """
 
+import re
 import shutil
 import subprocess
 import tempfile
@@ -264,3 +265,76 @@ def test_letterhead_contact_column_survives_empty_leading_fields(contact):
     assert "Föreningen X" in pages[0]
     for value in contact.values():
         assert value in pages[0]
+
+
+# --- margins: where the body text actually lands ---------------------------
+
+#: PDF user-space units per centimetre (a unit is 1/72 in).
+_PT_PER_CM = 72 / 2.54
+
+_WORD_BOX = re.compile(
+    r'<word xMin="([0-9.]+)" yMin="([0-9.]+)" xMax="[0-9.]+" yMax="[0-9.]+">([^<]*)</word>'
+)
+
+
+def _word_box(pdf: bytes, word: str) -> tuple[float, float]:
+    """``(xMin, yMin)`` of ``word`` on the first page, in PDF units."""
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / "doc.pdf"
+        path.write_bytes(pdf)
+        out = subprocess.run(
+            ["pdftotext", "-q", "-bbox", "-f", "1", "-l", "1", str(path), "-"],
+            capture_output=True,
+            check=True,
+            timeout=60,
+        )
+    for x_min, y_min, text in _WORD_BOX.findall(out.stdout.decode("utf-8")):
+        if text == word:
+            return float(x_min), float(y_min)
+    raise AssertionError(f"{word!r} not found in the first page's bbox output")
+
+
+def _anchor_payload(header, margins=None) -> dict:
+    page_template: dict = {"header": header}
+    if margins is not None:
+        page_template["margins"] = margins
+    return {
+        "lang": "sv",
+        "page_template": page_template,
+        "body": [{"type": "text", "text": "Ankarord i brödtexten."}],
+    }
+
+
+LETTERHEAD = {"variant": "letterhead", "fields": {"org_name": "Föreningen X"}}
+
+
+@requires_tools
+@pytest.mark.parametrize(
+    "header, top, expected_shift_cm",
+    [
+        # Header renders: the band stays put at 0.9cm + 1.2cm headheight and
+        # the 1.3cm header-text gap absorbs the change, from 3.4cm.
+        (LETTERHEAD, "5cm", 5 - 3.4),
+        # Header reclaimed: \kxreclaimtop carries the value, from 2cm.
+        (None, "4cm", 4 - 2),
+    ],
+    ids=["header renders", "header reclaimed"],
+)
+def test_margin_top_moves_the_body_text_down_by_the_delta(header, top, expected_shift_cm):
+    """Both top regimes must put the first line of body text where the
+    text-block contract says — not merely compile."""
+    base_y = _word_box(render(BLOCK_ENGINE_TEMPLATE, _anchor_payload(header)), "Ankarord")[1]
+    moved_y = _word_box(
+        render(BLOCK_ENGINE_TEMPLATE, _anchor_payload(header, {"top": top})), "Ankarord"
+    )[1]
+    assert moved_y - base_y == pytest.approx(expected_shift_cm * _PT_PER_CM, abs=0.5)
+
+
+@requires_tools
+def test_margin_left_moves_the_body_text_by_the_delta():
+    """The side margin is measured to the body text, from the class's 3cm."""
+    base_x = _word_box(render(BLOCK_ENGINE_TEMPLATE, _anchor_payload(None)), "Ankarord")[0]
+    moved_x = _word_box(
+        render(BLOCK_ENGINE_TEMPLATE, _anchor_payload(None, {"left": "2cm"})), "Ankarord"
+    )[0]
+    assert moved_x - base_x == pytest.approx((2 - 3) * _PT_PER_CM, abs=0.5)

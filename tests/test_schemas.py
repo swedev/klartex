@@ -210,3 +210,14 @@ def test_block_schema_accepts_safe_logo_names(logo):
         _with_body({"header": {"variant": "letterhead", "fields": {"org_name": "X", "logo": logo}}}),
         _block_schema(),
     )
+
+
+@pytest.mark.parametrize("template_name", ["faktura", "kvitto"])
+def test_logo_height_schema_default(template_name):
+    """The documented logo_height default matches the renderer's fallback.
+
+    The runtime fallback lives in `_recipe_base.tex.jinja`; nothing else
+    verifies that the schema the agent reads says the same thing.
+    """
+    schema = json.loads((TEMPLATES_DIR / template_name / "schema.json").read_text())
+    assert schema["properties"]["logo_height"]["default"] == "1cm"

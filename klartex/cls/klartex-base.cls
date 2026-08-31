@@ -10,8 +10,8 @@
 % Required packages
 \RequirePackage{fontspec}
 \RequirePackage[
-    left=3cm,
-    right=3cm,
+    left=2cm,
+    right=2cm,
     top=0.9cm,
     bottom=2cm,
     includehead,
@@ -70,8 +70,8 @@
 % Page templates can set a custom font via \setmainfont in the preamble.
 
 % Brand colors — configurable via \definecolor in document preamble
-\definecolor{brandprimary}{HTML}{1A1A1A}
-\definecolor{brandsecondary}{HTML}{666666}
+\definecolor{brandprimary}{HTML}{000000}
+\definecolor{brandsecondary}{HTML}{000000}
 \definecolor{brandaccent}{HTML}{0066CC}
 
 % Header/footer font hook — a no-op by default so header and footer follow

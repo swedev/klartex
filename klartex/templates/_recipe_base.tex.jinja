@@ -30,9 +30,9 @@
 \BLOCK{set logo_offset = cdata.get('logo_offset') or {} }
 {\LARGE\bfseries%
 \BLOCK{if logo_offset.get('x')}
-\hspace*{\VAR{logo_offset.x}\dimexpr\VAR{cdata.get('logo_height') or '0.8cm'}\relax}%
+\hspace*{\VAR{logo_offset.x}\dimexpr\VAR{cdata.get('logo_height') or '1cm'}\relax}%
 \BLOCK{endif}
-\raisebox{\dimexpr\fontcharht\font`F-\height+\VAR{logo_offset.get('y') or 0}\height\relax}{\includegraphics[height=\VAR{cdata.get('logo_height') or '0.8cm'}]{\VAR{cdata.logo}}}}%
+\raisebox{\dimexpr\fontcharht\font`F-\height+\VAR{logo_offset.get('y') or 0}\height\relax}{\includegraphics[height=\VAR{cdata.get('logo_height') or '1cm'}]{\VAR{cdata.logo}}}}%
 \BLOCK{endmacro}
 
 %# Document header: optional logo on the left (in line with the party blocks

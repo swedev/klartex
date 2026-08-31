@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from klartex.renderer import render, get_registry
+from klartex.renderer import render, get_registry, CLS_DIR
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -32,6 +32,19 @@ HAS_GEORGIA = _has_font("Georgia")
 def test_unknown_template():
     with pytest.raises(ValueError, match="Unknown template"):
         render("nonexistent", {})
+
+
+def test_class_default_chrome():
+    r"""The bundled class carries the default margins and brand colors.
+
+    The golden fixtures start at ``\documentclass{klartex-base}``, so a
+    regression in the class itself is invisible to them.
+    """
+    cls = (CLS_DIR / "klartex-base.cls").read_text()
+    assert "left=2cm," in cls
+    assert "right=2cm," in cls
+    assert r"\definecolor{brandprimary}{HTML}{000000}" in cls
+    assert r"\definecolor{brandsecondary}{HTML}{000000}" in cls
 
 
 @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
@@ -476,7 +489,7 @@ def test_kvitto_sender_logo_and_footer():
     tex = _render_recipe_tex("kvitto", data)
     assert "Avsändare" in tex
     assert "Säljbolaget AB" in tex
-    assert r"\includegraphics[height=0.8cm]{logo.pdf}" in tex
+    assert r"\includegraphics[height=1cm]{logo.pdf}" in tex
     assert r"\usepackage{klartex-footer}" in tex
     assert "bankgiro={1234-5678}" in tex
 
@@ -675,6 +688,12 @@ def test_faktura_logo_rendered_in_header_block():
 
     tex_without = _render_recipe_tex("faktura", _minimal_faktura())
     assert "logo.pdf" not in tex_without
+
+
+def test_faktura_logo_default_height():
+    """A logo without logo_height renders at the 1cm default."""
+    tex = _render_recipe_tex("faktura", _minimal_faktura(logo="logo.pdf"))
+    assert r"\includegraphics[height=1cm]{logo.pdf}" in tex
 
 
 def test_faktura_sender_block_rendered():

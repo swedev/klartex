@@ -1906,7 +1906,7 @@ class TestPageTemplateGoldens:
         tex = _render_tex(
             {"page_template": {"header": None}, "body": [{"type": "heading", "text": "G"}]}
         )
-        assert r"\geometry{top=2cm, headheight=0pt, headsep=0pt, includehead=false}" in tex
+        assert r"\geometry{top=1.7cm, headheight=0pt, headsep=0pt, includehead=false}" in tex
         assert r"\ifdefempty{\orgname}" not in tex
 
 
@@ -1945,12 +1945,12 @@ class TestPageTemplateSlots:
         tex = self._tex({"header": "letterhead"})
         assert (
             "\\ifdefempty{\\orgname}{\\ifdefempty{\\brandlogo}{%\n"
-            "  \\geometry{top=2cm, headheight=0pt, headsep=0pt, includehead=false}%"
+            "  \\geometry{top=1.7cm, headheight=0pt, headsep=0pt, includehead=false}%"
         ) in tex
 
     def test_logo_header_reclaims_only_when_the_logo_is_empty(self):
         tex = self._tex({"header": "logo"})
-        assert "\\ifdefempty{\\brandlogo}{%\n  \\geometry{top=2cm" in tex
+        assert "\\ifdefempty{\\brandlogo}{%\n  \\geometry{top=1.7cm" in tex
         assert "\\ifdefempty{\\orgname}{\\ifdefempty" not in tex
 
     def test_custom_header_owns_its_geometry(self):

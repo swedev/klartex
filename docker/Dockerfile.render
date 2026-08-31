@@ -16,7 +16,7 @@
 # run it with `--read-only --tmpfs /tmp --tmpfs /home/render`. Nothing here
 # authenticates or rate-limits; put it behind a caller that does, on a
 # network that is not the public internet.
-FROM ghcr.io/swedev/klartex-base:20260828-3@sha256:b011056413d449bdc41b893ff1bd538a2be46d78d3794698eb134f45936d6ff2
+FROM ghcr.io/swedev/klartex-base:20260831-12@sha256:4dbabb8953ca8c307055d1130ecd642000140819b1e3b272f358eb08598dcb4e
 
 LABEL org.opencontainers.image.source="https://github.com/swedev/klartex"
 LABEL org.opencontainers.image.licenses="MIT"

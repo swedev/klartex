@@ -1,6 +1,7 @@
 %# Page-template composition. Included by both meta-templates in place of the
 %# document class's chrome setup. Emission order is fixed:
-%#   1. document-level settings (font, header font, diff style)
+%#   1. document-level settings (font, header font, diff style, margins) —
+%#      before both slots, so a custom slot source's own geometry wins
 %#   2. header slot — custom source, or variant fragment preceded by the
 %#      \renewcommand's for its fields
 %#   3. footer slot — custom source or the variant fragment
@@ -16,6 +17,9 @@
 \BLOCK{endif}
 \BLOCK{if page_template.diff_style and page_template.diff_style != 'color'}
 \kxdiffstyle{\VAR{page_template.diff_style}}
+\BLOCK{endif}
+\BLOCK{if page_template.margin_setup}
+\VAR{page_template.margin_setup}
 \BLOCK{endif}
 %# --- Header slot ---
 \BLOCK{if page_template.header.is_custom}

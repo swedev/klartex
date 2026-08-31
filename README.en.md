@@ -173,7 +173,21 @@ A slot that is left out takes the surface's default: the block engine has an emp
 
 The object form of `letterhead` requires `fields.org_name` — the name is what the header is built around, and without it the other details would not be printed. A header with no details at all is written as the variant name on its own (`"header": "letterhead"`). `logo` is a filename free of LaTeX-special characters (`\ # $ % & _ { } ~ ^`).
 
-Beside the slots there are document-level settings — `font`, `header_font` and `diff_style` — which apply whether or not a slot has its own LaTeX, plus `page_numbers` and `first_page_header`.
+Beside the slots there are document-level settings — `font`, `header_font`, `diff_style` and `margins` — which apply whether or not a slot has its own LaTeX, plus `page_numbers` and `first_page_header`.
+
+### Margins
+
+`margins` is the distance from the paper edge to the **body text**, one key per side. Each key is optional and applies independently; the value is a LaTeX dimension with an explicit unit (`cm`, `mm`, `pt`, `in`).
+
+```json
+"page_template": {
+  "margins": { "top": "3.4cm", "bottom": "2cm", "left": "3cm", "right": "3cm" }
+}
+```
+
+The chrome adapts to the measurements rather than the other way round: `top` is measured to the first line of text, so with a header the band stays where it is and the gap between header and text grows or shrinks — which is why `top` must exceed 2.1 cm, where the band ends. With an empty (or content-less) header its space is reclaimed and any positive `top` works. `bottom` is measured to the last line of text and the footer hangs below it, so leave room for it — a small value clips the footer. `left` and `right` also move the header and footer band, which follows the text width.
+
+A slot with custom LaTeX that sets its own geometry wins over `margins`, exactly as it does over `font`.
 
 ### Custom page template
 

@@ -173,7 +173,21 @@ En del som utelämnas får ytans default: blockmotorn har tomt sidhuvud och sidn
 
 Objektformen av `letterhead` kräver `fields.org_name` — namnet är det som sidhuvudet byggs runt, och utan det skulle övriga uppgifter inte skrivas ut. Ett sidhuvud helt utan uppgifter anges som variantnamnet självt (`"header": "letterhead"`). `logo` är ett filnamn utan LaTeX-specialtecken (`\ # $ % & _ { } ~ ^`).
 
-Utöver sloten finns inställningar på dokumentnivå — `font`, `header_font` och `diff_style` — som gäller oavsett om en slot har egen LaTeX, plus `page_numbers` och `first_page_header`.
+Utöver sloten finns inställningar på dokumentnivå — `font`, `header_font`, `diff_style` och `margins` — som gäller oavsett om en slot har egen LaTeX, plus `page_numbers` och `first_page_header`.
+
+### Marginaler
+
+`margins` anger avståndet från papperskanten till **brödtexten**, en nyckel per sida. Varje nyckel är valfri och verkar för sig; värdet är ett LaTeX-mått med utskriven enhet (`cm`, `mm`, `pt`, `in`).
+
+```json
+"page_template": {
+  "margins": { "top": "3.4cm", "bottom": "2cm", "left": "3cm", "right": "3cm" }
+}
+```
+
+Chromet anpassar sig efter måtten i stället för tvärtom: `top` mäts till första textraden, så med ett sidhuvud står bandet kvar där det står och glappet mellan sidhuvud och text växer eller krymper — därför måste `top` överstiga 2,1 cm, där bandet slutar. Är sidhuvudet tomt (eller saknar innehåll) återtas dess utrymme och vilket positivt `top` som helst fungerar. `bottom` mäts till sista textraden och sidfoten hänger under den, så lämna plats åt den — ett litet värde klipper foten. `left` och `right` flyttar även sidhuvudets och sidfotens band, som följer textbredden.
+
+En slot med egen LaTeX som sätter sin egen geometri vinner över `margins`, precis som den gör över `font`.
 
 ### Egen sidmall
 

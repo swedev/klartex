@@ -6,6 +6,7 @@ from pathlib import Path
 import jsonschema
 import pytest
 
+from klartex.page_templates import DIMENSION_PATTERN
 from klartex.renderer import get_registry, TEMPLATES_DIR
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -118,6 +119,10 @@ def _with_body(page_template):
         {"header": {"variant": "logo", "fields": {"logo": "logo.pdf"}}},
         {"header": {"variant": "logo"}},
         {"footer": "pagenumber"},
+        {"margins": None},
+        {"margins": {}},
+        {"margins": {"left": "2cm"}},
+        {"margins": {"top": "3.4cm", "bottom": "2cm", "left": "25mm", "right": "1in"}},
     ],
 )
 def test_block_schema_accepts_slot_forms(page_template):
@@ -141,6 +146,12 @@ def test_block_schema_accepts_slot_forms(page_template):
         {"footer": {"title": True}},
         {"footer": {"fields": {"company": "X"}}},
         {"header": "letterhead", "bogus": 1},
+        {"margins": "2cm"},
+        {"margins": {"inner": "2cm"}},
+        {"margins": {"top": "2,5cm"}},
+        {"margins": {"top": "2.5"}},
+        {"margins": {"top": "2.5em"}},
+        {"margins": {"top": 2.5}},
     ],
 )
 def test_block_schema_rejects_bad_slots(page_template):
@@ -171,6 +182,11 @@ def test_every_template_schema_carries_the_generated_page_template(template_name
     assert pt["properties"]["header"]["oneOf"][1]["enum"] == ["letterhead", "logo"]
     assert pt["properties"]["footer"]["oneOf"][1]["enum"] == ["pagenumber", "columns"]
     assert pt["properties"]["diff_style"]["enum"] == ["color", "underline"]
+    margins = pt["properties"]["margins"]
+    assert margins["type"] == ["object", "null"]
+    assert margins["additionalProperties"] is False
+    assert set(margins["properties"]) == {"top", "bottom", "left", "right"}
+    assert all(v["pattern"] == DIMENSION_PATTERN for v in margins["properties"].values())
 
 
 def test_schema_files_hold_only_the_placeholder():

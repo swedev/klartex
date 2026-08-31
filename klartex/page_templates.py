@@ -36,14 +36,17 @@ Page template data in the render request is an object::
         "page_numbers": false,
         "first_page_header": false,
         "font": "Futura",
-        "header_font": "Futura"
+        "header_font": "Futura",
+        "margins": {"top": "3.4cm", "bottom": "2cm", "left": "3cm", "right": "3cm"}
     }
 
 Custom slot sources are not part of the JSON payload; they travel as
 ``render(header_source=…)`` / ``render(footer_source=…)`` keyword arguments.
 """
 
+import re
 from dataclasses import dataclass, field
+from fractions import Fraction
 from pathlib import Path
 
 import jinja2
@@ -91,6 +94,24 @@ def list_of(item: FieldType) -> FieldType:
 
 
 FILENAME_PATTERN = r"^[^\\#$%&_{}~^]+$"
+
+#: A LaTeX dimension: a non-negative number with an explicit unit. The four
+#: units are the supported set — font-relative units (em, ex) have no stable
+#: meaning before \setmainfont resolves. The pattern admits no LaTeX special
+#: character, so a value passes escape_data() untouched and is safe inside
+#: the emitted \geometry call.
+DIMENSION_PATTERN = r"^[0-9]+(\.[0-9]+)?(cm|mm|pt|in)$"
+
+_DIMENSION_RE = re.compile(DIMENSION_PATTERN)
+
+#: Exact conversion factors to TeX points, so boundary comparisons carry no
+#: float wobble.
+_UNIT_IN_PT: dict[str, Fraction] = {
+    "pt": Fraction(1),
+    "in": Fraction(7227, 100),
+    "cm": Fraction(7227, 254),
+    "mm": Fraction(7227, 2540),
+}
 
 TEXT = FieldType({"type": "string"})
 BOOL = FieldType({"type": "boolean"})
@@ -221,6 +242,107 @@ _SLOT_TEXT = {
     },
 }
 
+# ---------------------------------------------------------------------------
+# Margins. The values are text-block margins — paper edge to body text — so
+# the chrome geometry adapts to them: a set top becomes both a headsep
+# adjustment (header renders) and a \kxreclaimtop renewal (header reclaimed),
+# and the LaTeX-time \ifdefempty reclaim picks the regime.
+# ---------------------------------------------------------------------------
+
+MARGIN_KEYS = ("top", "bottom", "left", "right")
+
+
+def _cm(value: Fraction) -> str:
+    """A Fraction of centimetres as a LaTeX dimension string."""
+    return f"{float(value):g}cm"
+
+
+#: Bottom edge of the header band, from the paper edge: the class geometry's
+#: top (0.9cm) plus headheight (1.2cm) in klartex-base.cls. A set margins.top
+#: places the text block there, so the header–text gap absorbs the difference.
+#: tests/test_renderer.py locks this against the two values in the cls.
+HEADER_BAND_BOTTOM_CM = Fraction(21, 10)
+HEADER_BAND_BOTTOM = _cm(HEADER_BAND_BOTTOM_CM)
+
+#: Clearance the columns footer keeps below its band — the difference between
+#: klartex-footer.sty's own bottom and footskip defaults. A set margins.bottom
+#: moves both and preserves it.
+FOOTER_BAND_CLEARANCE = "1cm"
+
+_MARGIN_KEY_DESCRIPTIONS = {
+    "top": (
+        "Paper edge to the first line of body text. With a header the band "
+        f"stays put and the header–text gap absorbs the change, so top must "
+        f"exceed {HEADER_BAND_BOTTOM} (the band's bottom edge); with an empty "
+        "or content-less header the header space is reclaimed and any positive "
+        "value works."
+    ),
+    "bottom": (
+        "Paper edge to the last line of body text. The footer hangs below the "
+        "text block, so leave room for it — a small value clips it."
+    ),
+    "left": "Paper edge to the left of the body text. The header and footer band follows the text width.",
+    "right": "Paper edge to the right of the body text. The header and footer band follows the text width.",
+}
+
+MARGINS_SETTING: dict = {
+    "type": ["object", "null"],
+    "additionalProperties": False,
+    "description": (
+        "Page margins as the distance from the paper edge to the body text "
+        "block, e.g. {\"top\": \"3.4cm\", \"left\": \"2cm\"}. Each key is "
+        "independent and optional; the chrome adapts, so the header band and "
+        "the footer keep their place relative to the text. Values are LaTeX "
+        "dimensions with an explicit unit (cm, mm, pt, in). A custom slot "
+        "source that emits its own geometry wins, like it does for font."
+    ),
+    "properties": {
+        key: {
+            "type": "string",
+            "pattern": DIMENSION_PATTERN,
+            "description": _MARGIN_KEY_DESCRIPTIONS[key],
+        }
+        for key in MARGIN_KEYS
+    },
+}
+
+
+def _to_points(value: str) -> Fraction:
+    """A validated dimension string in TeX points."""
+    match = _DIMENSION_RE.match(value)
+    unit = match.group(2)
+    return Fraction(value[: -len(unit)]) * _UNIT_IN_PT[unit]
+
+
+def _check_margins(margins) -> dict:
+    """Validate the ``margins`` setting and return it as a dict.
+
+    ``None`` and ``{}`` both mean "no margins given".
+
+    Raises:
+        ValueError: If the value is not an object, carries an unknown key, or
+                    holds a value that is not a LaTeX dimension.
+    """
+    if margins is None:
+        return {}
+    if not isinstance(margins, dict):
+        raise ValueError(
+            "page_template.margins must be an object with the keys "
+            f"{', '.join(MARGIN_KEYS)}, got {type(margins).__name__}"
+        )
+    for key, value in margins.items():
+        if key not in MARGIN_KEYS:
+            raise ValueError(
+                f"Unknown margins key '{key}'. Allowed: {', '.join(MARGIN_KEYS)}"
+            )
+        if not isinstance(value, str) or not _DIMENSION_RE.match(value):
+            raise ValueError(
+                f"margins.{key} must be a LaTeX dimension with an explicit "
+                f"unit (cm, mm, pt, in), e.g. '2.5cm', got {value!r}"
+            )
+    return dict(margins)
+
+
 # Document-level settings on the page_template object.
 DOCUMENT_SETTINGS: dict[str, dict] = {
     "page_numbers": {"type": "boolean", "description": "Show page numbers in the footer"},
@@ -244,6 +366,7 @@ DOCUMENT_SETTINGS: dict[str, dict] = {
             "Removed text is struck through in both cases."
         ),
     },
+    "margins": MARGINS_SETTING,
 }
 
 
@@ -313,6 +436,7 @@ class PageTemplate:
     font: str | None = None
     header_font: str | None = None
     diff_style: str = "color"
+    margins: dict = field(default_factory=dict)
 
     @property
     def footer_has_payment(self) -> bool:
@@ -357,6 +481,48 @@ class PageTemplate:
                 "keyvals": footer_keyvals(self.footer.fields),
             },
         )
+
+    @property
+    def margin_setup(self) -> str:
+        """The geometry setup for the ``margins`` setting, empty when unset.
+
+        ``top`` is emitted for both top-geometry regimes at once — a headsep
+        adjustment for the header that renders, a ``\\kxreclaimtop`` renewal
+        for the header whose space is reclaimed — because which one applies is
+        decided at LaTeX time, by the reclaim block's ``\\ifdefempty`` tests.
+        """
+        if not self.margins:
+            return ""
+        lines: list[str] = []
+        keys: list[str] = []
+        top = self.margins.get("top")
+        if top:
+            lines.append(r"\renewcommand{\kxreclaimtop}{" + top + "}")
+        bottom = self.margins.get("bottom")
+        if bottom:
+            # The columns footer enlarges the bottom geometry for its band;
+            # these renewals make the user's bottom the value it enlarges to,
+            # keeping the band's clearance below the text block.
+            lines.append(r"\renewcommand{\kxfooterbottom}{" + bottom + "}")
+            lines.append(
+                r"\renewcommand{\kxfooterfootskip}{\dimexpr "
+                + bottom
+                + "-"
+                + FOOTER_BAND_CLEARANCE
+                + r"\relax}"
+            )
+        for key in ("left", "right", "bottom"):
+            value = self.margins.get(key)
+            if value:
+                keys.append(f"{key}={value}")
+        if top:
+            keys.append(r"headsep=\dimexpr " + top + "-" + HEADER_BAND_BOTTOM + r"\relax")
+        lines.append(r"\geometry{" + ", ".join(keys) + "}")
+        if self.margins.get("left") or self.margins.get("right"):
+            # fancyhdr's \headwidth does not track a \textwidth changed after
+            # the class loaded it, so the band would keep the old text width.
+            lines.append(r"\setlength{\headwidth}{\textwidth}")
+        return "\n".join(lines)
 
     @property
     def header_reclaim(self) -> str:
@@ -494,6 +660,7 @@ def load_page_template(
     font = overrides.get("font")
     header_font = overrides.get("header_font") or font
     diff_style = overrides.get("diff_style") or "color"
+    margins = _check_margins(overrides.get("margins"))
 
     if header_source is not None:
         header = SlotSpec(source=header_source)
@@ -514,7 +681,7 @@ def load_page_template(
         # page one either, so the empty slot defaults this off.
         first_page_header = not header.is_empty
 
-    return PageTemplate(
+    template = PageTemplate(
         header=header,
         footer=footer,
         page_numbers=page_numbers,
@@ -522,7 +689,30 @@ def load_page_template(
         font=font,
         header_font=header_font,
         diff_style=diff_style,
+        margins=margins,
     )
+    _check_margin_top(template)
+    return template
+
+
+def _check_margin_top(template: PageTemplate) -> None:
+    """Reject a ``margins.top`` that leaves no header–text gap.
+
+    Only checked where Python can tell the header will render: a predefined
+    variant with content. An empty or content-less header reclaims the header
+    space, and a custom source owns its own geometry — both take any positive
+    top.
+    """
+    top = template.margins.get("top")
+    if not top or not template.header.is_predefined or not template.header_macros:
+        return
+    if _to_points(top) <= _to_points(HEADER_BAND_BOTTOM):
+        raise ValueError(
+            f"margins.top must be greater than {HEADER_BAND_BOTTOM} when the "
+            f"header renders — the header band ends there, and {top} leaves no "
+            "gap between it and the body text. Use a larger top, or an empty "
+            "header (header: null) to reclaim the header's space."
+        )
 
 
 def footer_keyvals(fields: dict, variant: str = "columns") -> list[str]:

@@ -4,6 +4,7 @@ import pytest
 
 from klartex.page_templates import (
     BLOCK_DEFAULT_SLOTS,
+    HEADER_BAND_BOTTOM,
     RECIPE_DEFAULT_SLOTS,
     list_slot_variants,
     load_page_template,
@@ -286,3 +287,106 @@ class TestLetterheadRequiresOrgName:
         is the recipe default."""
         assert load_page_template({"header": "letterhead"}).header.variant == "letterhead"
         assert BLOCK_DEFAULT_SLOTS["header"] is None
+
+
+class TestMargins:
+    """`margins` is the text-block geometry: paper edge to body text."""
+
+    def test_absent_null_and_empty_all_mean_no_margins(self):
+        for spec in ({}, {"margins": None}, {"margins": {}}):
+            pt = load_page_template(spec)
+            assert pt.margins == {}
+            assert pt.margin_setup == ""
+
+    def test_non_object_is_rejected(self):
+        with pytest.raises(ValueError, match="margins must be an object"):
+            load_page_template({"margins": "2cm"})
+
+    def test_unknown_key_is_rejected(self):
+        with pytest.raises(ValueError, match="Unknown margins key 'inner'"):
+            load_page_template({"margins": {"inner": "2cm"}})
+
+    @pytest.mark.parametrize("value", ["2,5cm", "2.5", "2.5em", "2.5 cm", "-2cm", 2.5, True])
+    def test_values_must_be_latex_dimensions(self, value):
+        with pytest.raises(ValueError, match="margins.left must be a LaTeX dimension"):
+            load_page_template({"margins": {"left": value}})
+
+    @pytest.mark.parametrize("value", ["2cm", "25mm", "0cm", "1in", "72.27pt"])
+    def test_supported_units_and_zero(self, value):
+        assert load_page_template({"margins": {"left": value}}).margins["left"] == value
+
+    def test_geometry_keys_pass_through_verbatim(self):
+        setup = load_page_template({"margins": {"left": "2cm", "right": "3cm", "bottom": "25mm"}}).margin_setup
+        assert r"\geometry{left=2cm, right=3cm, bottom=25mm}" in setup
+
+    def test_side_margin_syncs_the_header_band_width(self):
+        """fancyhdr's \\headwidth does not track a later \\textwidth."""
+        assert r"\setlength{\headwidth}{\textwidth}" in load_page_template(
+            {"margins": {"left": "2cm"}}
+        ).margin_setup
+        assert r"\setlength{\headwidth}{\textwidth}" in load_page_template(
+            {"margins": {"right": "2cm"}}
+        ).margin_setup
+        assert r"\headwidth" not in load_page_template({"margins": {"bottom": "2cm"}}).margin_setup
+
+    def test_top_is_emitted_for_both_regimes(self):
+        """Which top regime applies is decided at LaTeX time by the reclaim's
+        \\ifdefempty tests, so both pieces are always emitted."""
+        setup = load_page_template({"header": None, "margins": {"top": "3cm"}}).margin_setup
+        assert r"\renewcommand{\kxreclaimtop}{3cm}" in setup
+        assert r"\geometry{headsep=\dimexpr 3cm-" + HEADER_BAND_BOTTOM + r"\relax}" in setup
+
+    def test_bottom_moves_the_columns_footer_geometry(self):
+        """\\kxfooter enlarges the bottom geometry for its band; the renewals
+        make the user's bottom the value it enlarges to, band clearance kept."""
+        setup = load_page_template({"margins": {"bottom": "3cm"}}).margin_setup
+        assert r"\renewcommand{\kxfooterbottom}{3cm}" in setup
+        assert r"\renewcommand{\kxfooterfootskip}{\dimexpr 3cm-1cm\relax}" in setup
+
+    def test_no_footer_renewals_without_bottom(self):
+        assert "kxfooterbottom" not in load_page_template({"margins": {"top": "4cm"}}).margin_setup
+
+    def test_full_setup_output(self):
+        pt = load_page_template(
+            {"header": None, "margins": {"top": "3.5cm", "bottom": "2cm", "left": "2cm", "right": "2cm"}}
+        )
+        assert pt.margin_setup == "\n".join([
+            r"\renewcommand{\kxreclaimtop}{3.5cm}",
+            r"\renewcommand{\kxfooterbottom}{2cm}",
+            r"\renewcommand{\kxfooterfootskip}{\dimexpr 2cm-1cm\relax}",
+            r"\geometry{left=2cm, right=2cm, bottom=2cm, headsep=\dimexpr 3.5cm-2.1cm\relax}",
+            r"\setlength{\headwidth}{\textwidth}",
+        ])
+
+
+class TestMarginTopMinimum:
+    """A top at or below the header band's bottom edge leaves no header–text
+    gap — rejected wherever Python can tell the header renders."""
+
+    LETTERHEAD = {"variant": "letterhead", "fields": {"org_name": "Föreningen X"}}
+    LOGO = {"variant": "logo", "fields": {"logo": "logo.pdf"}}
+
+    @pytest.mark.parametrize("header", [LETTERHEAD, LOGO])
+    @pytest.mark.parametrize("top", ["2.1cm", "21mm", "1cm", "0cm"])
+    def test_rejected_with_a_rendering_header(self, header, top):
+        with pytest.raises(ValueError, match="margins.top must be greater"):
+            load_page_template({"header": header, "margins": {"top": top}})
+
+    @pytest.mark.parametrize("header", [LETTERHEAD, LOGO])
+    def test_accepted_just_above_the_band(self, header):
+        pt = load_page_template({"header": header, "margins": {"top": "2.11cm"}})
+        assert pt.margins["top"] == "2.11cm"
+
+    @pytest.mark.parametrize(
+        "header",
+        [None, "letterhead", "logo"],
+        ids=["empty", "content-less letterhead", "content-less logo"],
+    )
+    def test_reclaimed_header_takes_any_positive_top(self, header):
+        """narrowmargins reclaims to 1.7cm, so small values are legitimate."""
+        pt = load_page_template({"header": header, "margins": {"top": "1.7cm"}})
+        assert r"\renewcommand{\kxreclaimtop}{1.7cm}" in pt.margin_setup
+
+    def test_custom_header_source_owns_its_geometry(self):
+        pt = load_page_template({"margins": {"top": "1cm"}}, header_source="% custom")
+        assert pt.margins["top"] == "1cm"

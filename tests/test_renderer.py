@@ -53,6 +53,37 @@ def test_class_default_chrome():
     assert r"\definecolor{brandsecondary}{HTML}{000000}" in cls
 
 
+def test_header_band_constant_matches_the_class_geometry():
+    r"""``HEADER_BAND_BOTTOM_CM`` is where the header band ends, and a set
+    ``margins.top`` puts the text block there via ``headsep``. It mirrors the
+    class geometry's ``top`` plus ``headheight``, so compare the **sum** — the
+    three values could otherwise drift apart in step and still pass.
+    """
+    import re
+    from fractions import Fraction
+
+    from klartex.page_templates import HEADER_BAND_BOTTOM_CM
+
+    cls = (CLS_DIR / "klartex-base.cls").read_text()
+    values = {}
+    for key in ("top", "headheight"):
+        match = re.search(rf"^\s*{key}=([0-9.]+)cm,\s*$", cls, re.MULTILINE)
+        assert match, f"geometry {key} in cm not found in klartex-base.cls"
+        values[key] = Fraction(match.group(1))
+    assert values["top"] + values["headheight"] == HEADER_BAND_BOTTOM_CM
+
+
+def test_footer_band_geometry_is_late_bound():
+    r"""klartex-footer enlarges the bottom geometry for its band. Binding it
+    through the class's macros is what lets ``margins.bottom`` win over it.
+    """
+    cls = (CLS_DIR / "klartex-base.cls").read_text()
+    assert r"\newcommand{\kxfooterbottom}{3.6cm}" in cls
+    assert r"\newcommand{\kxfooterfootskip}{2.6cm}" in cls
+    sty = (CLS_DIR / "klartex-footer.sty").read_text()
+    assert r"\geometry{bottom=\kxfooterbottom, footskip=\kxfooterfootskip}" in sty
+
+
 def test_narrowmargins_class_option_scoped_to_faktura_and_kvitto():
     r"""Only faktura and kvitto opt into the tighter `narrowmargins` geometry.
 
@@ -625,6 +656,34 @@ def _minimal_faktura(**extra) -> dict:
     }
     data.update(extra)
     return data
+
+
+def test_faktura_margins_override_the_narrowmargins_defaults():
+    r"""faktura's `narrowmargins` class option is the recipe default; explicit
+    margins are emitted after `\documentclass` and win, per key.
+    """
+    tex = _render_recipe_tex(
+        "faktura",
+        _minimal_faktura(page_template={"margins": {"left": "4cm", "top": "5cm"}}),
+    )
+    assert tex.index(r"\documentclass[narrowmargins]{klartex-base}") < tex.index(
+        r"\geometry{left=4cm, headsep=\dimexpr 5cm-2.1cm\relax}"
+    )
+    assert r"\renewcommand{\kxreclaimtop}{5cm}" in tex
+
+
+def test_faktura_margins_reach_its_own_footer_geometry():
+    r"""faktura's top-level `footer` is emitted after the page-template
+    include, so its `\kxfooter` must pick up the renewed bottom geometry.
+    """
+    tex = _render_recipe_tex(
+        "faktura",
+        _minimal_faktura(
+            footer={"company": "Bolaget AB"},
+            page_template={"margins": {"bottom": "3cm"}},
+        ),
+    )
+    assert tex.index(r"\renewcommand{\kxfooterbottom}{3cm}") < tex.index(r"\kxfooter{")
 
 
 def test_faktura_amounts_use_swedish_number_format():

@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -18,28 +19,22 @@ FIXTURES = Path(__file__).parent / "fixtures"
 HAS_XELATEX = shutil.which("xelatex") is not None
 
 
-def _installed_families() -> frozenset[str]:
-    """Every font family fontconfig knows, as exact names.
+def _squeeze(text: str) -> str:
+    """Log text with whitespace and fontspec's line prefix removed.
 
-    ``fc-list : family`` prints one comma-separated alias list per face, so
-    the names are split and stripped. Exact names matter: a substring test
-    would let "Noto Sans Arabic" answer for "Noto Sans", or "Inter Display"
-    for "Inter".
+    The TeX engine hard-wraps its output at a fixed column, splitting words
+    mid-token, and fontspec indents continuation lines under a "(fontspec)"
+    marker. Dropping both is what makes a message match regardless of where
+    the wrap happened to fall.
     """
-    if shutil.which("fc-list") is None:
-        return frozenset()
-    out = subprocess.run(
-        ["fc-list", ":", "family"], capture_output=True, text=True
-    ).stdout
-    return frozenset(
-        alias.strip()
-        for line in out.splitlines()
-        for alias in line.split(",")
-        if alias.strip()
-    )
+    return re.sub(r"\s+|\(fontspec\)", "", text)
 
 
-INSTALLED_FAMILIES = _installed_families()
+def _is_unresolvable_font(error: str, family: str) -> bool:
+    """True when a failed compile failed because fontspec could not find
+    ``family`` — as opposed to any other reason a render can fail."""
+    return _squeeze(f'The font "{family}" cannot be found') in _squeeze(error)
+
 
 # Environments that are supposed to render like production (the base-image
 # self-test and the release gate) set this, turning the missing-font skip
@@ -873,15 +868,15 @@ def test_guaranteed_font_renders(family):
     derives from the family is used, not only the regular face.
 
     Where the family is genuinely absent — GitHub runners install a minimal
-    TeX Live with no mscorefonts — the case skips. The skip reason
-    deliberately avoids the word xelatex so the CI guard against silently
-    skipped xelatex tests is not tripped. Environments that must render like
-    production set KLARTEX_REQUIRE_FONTS=1, which turns the skip into a
-    failure.
+    TeX Live with no mscorefonts — the case skips. Availability is decided by
+    the compile itself rather than by asking fontconfig: on macOS the engine
+    resolves fonts through Core Text, so fc-list answers for a font the
+    engine cannot load (and vice versa), and only the engine's own verdict
+    tells the two apart. The skip reason deliberately avoids the word xelatex
+    so the CI guard against silently skipped xelatex tests is not tripped.
+    Environments that must render like production set KLARTEX_REQUIRE_FONTS=1,
+    which turns the skip into a failure.
     """
-    if family not in INSTALLED_FAMILIES and not REQUIRE_FONTS:
-        pytest.skip(f"font family {family!r} not installed")
-
     data = {
         "body": [
             {
@@ -893,7 +888,12 @@ def test_guaranteed_font_renders(family):
         ],
         "page_template": {"font": family, "header_font": family},
     }
-    pdf_bytes = render("_block", data)
+    try:
+        pdf_bytes = render("_block", data)
+    except RuntimeError as exc:
+        if REQUIRE_FONTS or not _is_unresolvable_font(str(exc), family):
+            raise
+        pytest.skip(f"font family {family!r} not available to the TeX engine")
     assert pdf_bytes[:5] == b"%PDF-"
     assert len(pdf_bytes) > 1000
 

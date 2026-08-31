@@ -4,6 +4,18 @@
 
 (Update as work proceeds — newest entries first)
 
+## 2026-08-31 — PR #90 review feedback addressed
+
+- `base-image.yml`: `docker/guaranteed-fonts.txt` added to both `paths`
+  filters. Without it a change to the guaranteed set that needs no Dockerfile
+  edit would trigger neither the PR-time self-test nor the post-merge rebuild,
+  so the schema could promise a family no image build ever verified.
+- `tests/test_renderer.py`: font availability is decided by the compile itself
+  instead of by `fc-list`. On macOS the engine resolves fonts through Core
+  Text, so fontconfig can report a family the engine cannot load; the render is
+  attempted and only a fontspec "cannot be found" failure for that exact family
+  turns into a skip. `KLARTEX_REQUIRE_FONTS=1` re-raises instead.
+
 ## 2026-08-31 — Phase A implemented on `issue/83-guaranteed-font-set`
 
 Steps 1–7 of the plan are done. Steps 8–9 (Phase B, base-image pin bump) wait

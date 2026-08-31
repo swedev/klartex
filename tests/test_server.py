@@ -534,6 +534,24 @@ def test_font_file_absent_from_the_assets_is_a_structured_400():
     assert FONT_FILE in detail["message"]
 
 
+def test_font_file_never_comes_from_the_server_working_directory(tmp_path, monkeypatch):
+    """A font is only ever what the request sent.
+
+    A file-form font with no assets beside it would otherwise resolve against
+    the process working directory, so a font file that happens to sit there
+    would be embedded although no caller supplied it. The endpoint gives the
+    request a root of its own instead, and the face is simply missing from it.
+    """
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / FONT_FILE).write_bytes(b"a font file the caller never sent")
+
+    r = post_font_document({"file": FONT_FILE})
+    assert r.status_code == 400, r.text
+    detail = r.json()["detail"]
+    assert detail["type"] == "input_error"
+    assert FONT_FILE in detail["message"]
+
+
 def test_font_file_name_the_schema_rejects_never_reaches_the_assets_rule():
     """The schema's font-file pattern is stricter than ASSET_NAME_RE, so a
     name the endpoint would accept as an asset can still be a bad font name."""

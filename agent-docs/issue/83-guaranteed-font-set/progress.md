@@ -22,9 +22,12 @@ Steps 10–14 of the plan. Step 15 (CHANGELOG) belongs to the next release.
   referenced face must be a readable file in the asset root, else a
   `ValueError` naming the file and the contract, raised before the
   xelatex-presence check.
-- `klartex/server/`: unchanged, as the plan expected — the faces ride the
-  existing `assets` map and the preflight `ValueError` maps to the endpoint's
-  structured 400.
+- `klartex/server/render.py`: the faces ride the existing `assets` map and
+  the preflight `ValueError` maps to the endpoint's structured 400, as the
+  plan expected. The one code change the plan did not foresee: a file-form
+  font also makes the endpoint establish its per-request asset root, so a
+  request that sends no assets cannot pick a font file up from the server's
+  working directory.
 - `README.md` / `README.en.md`: the file form documented beside the
   guaranteed set.
 

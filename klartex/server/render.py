@@ -28,6 +28,7 @@ from jsonschema import ValidationError
 from pydantic import BaseModel, Field
 
 from klartex import render as klartex_render
+from klartex.page_templates import font_files
 
 log = logging.getLogger(__name__)
 
@@ -265,11 +266,19 @@ def render(req: RenderRequest) -> Response:
 
     try:
         with tempfile.TemporaryDirectory(prefix="klartex-render-") as tmp:
-            # asset_dir stays None unless the caller sent a bundle, so a
-            # plain render resolves its inputs exactly as it does without
-            # this service in front of it.
+            # asset_dir stays None unless the request references something
+            # that has to resolve out of a root of its own, so a plain render
+            # resolves its inputs exactly as it does without this service in
+            # front of it. A file-form font counts even with no assets sent:
+            # left to the process working directory, a font file that happens
+            # to sit there would be embedded although no caller supplied it.
             asset_dir: Path | None = None
-            if req.header_source is not None or req.footer_source is not None or assets:
+            if (
+                req.header_source is not None
+                or req.footer_source is not None
+                or assets
+                or font_files(req.data.get("page_template"))
+            ):
                 asset_dir = Path(tmp)
                 for filename, content in assets.items():
                     (asset_dir / filename).write_bytes(content)

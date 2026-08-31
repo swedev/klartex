@@ -388,7 +388,8 @@ class TestWholePageAutodetection:
         (cwd / "page_template.tex.jinja").write_text("% cwd default")
         result = CliRunner().invoke(app, ["-d", str(data)])
         assert result.exit_code == 0
-        assert "Using page template" in result.output
+        assert "Using page template" in result.stderr
+        assert "Using page template" not in result.stdout
 
 
 @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")

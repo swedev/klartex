@@ -203,7 +203,7 @@ def test_whole_page_source_owns_geometry_and_font(tmp_path):
         "\n"
         r"\geometry{top=4cm, bottom=3cm}"
         "\n"
-        r"\setmainfont{Helvetica}"
+        r"\setmainfont{lmsans10-regular.otf}"
         "\n"
         r"\fancyhead[L]{\color{brandprimary}Brand}"
         "\n"
@@ -212,7 +212,7 @@ def test_whole_page_source_owns_geometry_and_font(tmp_path):
     )
     data = {
         "body": [{"type": "heading", "text": "Whole page"}],
-        "page_template": {"font": "Times New Roman", "margins": {"bottom": "2cm"}},
+        "page_template": {"font": "lmroman10-regular.otf", "margins": {"bottom": "2cm"}},
     }
     pdf = render(
         "_block", data, page_template_source=whole_page, asset_dir=tmp_path

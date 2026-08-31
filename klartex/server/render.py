@@ -1,8 +1,9 @@
 """Compile endpoint: JSON in, PDF out. The only place that runs xelatex.
 
-`klartex.render()` needs its page-template slot sources as strings and its
+`klartex.render()` needs its page-template sources as strings and its
 assets as a directory on disk. This endpoint takes both inline — the caller
-sends `header_source`/`footer_source` plus `assets` as base64 — writes the
+sends `page_template_source` or `header_source`/`footer_source`, plus
+`assets` as base64 — writes the
 assets to a temporary directory for the duration of the call, and deletes
 it afterwards. Nothing survives a request: no registry, no volume, no
 knowledge of who asked.
@@ -127,6 +128,15 @@ class RenderRequest(BaseModel):
         examples=["_block", "protokoll", "faktura"],
     )
     data: dict = Field(..., description="Template data; validated against schema.")
+    page_template_source: str | None = Field(
+        None,
+        description=(
+            "Page-template source owning both slots — one source for the "
+            "whole design. The document-level settings in "
+            "`data.page_template` still apply. Cannot be combined with "
+            "`header_source` or `footer_source`."
+        ),
+    )
     header_source: str | None = Field(
         None,
         description=(
@@ -244,11 +254,13 @@ def _check_source_size(field: str, source: str | None) -> None:
 def render(req: RenderRequest) -> Response:
     """Compile a template + data combination to a PDF."""
     _check_encodable(req.template, "template")
+    _check_encodable(req.page_template_source, "page_template_source")
     _check_encodable(req.header_source, "header_source")
     _check_encodable(req.footer_source, "footer_source")
     _check_encodable(req.data, "data")
 
     assets = _decode_assets(req.assets)
+    _check_source_size("page_template_source", req.page_template_source)
     _check_source_size("header_source", req.header_source)
     _check_source_size("footer_source", req.footer_source)
 
@@ -274,7 +286,8 @@ def render(req: RenderRequest) -> Response:
             # to sit there would be embedded although no caller supplied it.
             asset_dir: Path | None = None
             if (
-                req.header_source is not None
+                req.page_template_source is not None
+                or req.header_source is not None
                 or req.footer_source is not None
                 or assets
                 or font_files(req.data.get("page_template"))
@@ -287,6 +300,7 @@ def render(req: RenderRequest) -> Response:
                 req.template,
                 req.data,
                 asset_dir=asset_dir,
+                page_template_source=req.page_template_source,
                 header_source=req.header_source,
                 footer_source=req.footer_source,
             )

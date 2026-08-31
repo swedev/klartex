@@ -44,8 +44,10 @@ Page template data in the render request is an object::
 travel with the render as assets — ``{"file": "Inter-Regular.ttf", "bold":
 "Inter-Bold.ttf"}`` — for fonts the render environment does not install.
 
-Custom slot sources are not part of the JSON payload; they travel as
-``render(header_source=…)`` / ``render(footer_source=…)`` keyword arguments.
+Custom sources are not part of the JSON payload; they travel as keyword
+arguments to ``render()``: ``header_source`` and ``footer_source`` own one
+slot each, and ``page_template_source`` is one whole-page source owning both
+slots. The document-level settings above apply in every mode.
 """
 
 import re
@@ -617,6 +619,9 @@ class SlotSpec:
     variant: str | None = None
     source: str | None = None
     settings: dict = field(default_factory=dict)
+    #: True when ``source`` is a whole-page source shared with the other
+    #: slot, so the composition emits it once.
+    shared_source: bool = False
 
     @property
     def is_custom(self) -> bool:
@@ -848,6 +853,7 @@ def load_page_template(
     defaults: dict | None = None,
     header_source: str | None = None,
     footer_source: str | None = None,
+    page_template_source: str | None = None,
 ) -> PageTemplate:
     """Resolve a page template from its payload value and any custom sources.
 
@@ -858,14 +864,25 @@ def load_page_template(
                  (``BLOCK_DEFAULT_SLOTS`` when omitted).
         header_source: Raw ``.tex.jinja`` content owning the header slot.
         footer_source: Raw ``.tex.jinja`` content owning the footer slot.
+        page_template_source: Raw content owning both slots. In this mode the
+                 payload's ``header`` and ``footer`` are not read; the
+                 document-level settings still apply.
 
     Returns:
         Resolved PageTemplate.
 
     Raises:
-        ValueError: If ``spec`` is not an object, or a key, variant or
-                    setting is unknown.
+        ValueError: If ``spec`` is not an object, a key, variant or setting
+                    is unknown, or ``page_template_source`` is combined with
+                    a per-slot source.
     """
+    if page_template_source is not None and (
+        header_source is not None or footer_source is not None
+    ):
+        raise ValueError(
+            "page_template_source owns both slots and cannot be combined "
+            "with header_source or footer_source"
+        )
     if spec is None:
         overrides: dict = {}
     elif isinstance(spec, dict):
@@ -891,15 +908,24 @@ def load_page_template(
     diff_style = overrides.get("diff_style") or "color"
     margins = _check_margins(overrides.get("margins"))
 
-    if header_source is not None:
-        header = SlotSpec(source=header_source)
+    if page_template_source is not None:
+        # One source owns both slots, so no chrome is read from the payload.
+        header = SlotSpec(source=page_template_source)
+        footer = SlotSpec(source=page_template_source, shared_source=True)
     else:
-        header = _resolve_slot("header", overrides.get("header", _MISSING), defaults["header"])
+        if header_source is not None:
+            header = SlotSpec(source=header_source)
+        else:
+            header = _resolve_slot(
+                "header", overrides.get("header", _MISSING), defaults["header"]
+            )
 
-    if footer_source is not None:
-        footer = SlotSpec(source=footer_source)
-    else:
-        footer = _resolve_slot("footer", overrides.get("footer", _MISSING), defaults["footer"])
+        if footer_source is not None:
+            footer = SlotSpec(source=footer_source)
+        else:
+            footer = _resolve_slot(
+                "footer", overrides.get("footer", _MISSING), defaults["footer"]
+            )
 
     page_numbers = overrides.get("page_numbers")
     if page_numbers is None:

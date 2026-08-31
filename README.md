@@ -86,6 +86,9 @@ cat data.json | klartex
 # Med explicit mall
 klartex -d data.json -t protokoll
 
+# Med egen sidmall (hela sidan i en fil)
+klartex -d data.json --page-template sidmall.tex.jinja
+
 # Med egen sidmall (en slot i taget)
 klartex -d data.json --header-template sidhuvud.tex.jinja
 
@@ -105,7 +108,7 @@ pip install 'klartex[serve]'
 klartex serve --host 127.0.0.1 --port 8000
 ```
 
-Mall, data och eventuella slot-källor går i samma JSON-objekt. Assets följer med som base64 och skrivs till en temporärkatalog som lever precis så länge anropet gör det.
+Mall, data och eventuella mallkällor — `page_template_source` för hela sidan, `header_source`/`footer_source` per slot — går i samma JSON-objekt. Assets följer med som base64 och skrivs till en temporärkatalog som lever precis så länge anropet gör det.
 
 ```json
 {
@@ -199,20 +202,26 @@ En slot med egen LaTeX som sätter sin egen geometri vinner över `margins`, pre
 
 ### Egen sidmall
 
-Rå LaTeX skickas per slot, inte i JSON:
+Rå LaTeX skickas som fil eller text, inte i JSON. En fil kan äga hela sidan, eller en slot i taget:
 
 ```bash
+klartex -d data.json --page-template sidmall.tex.jinja
 klartex -d data.json --header-template sidhuvud.tex.jinja
 klartex -d data.json --header-template sidhuvud.tex.jinja --footer-template sidfot.tex.jinja
 ```
 
 ```python
+render("_block", data, page_template_source=Path("sidmall.tex.jinja").read_text())
 render("_block", data, header_source=Path("sidhuvud.tex.jinja").read_text())
 ```
 
-Båda filerna måste ligga i samma katalog — den katalogen blir mallkatalogen som filer hittas relativt till.
+`--page-template` äger båda slotarna och kan inte kombineras med slot-flaggorna. Slot-filerna måste ligga i samma katalog — den katalogen blir mallkatalogen som filer hittas relativt till.
 
-En slot-fil definierar sin egen del av chromet:
+Utan mallflagga letar klartex själv: först `<data-filens-stam>.tex.jinja` bredvid datafilen, sedan `page_template.tex.jinja` i arbetsmappen. Hittas en sådan fil används den som helsidesmall, och sökvägen skrivs på stderr. En slot-flagga stänger av autodetekteringen.
+
+Inställningarna på dokumentnivå i `data.page_template` (`font`, `header_font`, `diff_style`, `margins`) gäller oavsett form och skrivs ut före mallens egen LaTeX, så mallens `\geometry` och `\setmainfont` vinner. `header` och `footer` i JSON läses inte när en helsidesmall är satt.
+
+En mallfil definierar sitt eget chrome:
 
 ```latex
 \definecolor{brandprimary}{HTML}{2E5A1C}
@@ -238,8 +247,8 @@ Delarna skrivs ut i fast ordning: inställningar på dokumentnivå, sidhuvud, si
 
 Var logotyper och andra filer hittas skiljer sig mellan de två ytorna:
 
-- **CLI med filbaserad sidmall** (`--header-template`, `--footer-template`): filer hittas relativt till slot-filernas egen katalog, med arbetsmappen som fallback. En mall och dess logotyper kan därmed ligga samlade i t.ex. en `Branding/`-mapp och användas från vilken arbetsmapp som helst. För en symlänkad fil gäller målets katalog.
-- **API med `header_source` eller `footer_source`**: parametrarna tar rå text utan sökväg, så det finns ingen mallkatalog att utgå från. Anropare som vill hitta filer utanför arbetsmappen skickar `asset_dir=<katalog>` till `render()`; annars gäller arbetsmappen.
+- **CLI med filbaserad sidmall** (`--page-template`, `--header-template`, `--footer-template`, samt en autodetekterad mall): filer hittas relativt till mallfilens egen katalog, med arbetsmappen som fallback. En mall och dess logotyper kan därmed ligga samlade i t.ex. en `Branding/`-mapp och användas från vilken arbetsmapp som helst. För en symlänkad fil gäller målets katalog.
+- **API med `page_template_source`, `header_source` eller `footer_source`**: parametrarna tar rå text utan sökväg, så det finns ingen mallkatalog att utgå från. Anropare som vill hitta filer utanför arbetsmappen skickar `asset_dir=<katalog>` till `render()`; annars gäller arbetsmappen.
 
 > **Både `\includegraphics{logo.pdf}` och `\includegraphics{./logo.pdf}` fungerar**, liksom `\input{../delat/farger.tex}` — relativa referenser utgår från mallens katalog (eller `asset_dir`, i annat fall arbetsmappen). En skillnad finns dock: namn med `./` eller `../` faller **inte** tillbaka på arbetsmappen. TeX:s filsökning (Kpathsea) söker aldrig upp sådana namn, utan provar dem rakt av mot xelatex arbetskatalog — och den katalogen är just mallens katalog. Namn utan prefix söks däremot i hela kedjan och hittas även om filen bara ligger i arbetsmappen.
 

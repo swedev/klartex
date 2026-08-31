@@ -86,6 +86,9 @@ cat data.json | klartex
 # With explicit template
 klartex -d data.json -t protokoll
 
+# With a custom page template (one file for the whole page)
+klartex -d data.json --page-template page.tex.jinja
+
 # With a custom page template (one slot at a time)
 klartex -d data.json --header-template header.tex.jinja
 
@@ -105,7 +108,7 @@ pip install 'klartex[serve]'
 klartex serve --host 127.0.0.1 --port 8000
 ```
 
-Template, data and any slot sources travel in one JSON object. Assets come along as base64 and are written to a temporary directory that lives exactly as long as the call does.
+Template, data and any template sources — `page_template_source` for the whole page, `header_source`/`footer_source` per slot — travel in one JSON object. Assets come along as base64 and are written to a temporary directory that lives exactly as long as the call does.
 
 ```json
 {
@@ -199,20 +202,26 @@ A slot with custom LaTeX that sets its own geometry wins over `margins`, exactly
 
 ### Custom page template
 
-Raw LaTeX is supplied per slot, not in the JSON:
+Raw LaTeX is supplied as a file or as text, not in the JSON. One file can own the whole page, or one slot at a time:
 
 ```bash
+klartex -d data.json --page-template page.tex.jinja
 klartex -d data.json --header-template header.tex.jinja
 klartex -d data.json --header-template header.tex.jinja --footer-template footer.tex.jinja
 ```
 
 ```python
+render("_block", data, page_template_source=Path("page.tex.jinja").read_text())
 render("_block", data, header_source=Path("header.tex.jinja").read_text())
 ```
 
-Both files must live in the same directory — that directory becomes the template directory files resolve against.
+`--page-template` owns both slots and cannot be combined with the slot flags. The slot files must live in the same directory — that directory becomes the template directory files resolve against.
 
-A slot file defines its own part of the chrome:
+With no template flag, klartex looks for one itself: first `<data-stem>.tex.jinja` next to the data file, then `page_template.tex.jinja` in the working directory. A file found that way is used as a whole-page template, and its path is announced on stderr. A slot flag turns autodetection off.
+
+The document-level settings in `data.page_template` (`font`, `header_font`, `diff_style`, `margins`) apply in either form and are emitted before the template's own LaTeX, so the template's `\geometry` and `\setmainfont` win. The JSON `header` and `footer` are not read when a whole-page template is in use.
+
+A template file defines its own chrome:
 
 ```latex
 \definecolor{brandprimary}{HTML}{2E5A1C}
@@ -238,8 +247,8 @@ The parts are emitted in a fixed order: document-level settings, header, footer,
 
 Where logos and other files are resolved differs between the two surfaces:
 
-- **CLI with a file-based page template** (`--header-template`, `--footer-template`): files are resolved relative to the slot files' own directory, with the working directory as fallback. A template and its logos can therefore live together in e.g. a `Branding/` folder and be used from any working directory. For a symlinked file, the target's directory applies.
-- **API with `header_source` or `footer_source`**: the parameters take raw text with no path, so there is no template directory to work from. Callers who need files outside the working directory pass `asset_dir=<directory>` to `render()`; otherwise the working directory applies.
+- **CLI with a file-based page template** (`--page-template`, `--header-template`, `--footer-template`, and an autodetected template): files are resolved relative to the template file's own directory, with the working directory as fallback. A template and its logos can therefore live together in e.g. a `Branding/` folder and be used from any working directory. For a symlinked file, the target's directory applies.
+- **API with `page_template_source`, `header_source` or `footer_source`**: the parameters take raw text with no path, so there is no template directory to work from. Callers who need files outside the working directory pass `asset_dir=<directory>` to `render()`; otherwise the working directory applies.
 
 > **Both `\includegraphics{logo.pdf}` and `\includegraphics{./logo.pdf}` work**, as does `\input{../shared/colors.tex}` — relative references resolve against the template's directory (or `asset_dir`, otherwise the working directory). One asymmetry remains: names starting with `./` or `../` do **not** fall back to the working directory. TeX's file lookup (Kpathsea) never searches for such names; it tries them as-is against xelatex's working directory — which is precisely the template's directory. Plain names, by contrast, go through the full search chain and are found even if the file only exists in the working directory.
 

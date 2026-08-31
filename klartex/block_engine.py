@@ -38,6 +38,7 @@ def prepare_block_context(
     *,
     header_source: str | None = None,
     footer_source: str | None = None,
+    page_template_source: str | None = None,
 ) -> dict[str, Any]:
     """Build the Jinja context for the block engine meta-template.
 
@@ -47,6 +48,7 @@ def prepare_block_context(
               calling this function.
         header_source: Optional raw .tex.jinja content owning the header slot.
         footer_source: Optional raw .tex.jinja content owning the footer slot.
+        page_template_source: Optional raw content owning both slots.
 
     Returns:
         Context dict for rendering ``_block_engine.tex.jinja``.
@@ -65,6 +67,7 @@ def prepare_block_context(
         defaults=BLOCK_DEFAULT_SLOTS,
         header_source=header_source,
         footer_source=footer_source,
+        page_template_source=page_template_source,
     )
 
     # Extract document title from body blocks (first heading or title_page)

@@ -291,10 +291,18 @@ def test_malformed_envelope_is_a_400_input_error(payload):
         b'{"template":"\\ud800","data":{}}',
         b'{"template":"_block","data":{"body":[]},"header_source":"\\ud800"}',
         b'{"template":"_block","data":{"body":[]},"footer_source":"\\ud800"}',
+        b'{"template":"_block","data":{"body":[]},"page_template_source":"\\ud800"}',
         b'{"template":"_block","data":{"body":[{"type":"text","text":"\\ud800"}]}}',
         b'{"template":"_block","data":{"\\ud800":1,"body":[]}}',
     ],
-    ids=["template", "header-source", "footer-source", "nested-value", "object-key"],
+    ids=[
+        "template",
+        "header-source",
+        "footer-source",
+        "whole-page-source",
+        "nested-value",
+        "object-key",
+    ],
 )
 def test_unpaired_surrogate_is_a_400_input_error(payload):
     """JSON admits `"\\ud800"`; UTF-8 does not, and the contract has no 500.
@@ -385,6 +393,42 @@ def test_render_with_a_footer_source():
     )
     assert r.status_code == 200, r.text
     assert r.content[:4] == b"%PDF"
+
+
+@needs_xelatex
+def test_render_with_a_whole_page_source():
+    """One source owns both slots, and its inline asset resolves."""
+    r = post_blocks(
+        MINIMAL_BODY,
+        page_template_source=LOGO_HEADER_SOURCE + r"\fancyfoot[C]{\thepage}" "\n",
+        assets={"logo.png": PNG_1PX},
+    )
+    assert r.status_code == 200, r.text
+    assert r.content[:4] == b"%PDF"
+
+
+@pytest.mark.parametrize("slot", ["header_source", "footer_source"])
+def test_whole_page_source_with_a_slot_source_is_a_400(slot):
+    """The core's ValueError surfaces through the documented contract."""
+    r = post_blocks(MINIMAL_BODY, page_template_source="% w", **{slot: "% s"})
+    assert r.status_code == 400, r.text
+    detail = r.json()["detail"]
+    assert detail["type"] == "input_error"
+    assert "cannot be combined" in detail["message"]
+
+
+def test_whole_page_source_is_forwarded_to_the_core(monkeypatch):
+    seen: list = []
+
+    def capture(template, data, asset_dir=None, **kwargs):
+        seen.append(kwargs)
+        return b"%PDF-fake"
+
+    monkeypatch.setattr(render_module, "klartex_render", capture)
+
+    r = post_blocks(MINIMAL_BODY, page_template_source="% whole page")
+    assert r.status_code == 200
+    assert seen[0]["page_template_source"] == "% whole page"
 
 
 @needs_xelatex
@@ -571,7 +615,9 @@ def test_too_many_assets_is_rejected():
     assert r.json()["detail"]["type"] == "input_error"
 
 
-@pytest.mark.parametrize("field", ["header_source", "footer_source"])
+@pytest.mark.parametrize(
+    "field", ["header_source", "footer_source", "page_template_source"]
+)
 def test_oversized_slot_source_is_rejected(field):
     source = "%" * (render_module.MAX_TEMPLATE_BYTES + 1)
     r = post_blocks(MINIMAL_BODY, **{field: source})

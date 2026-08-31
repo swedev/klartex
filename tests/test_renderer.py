@@ -189,6 +189,37 @@ def test_render_resolves_relative_asset_dir(tmp_path, monkeypatch):
     assert pdf[:5] == b"%PDF-"
 
 
+@pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+def test_whole_page_source_owns_geometry_and_font(tmp_path):
+    r"""The documented use: one file carrying the whole design — its own
+    \geometry and \setmainfont, plus a sibling asset — rendered alongside the
+    payload's document-level settings.
+    """
+    (tmp_path / "brand-colors.tex").write_text(
+        r"\definecolor{brandprimary}{HTML}{2E5A1C}"
+    )
+    whole_page = (
+        r"\input{brand-colors}"
+        "\n"
+        r"\geometry{top=4cm, bottom=3cm}"
+        "\n"
+        r"\setmainfont{Helvetica}"
+        "\n"
+        r"\fancyhead[L]{\color{brandprimary}Brand}"
+        "\n"
+        r"\fancyfoot[C]{\thepage}"
+        "\n"
+    )
+    data = {
+        "body": [{"type": "heading", "text": "Whole page"}],
+        "page_template": {"font": "Times New Roman", "margins": {"bottom": "2cm"}},
+    }
+    pdf = render(
+        "_block", data, page_template_source=whole_page, asset_dir=tmp_path
+    )
+    assert pdf[:5] == b"%PDF-"
+
+
 def _color_page_template(input_arg: str) -> str:
     """A page template whose only job is to \\input the given argument."""
     return (
@@ -491,8 +522,8 @@ class TestDiscovery:
 def _render_recipe_tex(template_name: str, data: dict, **sources: str) -> str:
     """Helper: run the recipe pre-compile pipeline, return the LaTeX source.
 
-    ``sources`` forwards ``header_source`` / ``footer_source`` to the recipe
-    renderer.
+    ``sources`` forwards ``page_template_source`` / ``header_source`` /
+    ``footer_source`` to the recipe renderer.
     """
     from klartex.renderer import _render_recipe
     from klartex.tex_escape import escape_data
@@ -501,6 +532,7 @@ def _render_recipe_tex(template_name: str, data: dict, **sources: str) -> str:
     return _render_recipe(
         info,
         escape_data(data),
+        page_template_source=sources.get("page_template_source"),
         header_source=sources.get("header_source"),
         footer_source=sources.get("footer_source"),
     )
@@ -682,6 +714,46 @@ def test_faktura_margins_override_the_narrowmargins_defaults():
         r"\geometry{left=4cm, headsep=\dimexpr 5cm-2.1cm\relax}"
     )
     assert r"\renewcommand{\kxreclaimtop}{5cm}" in tex
+
+
+def test_whole_page_source_reaches_the_recipe_path():
+    tex = _render_recipe_tex(
+        "faktura", _minimal_faktura(), page_template_source="% whole page"
+    )
+    assert tex.count("% whole page") == 1
+
+
+def test_recipe_footer_still_wins_over_a_whole_page_source():
+    r"""faktura's own top-level `footer` is document content, not chrome: it is
+    emitted after the page-template composition, so it survives a whole-page
+    source owning both slots.
+    """
+    tex = _render_recipe_tex(
+        "faktura",
+        _minimal_faktura(footer={"company": "Bolaget AB"}),
+        page_template_source="% whole page",
+    )
+    assert tex.count("% whole page") == 1
+    assert r"\kxfooter{" in tex
+    assert "Bolaget AB" in tex
+    assert tex.index("% whole page") < tex.index(r"\kxfooter{")
+
+
+def test_page_numbers_still_reaches_the_recipe_footer_in_whole_page_mode():
+    r"""`page_numbers` is inert for the page-template footer (the source owns
+    it) but still plumbs through to a recipe-level `footer`.
+    """
+    with_numbers = _render_recipe_tex(
+        "faktura",
+        _minimal_faktura(footer={"company": "Bolaget AB"}),
+        page_template_source="% whole page",
+    )
+    without = _render_recipe_tex(
+        "faktura",
+        _minimal_faktura(footer={"company": "Bolaget AB"}, page_template={"page_numbers": False}),
+        page_template_source="% whole page",
+    )
+    assert with_numbers != without
 
 
 def test_faktura_margins_reach_its_own_footer_geometry():

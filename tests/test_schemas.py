@@ -6,7 +6,7 @@ from pathlib import Path
 import jsonschema
 import pytest
 
-from klartex.page_templates import DIMENSION_PATTERN
+from klartex.page_templates import DIMENSION_PATTERN, GUARANTEED_FONTS
 from klartex.renderer import get_registry, TEMPLATES_DIR
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -241,3 +241,41 @@ def test_logo_height_schema_default(template_name):
     """
     schema = json.loads((TEMPLATES_DIR / template_name / "schema.json").read_text())
     assert schema["properties"]["logo_height"]["default"] == "1cm"
+
+
+@pytest.mark.parametrize("setting", ["font", "header_font"])
+def test_block_schema_documents_the_guaranteed_fonts(setting):
+    """The discovery surface names the render environment's font guarantee.
+
+    An agent picks a font from `klartex schema _block` alone, so every family
+    the base image is built to carry has to appear in the description — and
+    conversely, nothing may be promised there that the image is not checked
+    for (docker/Dockerfile.base fails the build on a missing family).
+    """
+    settings = _block_schema()["properties"]["page_template"]["properties"]
+    assert "ghcr.io/swedev/klartex-base" in settings["font"]["description"]
+    description = settings[setting]["description"]
+    if setting == "font":
+        for family in GUARANTEED_FONTS:
+            assert family in description, family
+    else:
+        assert "guaranteed families are the same as for font" in description
+
+
+def test_dockerfile_font_list_matches_the_constant():
+    """docker/guaranteed-fonts.txt is the Dockerfile's copy of the constant.
+
+    The image build cannot import klartex — it verifies the fonts before the
+    package is installed — so the list travels as a file. This test is what
+    keeps the copy honest.
+    """
+    repo_root = Path(__file__).resolve().parent.parent
+    lines = (repo_root / "docker" / "guaranteed-fonts.txt").read_text(
+        encoding="utf-8"
+    ).splitlines()
+    families = tuple(
+        line.strip()
+        for line in lines
+        if line.strip() and not line.lstrip().startswith("#")
+    )
+    assert families == GUARANTEED_FONTS

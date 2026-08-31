@@ -11,26 +11,30 @@ name: Build and publish base image
 # reaches the registry. The arm64 manifest gets the Dockerfile's
 # build-time sanity check only.
 #
-# Runs only when the base file (or this workflow) changes — a few times a
-# year. The ~15-20 minute QEMU arm64 build is the price of that run, and
-# is why no GHA cache is configured: ~7 GB per architecture never fits in
-# the 10 GB repo cache anyway.
+# Runs only when the base file, the guaranteed-font list it verifies
+# against, or this workflow changes — a few times a year. The ~15-20 minute
+# QEMU arm64 build is the price of that run, and is why no GHA cache is
+# configured: ~7 GB per architecture never fits in the 10 GB repo cache
+# anyway.
 #
-# Bumping the base: change docker/Dockerfile.base, merge, wait for the tag
-# this workflow publishes, then open a separate PR in each consumer that
-# moves its pin to the new tag + digest. Published tags referenced by any
-# Dockerfile or workflow in the history must never be deleted.
+# Bumping the base: change docker/Dockerfile.base or
+# docker/guaranteed-fonts.txt, merge, wait for the tag this workflow
+# publishes, then open a separate PR in each consumer that moves its pin to
+# the new tag + digest. Published tags referenced by any Dockerfile or
+# workflow in the history must never be deleted.
 
 on:
   push:
     branches: [main]
     paths:
       - 'docker/Dockerfile.base'
+      - 'docker/guaranteed-fonts.txt'
       - '.github/workflows/base-image.yml'
   pull_request:
     branches: [main]
     paths:
       - 'docker/Dockerfile.base'
+      - 'docker/guaranteed-fonts.txt'
       - '.github/workflows/base-image.yml'
   workflow_dispatch:
     inputs:
@@ -129,15 +133,15 @@ jobs:
       # The point of the whole workflow: klartex must pass inside the image
       # before the image can be published. poppler-utils is installed here
       # rather than baked in — the image stays production-faithful and the
-      # pdftotext round-trip tests still run. KLARTEX_REQUIRE_GEORGIA turns
-      # the Georgia render test's skip into a failure, so a base that lost
-      # the fonts fails here instead of shipping.
+      # pdftotext round-trip tests still run. KLARTEX_REQUIRE_FONTS turns the
+      # guaranteed-font render tests' skips into failures, so a base that lost
+      # a family fails here instead of shipping.
       - name: Run klartex test suite inside the image
         shell: bash
         run: |
           set -euo pipefail
           docker run --rm -v "$PWD:/work" -w /work \
-            -e KLARTEX_REQUIRE_GEORGIA=1 \
+            -e KLARTEX_REQUIRE_FONTS=1 \
             klartex-base:selftest bash -c '
               set -euo pipefail
               apt-get update

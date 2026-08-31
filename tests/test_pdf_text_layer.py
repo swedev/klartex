@@ -184,7 +184,7 @@ def _two_page_body(heading: str) -> list[dict]:
     """A body long enough to be paginated, so `Sida 1 av 2` is meaningful."""
     return [
         {"type": "heading", "text": heading},
-        {"type": "text", "text": LOREM * 30},
+        {"type": "text", "text": LOREM * 50},
     ]
 
 

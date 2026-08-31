@@ -1860,15 +1860,12 @@ def golden_preamble(tex: str) -> list[str]:
 
 
 class TestPageTemplateGoldens:
-    r"""The three aliases must still emit the preamble they emitted before the
-    slot model existed. The goldens were captured from `main`.
+    r"""Each slot combination must emit exactly the preamble its golden pins.
 
-    One region is not `main`'s text: the letterhead's right-hand contact
-    column, where the unconditional `\\` separator was replaced by
-    `\kx@hdrline` so a column with empty leading fields compiles. The golden
-    output is unaffected — the whole block sits inside `\ifdefempty{\orgname}`,
-    which is false for every payload that supplies no header settings. Every
-    other line is still `main`'s, verbatim.
+    The goldens are the composition's expected output, held by hand: a
+    deliberate change to a slot fragment or to the composition order is a
+    change to the golden in the same commit, and any other diff is a
+    regression.
     """
 
     @pytest.mark.parametrize(

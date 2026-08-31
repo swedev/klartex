@@ -2,14 +2,17 @@
 \fancyhead[L]{%
     \ifdefempty{\orgname}{}{%
     \color{brandsecondary}\kxheaderfont
-    \begin{minipage}[t]{0.20\textwidth}
+    \begin{minipage}[t]{0.30\textwidth}
         \fontsize{6pt}{9pt}\selectfont
+        \raggedright\hyphenpenalty=10000
         \textbf{\orgname}%
         \ifdefempty{\orgaddress}{}{\\
         \orgaddress}%
     \end{minipage}%
-    \begin{minipage}[t]{0.22\textwidth}
+    \hspace{0.03\textwidth}%
+    \begin{minipage}[t]{0.25\textwidth}
         \fontsize{6pt}{9pt}\selectfont
+        \raggedright\hyphenpenalty=10000
         \kx@hdrsepfalse
         \kx@hdrline{\orgwebsite}%
         \kx@hdrline{\orgemail}%

@@ -1,8 +1,43 @@
 # Progress: Issue #83 — Guaranteed font set in the render environment, and a path for external fonts
 
-## Status: Phase A complete (Phases B and C not started)
+## Status: Phase A merged, Phase B implemented, Phase C not started
 
 (Update as work proceeds — newest entries first)
+
+## 2026-08-31 — Phase B implemented on `issue/83-guaranteed-font-set-r2`
+
+Step 9 of the plan. Steps 10-14 (Phase C, the file form) remain, as a separate
+PR; step 15 (CHANGELOG) belongs to the next release.
+
+- Step 8 completed itself: merging PR #90 triggered `base-image.yml` on `main`
+  (run 33431438070). Its self-test ran the full suite inside the freshly built
+  amd64 image with `KLARTEX_REQUIRE_FONTS=1` — **621 passed, 0 skipped**, every
+  `test_guaranteed_font_renders[...]` case among them, so the new base honours
+  the guarantee `GUARANTEED_FONTS` promises.
+- New pin, read from the run's `Report pin` step and cross-checked against the
+  push log's manifest-list digest and the ghcr versions API (tag resolves to
+  the same index digest):
+  `ghcr.io/swedev/klartex-base:20260831-12@sha256:4dbabb8953ca8c307055d1130ecd642000140819b1e3b272f358eb08598dcb4e`
+- `.github/workflows/publish.yml` (`container.image`, the release gate) and
+  `docker/Dockerfile.render` (`FROM`) move to it in the same commit — the
+  `image` job refuses to publish when those two diverge.
+
+### Verification
+
+- The `publish.yml` guard's own `sed` extraction, run over the working tree,
+  reports identical pins for `Dockerfile.render` and the gate.
+- `publish.yml` parses as YAML; no other file in the tree references the old
+  pin (the remaining hits are historical plan documents under `agent-docs/`).
+- Both READMEs cite the image as `<tag>@sha256:<digest>` placeholders, so no
+  documentation needed the new value.
+- No Python or LaTeX changed, so the suite is unaffected; the pin's real proof
+  is the base-image self-test above, and the release gate re-runs it on the
+  pinned image at the next release.
+
+### Remaining coordination
+
+- `swedev/klartex.se` gets the font guarantee only when it moves its own base
+  pin to `20260831-12`.
 
 ## 2026-08-31 — PR #90 review feedback addressed
 

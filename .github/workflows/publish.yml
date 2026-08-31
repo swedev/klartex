@@ -44,7 +44,7 @@ jobs:
     # production is arm64; both manifests come from the same Dockerfile and
     # the same digest-pinned upstream, but they are separate builds.
     container:
-      image: ghcr.io/swedev/klartex-base:20260828-3@sha256:b011056413d449bdc41b893ff1bd538a2be46d78d3794698eb134f45936d6ff2
+      image: ghcr.io/swedev/klartex-base:20260831-12@sha256:4dbabb8953ca8c307055d1130ecd642000140819b1e3b272f358eb08598dcb4e
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}

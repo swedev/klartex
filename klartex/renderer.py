@@ -114,6 +114,7 @@ def render(
     *,
     header_source: str | None = None,
     footer_source: str | None = None,
+    page_template_source: str | None = None,
 ) -> bytes:
     """Render a template with data to PDF bytes.
 
@@ -124,13 +125,19 @@ def render(
             The footer slot still resolves from data["page_template"].
         footer_source: Optional raw .tex.jinja content owning the footer slot.
             The header slot still resolves from data["page_template"].
+        page_template_source: Optional raw content owning both page-template
+            slots — one file for the whole design. The document-level settings
+            in data["page_template"] (font, header_font, diff_style, margins)
+            still apply, and are emitted before the source so its own
+            \\geometry and font commands win. Cannot be combined with
+            `header_source` or `footer_source`, which raises `ValueError`.
         asset_dir: Optional directory that assets (`\\includegraphics`,
             `\\input`, custom fonts, …) resolve against. Useful when callers
             (e.g. a server) keep page-template bundles in a known location
             separate from the working directory. A relative path is resolved
             against the caller's cwd; a path that is not an existing
-            directory raises `ValueError`. Note that `header_source` and
-            `footer_source` are raw text with no path of their own, so API
+            directory raises `ValueError`. Note that the source arguments
+            are raw text with no path of their own, so API
             callers must pass `asset_dir` explicitly to get assets resolved
             outside cwd.
 
@@ -195,6 +202,7 @@ def render(
             escaped_data,
             header_source=header_source,
             footer_source=footer_source,
+            page_template_source=page_template_source,
         )
         return _compile_tex(tex_source, asset_dir=asset_dir)
 
@@ -204,6 +212,7 @@ def render(
         escaped_data,
         header_source=header_source,
         footer_source=footer_source,
+        page_template_source=page_template_source,
     )
     return _compile_tex(tex_source, asset_dir=asset_dir)
 
@@ -343,6 +352,7 @@ def _render_block_engine(
     *,
     header_source: str | None = None,
     footer_source: str | None = None,
+    page_template_source: str | None = None,
 ) -> str:
     """Render using the universal block engine path."""
     from klartex.block_engine import prepare_block_context
@@ -351,6 +361,7 @@ def _render_block_engine(
         escaped_data,
         header_source=header_source,
         footer_source=footer_source,
+        page_template_source=page_template_source,
     )
     template = _jinja_env.get_template("_block_engine.tex.jinja")
     return template.render(context)
@@ -362,6 +373,7 @@ def _render_recipe(
     *,
     header_source: str | None = None,
     footer_source: str | None = None,
+    page_template_source: str | None = None,
 ) -> str:
     """Render using the YAML recipe path."""
     from klartex.recipe import load_recipe, prepare_recipe_context
@@ -372,6 +384,7 @@ def _render_recipe(
         escaped_data,
         header_source=header_source,
         footer_source=footer_source,
+        page_template_source=page_template_source,
     )
     template = _jinja_env.get_template("_recipe_base.tex.jinja")
     return template.render(context)

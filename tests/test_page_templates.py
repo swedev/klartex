@@ -331,6 +331,58 @@ class TestCustomSources:
         assert pt.footer.is_custom
 
 
+class TestWholePageSource:
+    """page_template_source owns both slots — one source for the design."""
+
+    def test_both_slots_carry_the_source_and_the_footer_is_shared(self):
+        pt = load_page_template({}, page_template_source="% whole")
+        assert pt.header.is_custom
+        assert pt.footer.is_custom
+        assert pt.header.source == pt.footer.source == "% whole"
+        assert pt.footer.shared_source is True
+        assert pt.header.shared_source is False
+
+    def test_a_per_slot_source_is_not_shared(self):
+        pt = load_page_template({}, header_source="% h", footer_source="% f")
+        assert pt.header.shared_source is False
+        assert pt.footer.shared_source is False
+
+    def test_payload_slots_are_not_read_for_composition(self):
+        pt = load_page_template(LETTERHEAD_TITLE, page_template_source="% whole")
+        assert pt.header.variant is None
+        assert pt.footer.variant is None
+        assert pt.header.source == "% whole"
+
+    def test_document_level_settings_still_apply(self):
+        pt = load_page_template(
+            {
+                "font": "Futura",
+                "header_font": "Helvetica",
+                "diff_style": "underline",
+                "margins": {"top": "1cm"},
+            },
+            page_template_source="% whole",
+        )
+        assert pt.font == "Futura"
+        assert pt.header_font == "Helvetica"
+        assert pt.diff_style == "underline"
+        assert pt.margins["top"] == "1cm"
+
+    def test_the_source_owns_its_geometry_so_a_small_top_is_allowed(self):
+        """_check_margin_top only guards a rendering predefined header."""
+        pt = load_page_template({"margins": {"top": "1cm"}}, page_template_source="% w")
+        assert pt.margins["top"] == "1cm"
+
+    def test_header_reclaim_is_empty(self):
+        pt = load_page_template({}, page_template_source="% whole")
+        assert not pt.header_reclaim
+
+    @pytest.mark.parametrize("slot", ["header_source", "footer_source"])
+    def test_cannot_be_combined_with_a_slot_source(self, slot):
+        with pytest.raises(ValueError, match="cannot be combined"):
+            load_page_template({}, page_template_source="% w", **{slot: "% s"})
+
+
 class TestSlotListing:
     """list_slot_variants() for agent discovery."""
 

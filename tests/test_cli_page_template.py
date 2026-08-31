@@ -85,7 +85,7 @@ class TestSlotTemplateFlags:
         assert asset_dir.is_absolute()
         assert asset_dir == branding.resolve()
 
-    def test_no_slot_flag_leaves_asset_dir_none(self, cwd, captured):
+    def test_no_flag_and_nothing_to_detect_leaves_asset_dir_none(self, cwd, captured):
         data = cwd / "report.json"
         data.write_text(json.dumps(BLOCK_DATA))
         result = runner.invoke(app, ["-d", str(data)])
@@ -94,16 +94,17 @@ class TestSlotTemplateFlags:
         assert captured["header_source"] is None
         assert captured["footer_source"] is None
 
-    def test_a_sibling_template_file_is_not_picked_up(self, cwd, captured):
-        """No auto-detection: a .tex.jinja next to the data file is ignored."""
-        data = cwd / "report.json"
-        data.write_text(json.dumps(BLOCK_DATA))
+    def test_slot_flags_suppress_autodetection(self, cwd, captured):
+        """A slot flag is explicit, so a detectable sibling is left alone."""
+        branding, data = _bundle(cwd)
         (cwd / "report.tex.jinja").write_text("% sibling")
-        (cwd / "page_template.tex.jinja").write_text("% cwd")
-        result = runner.invoke(app, ["-d", str(data)])
+        result = runner.invoke(
+            app, ["-d", str(data), "--header-template", str(branding / "head.tex.jinja")]
+        )
         assert result.exit_code == 0
-        assert captured["header_source"] is None
-        assert captured["footer_source"] is None
+        assert captured["page_template_source"] is None
+        assert captured["header_source"] == "% header"
+        assert captured["asset_dir"] == branding.resolve()
 
     def test_slot_files_in_different_directories_are_rejected(self, cwd, captured):
         branding, data = _bundle(cwd)
@@ -247,3 +248,167 @@ class TestSlotTemplateFlagsRender:
         )
         assert result.exit_code == 0, result.output
         assert (cwd / "out.pdf").read_bytes()[:5] == b"%PDF-"
+
+
+class TestAutodetectHelper:
+    """_autodetect_page_template's resolution order, as a unit."""
+
+    def test_sibling_of_the_data_file_wins(self, cwd):
+        from klartex.cli import _autodetect_page_template
+
+        data = cwd / "report.json"
+        data.write_text(json.dumps(BLOCK_DATA))
+        sibling = cwd / "report.tex.jinja"
+        sibling.write_text("% sibling")
+        (cwd / "page_template.tex.jinja").write_text("% cwd default")
+        assert _autodetect_page_template(data) == sibling
+
+    def test_cwd_default_is_the_fallback(self, cwd):
+        from klartex.cli import _autodetect_page_template
+
+        data = cwd / "report.json"
+        data.write_text(json.dumps(BLOCK_DATA))
+        default = cwd / "page_template.tex.jinja"
+        default.write_text("% cwd default")
+        assert _autodetect_page_template(data) == default
+
+    def test_cwd_default_applies_without_a_data_file(self, cwd):
+        from klartex.cli import _autodetect_page_template
+
+        default = cwd / "page_template.tex.jinja"
+        default.write_text("% cwd default")
+        assert _autodetect_page_template(None) == default
+
+    def test_nothing_to_detect_returns_none(self, cwd):
+        from klartex.cli import _autodetect_page_template
+
+        data = cwd / "report.json"
+        data.write_text(json.dumps(BLOCK_DATA))
+        assert _autodetect_page_template(data) is None
+
+    def test_a_directory_candidate_is_not_a_template(self, cwd):
+        """Only a regular file counts — a directory of that name is skipped."""
+        from klartex.cli import _autodetect_page_template
+
+        data = cwd / "report.json"
+        data.write_text(json.dumps(BLOCK_DATA))
+        (cwd / "report.tex.jinja").mkdir()
+        (cwd / "page_template.tex.jinja").mkdir()
+        assert _autodetect_page_template(data) is None
+
+
+class TestWholePageTemplateFlag:
+    """--page-template owns both slots and sets asset_dir to its own dir."""
+
+    def test_explicit_flag_reaches_render(self, cwd, captured):
+        _, data = _bundle(cwd)
+        whole = cwd / "branding" / "page.tex.jinja"
+        whole.write_text("% whole page")
+        result = runner.invoke(app, ["-d", str(data), "--page-template", str(whole)])
+        assert result.exit_code == 0
+        assert captured["page_template_source"] == "% whole page"
+        assert captured["header_source"] is None
+        assert captured["footer_source"] is None
+        assert captured["asset_dir"] == whole.parent.resolve()
+
+    def test_relative_flag_value_is_absolutised(self, cwd, captured):
+        branding, _ = _bundle(cwd)
+        (branding / "page.tex.jinja").write_text("% whole page")
+        result = runner.invoke(
+            app, ["-d", "report.json", "--page-template", "branding/page.tex.jinja"]
+        )
+        assert result.exit_code == 0
+        asset_dir = captured["asset_dir"]
+        assert asset_dir.is_absolute()
+        assert asset_dir == branding.resolve()
+
+    def test_explicit_flag_wins_over_a_detectable_sibling(self, cwd, captured):
+        branding, data = _bundle(cwd)
+        (cwd / "report.tex.jinja").write_text("% sibling")
+        whole = branding / "page.tex.jinja"
+        whole.write_text("% explicit")
+        result = runner.invoke(app, ["-d", str(data), "--page-template", str(whole)])
+        assert result.exit_code == 0
+        assert captured["page_template_source"] == "% explicit"
+        assert captured["asset_dir"] == branding.resolve()
+
+    def test_missing_file_is_reported(self, cwd, captured):
+        _, data = _bundle(cwd)
+        result = runner.invoke(app, ["-d", str(data), "--page-template", "nope.tex.jinja"])
+        assert result.exit_code == 1
+        assert "not found" in result.output
+
+    @pytest.mark.parametrize("slot_flag", ["--header-template", "--footer-template"])
+    def test_conflict_with_a_slot_flag_is_rejected(self, cwd, captured, slot_flag):
+        branding, data = _bundle(cwd)
+        whole = branding / "page.tex.jinja"
+        whole.write_text("% whole page")
+        result = runner.invoke(
+            app,
+            [
+                "-d", str(data),
+                "--page-template", str(whole),
+                slot_flag, str(branding / "head.tex.jinja"),
+            ],
+        )
+        assert result.exit_code == 1
+        assert "cannot be combined" in result.output
+        assert slot_flag in result.output
+
+
+class TestWholePageAutodetection:
+    """A sibling <data-stem>.tex.jinja, or ./page_template.tex.jinja, is
+    picked up when no template flag is given."""
+
+    def test_sibling_next_to_the_data_file_is_used(self, cwd, captured):
+        sub = cwd / "reports"
+        sub.mkdir()
+        data = sub / "report.json"
+        data.write_text(json.dumps(BLOCK_DATA))
+        (sub / "report.tex.jinja").write_text("% sibling")
+        result = runner.invoke(app, ["-d", str(data)])
+        assert result.exit_code == 0
+        assert captured["page_template_source"] == "% sibling"
+        assert captured["asset_dir"] == sub.resolve()
+        assert "Using page template" in result.output
+
+    def test_cwd_default_is_used(self, cwd, captured):
+        data = cwd / "report.json"
+        data.write_text(json.dumps(BLOCK_DATA))
+        (cwd / "page_template.tex.jinja").write_text("% cwd default")
+        result = runner.invoke(app, ["-d", str(data)])
+        assert result.exit_code == 0
+        assert captured["page_template_source"] == "% cwd default"
+        assert captured["asset_dir"] == cwd.resolve()
+
+    def test_the_notice_goes_to_stderr(self, cwd, captured):
+        """The notice must not pollute a piped PDF on stdout."""
+        data = cwd / "report.json"
+        data.write_text(json.dumps(BLOCK_DATA))
+        (cwd / "page_template.tex.jinja").write_text("% cwd default")
+        result = CliRunner().invoke(app, ["-d", str(data)])
+        assert result.exit_code == 0
+        assert "Using page template" in result.output
+
+
+@pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+def test_autodetected_template_finds_its_sibling_asset_from_another_cwd(
+    tmp_path, monkeypatch
+):
+    """The user-shaped case: data + template + logo in one directory,
+    rendered from somewhere else."""
+    bundle = tmp_path / "bundle"
+    bundle.mkdir()
+    data = bundle / "report.json"
+    data.write_text(json.dumps(BLOCK_DATA))
+    (bundle / "brand.tex").write_text("\\newcommand{\\kxbrand}{Brandname}")
+    (bundle / "report.tex.jinja").write_text(
+        "\\input{brand}\n\\fancyhead[L]{\\kxbrand}"
+    )
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    monkeypatch.chdir(elsewhere)
+    out = elsewhere / "out.pdf"
+    result = runner.invoke(app, ["-d", str(data), "-o", str(out)])
+    assert result.exit_code == 0, result.output
+    assert out.read_bytes().startswith(b"%PDF")

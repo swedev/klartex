@@ -143,6 +143,7 @@ def prepare_recipe_context(
     *,
     header_source: str | None = None,
     footer_source: str | None = None,
+    page_template_source: str | None = None,
 ) -> dict[str, Any]:
     """Build a template context dict for the Jinja meta-template.
 
@@ -155,6 +156,7 @@ def prepare_recipe_context(
         data: Template data (already escaped for LaTeX)
         header_source: Optional raw .tex.jinja content owning the header slot.
         footer_source: Optional raw .tex.jinja content owning the footer slot.
+        page_template_source: Optional raw content owning both slots.
 
     Returns:
         Context dict for rendering _recipe_base.tex.jinja
@@ -233,6 +235,7 @@ def prepare_recipe_context(
         defaults=recipe.document.page_template,
         header_source=header_source,
         footer_source=footer_source,
+        page_template_source=page_template_source,
     )
 
     return {

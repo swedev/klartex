@@ -4,7 +4,8 @@
 %#      before both slots, so a custom slot source's own geometry wins
 %#   2. header slot — custom source, or variant fragment preceded by the
 %#      \renewcommand's for its fields
-%#   3. footer slot — custom source or the variant fragment
+%#   3. footer slot — custom source or the variant fragment. A whole-page
+%#      source owns both slots and is emitted once, in the header arm.
 %#   4. header-space reclaim — after both slots, so its \ifdefempty test sees
 %#      the final value of the contract macros
 %#   5. first-page style
@@ -33,7 +34,9 @@
 %# A template-level footer (e.g. faktura's own footer field, emitted by the
 %# recipe base after this include) takes precedence over the page template's.
 \BLOCK{if page_template.footer.is_custom}
+\BLOCK{if not page_template.footer.shared_source}
 \VAR{page_template.footer.source}
+\BLOCK{endif}
 \BLOCK{elif page_template.footer.is_predefined}
 \BLOCK{if page_template.footer.variant == 'columns' and data is defined and data.get('footer')}
 %# The template-level footer is emitted by the recipe base instead.

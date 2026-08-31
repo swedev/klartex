@@ -1069,8 +1069,8 @@ def _render_tex(data: dict, **sources: str) -> str:
     """Module helper: run the renderer's pre-compile pipeline and return the
     rendered LaTeX source (no xelatex needed).
 
-    ``sources`` forwards ``header_source`` / ``footer_source`` to the
-    block-engine renderer.
+    ``sources`` forwards ``page_template_source`` / ``header_source`` /
+    ``footer_source`` to the block-engine renderer.
     """
     from klartex.renderer import _render_block_engine, _restore_block_types
     from klartex.tex_escape import escape_data
@@ -1079,6 +1079,7 @@ def _render_tex(data: dict, **sources: str) -> str:
     _restore_block_types(data["body"], escaped["body"])
     return _render_block_engine(
         escaped,
+        page_template_source=sources.get("page_template_source"),
         header_source=sources.get("header_source"),
         footer_source=sources.get("footer_source"),
     )
@@ -2089,3 +2090,93 @@ class TestPageTemplateSlots:
             },
         )
         assert pdf.startswith(b"%PDF")
+
+
+class TestWholePageTemplateSource:
+    """Tex-level composition locks for the whole-page source: one file owning
+    both slots, emitted once, with the document-level settings kept."""
+
+    @staticmethod
+    def _tex(page_template=None, **sources):
+        data = {"body": [{"type": "heading", "text": "Rubrik"}]}
+        if page_template is not _MISSING_PT:
+            data["page_template"] = page_template
+        return _render_tex(data, **sources)
+
+    def test_the_source_is_emitted_exactly_once(self):
+        tex = self._tex({}, page_template_source="% whole page")
+        assert tex.count("% whole page") == 1
+
+    def test_it_is_emitted_once_even_with_payload_slots_set(self):
+        tex = self._tex(
+            {
+                "header": {"variant": "letterhead", "fields": {"org_name": "X"}},
+                "footer": {"variant": "columns", "fields": {"company": "Y"}},
+            },
+            page_template_source="% whole page",
+        )
+        assert tex.count("% whole page") == 1
+
+    def test_payload_slot_chrome_is_not_emitted(self):
+        tex = self._tex(
+            {"header": {"variant": "letterhead", "fields": {"org_name": "Föreningen"}}},
+            page_template_source="% whole page",
+        )
+        assert "Föreningen" not in tex
+
+    def test_no_page_template_key_at_all_still_works(self):
+        tex = self._tex(_MISSING_PT, page_template_source="% whole page")
+        assert tex.count("% whole page") == 1
+
+    def test_document_level_settings_are_kept(self):
+        tex = self._tex(
+            {
+                "font": "Futura",
+                "header_font": "Helvetica",
+                "diff_style": "underline",
+                "margins": {"top": "1.5cm", "bottom": "2cm"},
+            },
+            page_template_source="% whole page",
+        )
+        assert r"\setmainfont{Futura}" in tex
+        assert "Helvetica" in tex
+        assert r"\kxdiffstyle{underline}" in tex
+        assert r"\renewcommand{\kxreclaimtop}{1.5cm}" in tex
+        assert "bottom=2cm" in tex
+
+    def test_settings_come_before_the_source_so_the_source_wins(self):
+        """Emission order: document-level settings, then the source — so the
+        source's own \\geometry and font commands take effect last."""
+        tex = self._tex(
+            {"font": "Futura", "margins": {"top": "3cm"}},
+            page_template_source="% whole page",
+        )
+        assert tex.index(r"\setmainfont{Futura}") < tex.index("% whole page")
+        assert tex.index(r"\renewcommand{\kxreclaimtop}{3cm}") < tex.index("% whole page")
+
+    def test_first_page_plain_style_is_suppressed(self):
+        tex = self._tex(
+            {"first_page_header": False}, page_template_source="% whole page"
+        )
+        assert r"\thispagestyle{plain}" not in tex
+
+    def test_no_header_space_reclaim(self):
+        tex = self._tex({}, page_template_source="% whole page")
+        assert r"\ifdefempty{\orgname}" not in tex
+
+    def test_page_numbers_false_emits_no_empty_footer(self):
+        """The source owns the footer, so nothing blanks it on its behalf."""
+        tex = self._tex({"page_numbers": False}, page_template_source="% whole page")
+        assert r"\fancyfoot[C]{}" not in tex
+
+
+def test_whole_page_source_conflicts_with_a_slot_source():
+    from klartex.renderer import render
+
+    with pytest.raises(ValueError, match="cannot be combined"):
+        render(
+            "_block",
+            {"body": [{"type": "heading", "text": "x"}]},
+            page_template_source="% whole page",
+            header_source="% h",
+        )

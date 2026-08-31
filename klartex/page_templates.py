@@ -249,7 +249,7 @@ DOCUMENT_SETTINGS: dict[str, dict] = {
 
 # Header-space reclaim: emitted after both slots, so the \ifdefempty test at
 # preamble end sees the final value of the contract macros.
-_RECLAIM = r"\geometry{top=1.7cm, headheight=0pt, headsep=0pt, includehead=false}"
+_RECLAIM = r"\geometry{top=\kxreclaimtop, headheight=0pt, headsep=0pt, includehead=false}"
 _RECLAIM_GUARDED = (
     "%\n  " + _RECLAIM + "%\n  " + r"\fancyhead{}" + "%\n}{}"
 )

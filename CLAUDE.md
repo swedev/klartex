@@ -67,11 +67,11 @@ Two consequences of the escape→restore pattern matter when adding blocks:
 
 ### Two surfaces, one renderer
 
-**Block engine** (primary surface) — virtual template name `_block`. Caller composes `body[]` freely from typed blocks; `_block_engine.tex.jinja` dispatches each block to its render macro. No fixed document structure — the document type emerges from what blocks are placed. Almost all active development happens here, and most user-authored documents go through this path.
+**Block engine** (free-form surface) — virtual template name `_block`. Caller composes `body[]` freely from typed blocks; `_block_engine.tex.jinja` dispatches each block to its render macro. No fixed document structure — the document type emerges from what blocks are placed. Most development so far has happened here, but that reflects which documents have been worked on — neither path is the primary one by decision.
 
 **Recipe path** (specialized surface for stable transactional document types) — `klartex/templates/<name>/recipe.yaml` declares which components and metadata fields make up a fixed document type. `recipe.py::prepare_recipe_context` resolves dot-paths (e.g. `data_map: {items: agenda_items}`) and hands a context to `_recipe_base.tex.jinja`. Used by `protokoll`, `faktura`, `balansrakning`, `resultatrakning`, `budgetrapport`, `sie-exportrapport`. The value is letting producers send domain-shaped JSON (e.g. an invoice with `lines[]`) without describing layout — useful for upstream systems with stable contracts.
 
-The two paths share rendering logic via `_block_macros.tex.jinja` and `_financial_macros.tex.jinja`. Block-engine equivalents exist for almost every recipe component (`agenda` covers protokoll's items, `title_page` covers title pages, `resultatrakning`/`budgettabell`/`notapparat` are dual-purpose). Only the `invoice_*` components are recipe-only today.
+The two paths share rendering logic via `_block_macros.tex.jinja` and `_financial_macros.tex.jinja`. Block-engine equivalents exist for almost every recipe component (`agenda` covers protokoll's items, `title_page` covers title pages, `resultatrakning`/`budgettabell`/`notapparat` are dual-purpose). Only the `invoice_*` components are recipe-only.
 
 `registry.py::discover_templates` scans `templates/*/schema.json + recipe.yaml` for recipes and registers `_block` as a virtual template. For `_block` it builds two schemas: `validation_schema` (base, no `oneOf`) used at runtime so per-block error messages stay readable, and `schema` (with `oneOf` union of all block schemas) shown by `klartex schema _block` for agent introspection.
 
@@ -85,7 +85,7 @@ Single source of truth for block types: `_COMPONENTS` maps each name to its `.st
 4. If it needs custom LaTeX, add a `klartex-<type>.sty` to `klartex/cls/` (it is auto-loaded via the component spec; `klartex-base.cls` is the document class).
 5. If the block can nest other blocks, extend `renderer.py::_restore_block_types`.
 
-`KNOWN_BLOCK_TYPES` in `block_engine.py` is derived from components that have a `block_schema_path`. Recipe-only components (`invoice_*`) intentionally have no schema and aren't visible to the block engine.
+`KNOWN_BLOCK_TYPES` in `block_engine.py` is derived from components that have a `block_schema_path`. Recipe-only components (`invoice_*`) have no schema and aren't visible to the block engine.
 
 ### Page templates (`klartex/page_templates.py`)
 

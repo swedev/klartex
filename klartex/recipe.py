@@ -51,6 +51,7 @@ class RecipeDocument:
     """Document-level settings from a recipe."""
 
     title: str = ""
+    class_options: str = ""
     #: Slot object, in payload syntax, for the slots data.page_template
     #: leaves out.
     page_template: dict = field(default_factory=lambda: dict(RECIPE_DEFAULT_SLOTS))
@@ -100,6 +101,7 @@ def load_recipe(path: Path) -> Recipe:
     doc_raw = raw.get("document", {})
     document = RecipeDocument(
         title=doc_raw.get("title", ""),
+        class_options=doc_raw.get("class_options", ""),
         # A partial slot object (one slot named) falls back to the recipe
         # default for the other slot, so load_page_template always gets both.
         page_template={**RECIPE_DEFAULT_SLOTS, **(doc_raw.get("page_template") or {})},
@@ -237,6 +239,7 @@ def prepare_recipe_context(
         "recipe": recipe,
         "data": data,
         "title": rendered_title,
+        "class_options": recipe.document.class_options,
         "page_template": page_tmpl,
         "metadata": resolved_metadata,
         "components": resolved_components,

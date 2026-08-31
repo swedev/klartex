@@ -4,12 +4,19 @@
   "title": "Klartex Recipe",
   "description": "Schema for YAML recipe files that define composable document templates",
   "type": "object",
-  "required": ["template", "document", "components"],
+  "required": [
+    "template",
+    "document",
+    "components"
+  ],
   "additionalProperties": false,
   "properties": {
     "template": {
       "type": "object",
-      "required": ["name", "description"],
+      "required": [
+        "name",
+        "description"
+      ],
       "additionalProperties": false,
       "properties": {
         "name": {
@@ -22,7 +29,10 @@
         },
         "lang": {
           "type": "string",
-          "enum": ["sv", "en"],
+          "enum": [
+            "sv",
+            "en"
+          ],
           "default": "sv",
           "description": "Default document language"
         }
@@ -44,7 +54,10 @@
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["label", "field"],
+            "required": [
+              "label",
+              "field"
+            ],
             "additionalProperties": false,
             "properties": {
               "label": {
@@ -62,7 +75,9 @@
               },
               "suffix_fields": {
                 "type": "array",
-                "items": { "type": "string" },
+                "items": {
+                  "type": "string"
+                },
                 "description": "Additional data fields appended to the value (e.g. time_start, time_end)"
               },
               "suffix_separator": {
@@ -73,6 +88,10 @@
             }
           },
           "description": "Metadata fields displayed in a table at the top of the document"
+        },
+        "class_options": {
+          "type": "string",
+          "description": "documentclass options for klartex-base, e.g. 'narrowmargins' — the tighter business-document geometry (2cm side margins, 1.7cm reclaimed top) used by faktura and kvitto."
         }
       }
     },
@@ -80,7 +99,9 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["type"],
+        "required": [
+          "type"
+        ],
         "additionalProperties": false,
         "properties": {
           "type": {
@@ -107,12 +128,18 @@
       "type": "object",
       "additionalProperties": {
         "type": "object",
-        "required": ["type"],
+        "required": [
+          "type"
+        ],
         "additionalProperties": false,
         "properties": {
           "type": {
             "type": "string",
-            "enum": ["text", "list", "table"],
+            "enum": [
+              "text",
+              "list",
+              "table"
+            ],
             "description": "Field type"
           },
           "description": {

@@ -6,6 +6,7 @@ template:
   lang: sv
 
 document:
+  class_options: invoice
   title: "Faktura {{ data.invoice_number }}"
 
 components:

@@ -10,6 +10,8 @@ import pytest
 
 from klartex.renderer import render, get_registry, CLS_DIR
 
+TEMPLATES_DIR = CLS_DIR.parent / "templates"
+
 FIXTURES = Path(__file__).parent / "fixtures"
 
 HAS_XELATEX = shutil.which("xelatex") is not None
@@ -41,10 +43,29 @@ def test_class_default_chrome():
     regression in the class itself is invisible to them.
     """
     cls = (CLS_DIR / "klartex-base.cls").read_text()
-    assert "left=2cm," in cls
-    assert "right=2cm," in cls
+    assert r"\newcommand{\kxsidemargin}{3cm}" in cls
+    assert r"\newcommand{\kxreclaimtop}{2cm}" in cls
+    assert r"left=\kxsidemargin," in cls
+    assert r"right=\kxsidemargin," in cls
+    assert r"\renewcommand{\kxsidemargin}{2cm}" in cls
+    assert r"\renewcommand{\kxreclaimtop}{1.7cm}" in cls
     assert r"\definecolor{brandprimary}{HTML}{000000}" in cls
     assert r"\definecolor{brandsecondary}{HTML}{000000}" in cls
+
+
+def test_invoice_class_option_scoped_to_faktura_and_kvitto():
+    r"""Only faktura and kvitto opt into the tighter `invoice` geometry.
+
+    The option rides on `document.class_options` in recipe.yaml; the meta
+    template turns it into `\documentclass[invoice]{klartex-base}`.
+    """
+    import yaml
+    for name, expect in [("faktura", "invoice"), ("kvitto", "invoice"),
+                         ("protokoll", ""), ("resultatrakning", "")]:
+        raw = yaml.safe_load((TEMPLATES_DIR / name / "recipe.yaml").read_text())
+        assert raw.get("document", {}).get("class_options", "") == expect, name
+    meta = (TEMPLATES_DIR / "_recipe_base.tex.jinja").read_text()
+    assert r"\documentclass[\VAR{class_options}]{klartex-base}" in meta
 
 
 @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")

@@ -7,11 +7,22 @@
 % Base class
 \LoadClass[10pt,a4paper]{article}
 
+% Margin profile. The `invoice` class option opts a document type into the
+% tighter business-document geometry (faktura/kvitto); everything else
+% keeps the defaults.
+\newcommand{\kxsidemargin}{3cm}
+\newcommand{\kxreclaimtop}{2cm}
+\DeclareOption{invoice}{%
+    \renewcommand{\kxsidemargin}{2cm}%
+    \renewcommand{\kxreclaimtop}{1.7cm}%
+}
+\ProcessOptions\relax
+
 % Required packages
 \RequirePackage{fontspec}
 \RequirePackage[
-    left=2cm,
-    right=2cm,
+    left=\kxsidemargin,
+    right=\kxsidemargin,
     top=0.9cm,
     bottom=2cm,
     includehead,

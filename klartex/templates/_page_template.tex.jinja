@@ -8,12 +8,11 @@
 %#   4. header-space reclaim — after both slots, so its \ifdefempty test sees
 %#      the final value of the contract macros
 %#   5. first-page style
-\BLOCK{if page_template.font}
-\setmainfont{\VAR{page_template.font}}
+\BLOCK{if page_template.font_setup}
+\VAR{page_template.font_setup}
 \BLOCK{endif}
-\BLOCK{if page_template.header_font}
-\newfontfamily\kxheaderfontfamily{\VAR{page_template.header_font}}
-\renewcommand{\kxheaderfont}{\kxheaderfontfamily}
+\BLOCK{if page_template.header_font_setup}
+\VAR{page_template.header_font_setup}
 \BLOCK{endif}
 \BLOCK{if page_template.diff_style and page_template.diff_style != 'color'}
 \kxdiffstyle{\VAR{page_template.diff_style}}

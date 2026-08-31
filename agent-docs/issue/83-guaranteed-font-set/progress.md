@@ -1,8 +1,61 @@
 # Progress: Issue #83 — Guaranteed font set in the render environment, and a path for external fonts
 
-## Status: Phase A merged, Phase B implemented, Phase C not started
+## Status: Phases A and B merged, Phase C implemented
 
 (Update as work proceeds — newest entries first)
+
+## 2026-08-31 — Phase C implemented on `issue/83-guaranteed-font-set-r3`
+
+Steps 10–14 of the plan. Step 15 (CHANGELOG) belongs to the next release.
+
+- `klartex/page_templates.py`: `FONT_FILENAME_PATTERN`, `FONT_FACE_OPTIONS`
+  (the four keys mapped to their fontspec options), `_check_font`,
+  `_fontspec_setup` and `font_files()`; `font` / `header_font` become
+  `oneOf` [family name, file object] in `DOCUMENT_SETTINGS`, with the file
+  form described once and reused by both; `PageTemplate.font_setup` /
+  `.header_font_setup` emit the ready LaTeX.
+- `klartex/templates/_page_template.tex.jinja`: emits those two properties in
+  place of the inline `\setmainfont` / `\newfontfamily` blocks. The name form
+  is byte-identical, so the golden preambles are untouched.
+- `klartex/renderer.py`: `_resolve_asset_root()` factored out of
+  `_compile_tex`, and `_preflight_font_files()` in `render()` — every
+  referenced face must be a readable file in the asset root, else a
+  `ValueError` naming the file and the contract, raised before the
+  xelatex-presence check.
+- `klartex/server/`: unchanged, as the plan expected — the faces ride the
+  existing `assets` map and the preflight `ValueError` maps to the endpoint's
+  structured 400.
+- `README.md` / `README.en.md`: the file form documented beside the
+  guaranteed set.
+
+### Decisions carried out as planned
+
+- Absent face key → no fontspec option → the regular face; nothing is
+  synthesised. Stated in the schema description.
+- File names carry no underscore, so the value survives `escape_data()`
+  byte-identical; the tex-level tests assert the emitted command after
+  escaping, which is what locks that.
+
+### Deviation
+
+- `FONT_FILENAME_PATTERN` ends `$(?![\s\S])` rather than plain `$`. Python's
+  `$` also matches before a final newline, so `"Inter.ttf\n"` would otherwise
+  satisfy jsonschema's `pattern`. Same guard, same reason, as
+  `DIMENSION_PATTERN`.
+
+### Verification
+
+- `pytest -n auto`: 643 passed, 9 skipped (the guaranteed families macOS
+  lacks — the same 9 as before this round).
+- New coverage: loader validation of both forms and every rejected filename
+  shape; the emitted fontspec commands (all four faces, regular only, header
+  reuse, the two forms mixed); the preflight (missing regular face, missing
+  optional face, cwd as asset root, invalid `asset_dir`); two xelatex
+  round-trips using the Latin Modern OTF faces located with `kpsewhich`, so
+  they run wherever the other compile tests do; three endpoint tests (a face
+  sent through `assets` renders, a missing face is a structured 400 naming
+  the file, and a name the endpoint's own `ASSET_NAME_RE` would accept is
+  still rejected by the stricter font pattern).
 
 ## 2026-08-31 — Phase B implemented on `issue/83-guaranteed-font-set-r2`
 

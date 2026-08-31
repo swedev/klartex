@@ -40,6 +40,10 @@ Page template data in the render request is an object::
         "margins": {"top": "3.4cm", "bottom": "2cm", "left": "3cm", "right": "3cm"}
     }
 
+``font`` and ``header_font`` also accept an object naming font files that
+travel with the render as assets — ``{"file": "Inter-Regular.ttf", "bold":
+"Inter-Bold.ttf"}`` — for fonts the render environment does not install.
+
 Custom slot sources are not part of the JSON payload; they travel as
 ``render(header_source=…)`` / ``render(footer_source=…)`` keyword arguments.
 """
@@ -379,26 +383,191 @@ GUARANTEED_FONTS: tuple[str, ...] = (
 _GUARANTEED_FONTS_TEXT = ", ".join(GUARANTEED_FONTS)
 
 
+# ---------------------------------------------------------------------------
+# Font files. Beside a family name, ``font`` and ``header_font`` accept an
+# object naming .ttf/.otf files that travel with the render as assets, so a
+# document can use a font the render environment does not install.
+# ---------------------------------------------------------------------------
+
+#: A font face file: a bare basename with a lowercase .ttf/.otf extension, at
+#: most 128 characters. The pattern admits no path separator and no LaTeX
+#: special character — underscore included — so a value passes escape_data()
+#: byte-identical and is safe inside the emitted fontspec call. It is stricter
+#: than the server's own asset-name rule, so every name the schema admits is
+#: one the endpoint accepts.
+#:
+#: The trailing lookahead does here what it does for DIMENSION_PATTERN:
+#: Python's ``$`` also matches before a final newline, so ``"Inter.ttf\n"``
+#: would otherwise satisfy jsonschema's ``pattern`` keyword.
+FONT_FILENAME_PATTERN = r"^[A-Za-z0-9][A-Za-z0-9.-]{0,123}\.(ttf|otf)$(?![\s\S])"
+
+_FONT_FILENAME_RE = re.compile(FONT_FILENAME_PATTERN)
+
+#: The keys of the font file form, in fontspec emission order, mapped to the
+#: fontspec option each becomes. ``file`` is the font itself, so it has none.
+FONT_FACE_OPTIONS: dict[str, str | None] = {
+    "file": None,
+    "bold": "BoldFont",
+    "italic": "ItalicFont",
+    "bold_italic": "BoldItalicFont",
+}
+
+_FONT_FACE_DESCRIPTIONS = {
+    "file": "The regular face — the file the family is named by. Required.",
+    "bold": "The bold face, used by **bold** markup.",
+    "italic": "The italic face, used by *italic* markup.",
+    "bold_italic": "The bold-italic face, used where both apply.",
+}
+
+#: The file form, described once for both settings.
+_FONT_FILE_FORM = (
+    "An object instead of a name loads font files that travel with the render "
+    "as assets: {\"file\": \"Inter-Regular.ttf\", \"bold\": \"Inter-Bold.ttf\", "
+    "\"italic\": \"Inter-Italic.ttf\", \"bold_italic\": \"Inter-BoldItalic.ttf\"}. "
+    "Only file is required, and a style whose face file is missing renders in "
+    "the regular face — nothing is synthesised, so supply the faces the "
+    "document actually uses. The files are looked up in asset_dir alone (the "
+    "working directory when no asset_dir is set); there is no search chain, "
+    "and a file that is not there is an error before rendering starts. A name "
+    "is a bare file name ending in .ttf or .otf, with no directory part and no "
+    "underscore or other LaTeX special character — rename the file if it has "
+    "one. Over klartex serve the faces ride the request's assets map, which "
+    "takes at most 10 files of 5 MB each."
+)
+
+
+def _font_forms(name_description: str) -> list[dict]:
+    """The two accepted forms of a font setting: a family name, or a file object."""
+    return [
+        {"type": "string", "description": name_description},
+        {
+            "type": "object",
+            "description": "Font files travelling with the render as assets.",
+            "additionalProperties": False,
+            "required": ["file"],
+            "properties": {
+                key: {
+                    "type": "string",
+                    "pattern": FONT_FILENAME_PATTERN,
+                    "description": _FONT_FACE_DESCRIPTIONS[key],
+                }
+                for key in FONT_FACE_OPTIONS
+            },
+        },
+    ]
+
+
+def _check_font(key: str, value):
+    """Validate one font setting in either form and return it.
+
+    ``None`` means unset. The hand-rolled errors mirror ``_check_margins``:
+    ``load_page_template`` is reachable from callers that never ran the JSON
+    Schema, so the loader states the contract itself.
+
+    Raises:
+        ValueError: If the value is neither a family name nor a well-formed
+                    font file object.
+    """
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return value
+    if not isinstance(value, dict):
+        raise ValueError(
+            f"page_template.{key} must be a fontspec family name or an object "
+            f"naming font files, got {type(value).__name__}"
+        )
+    unknown = [k for k in value if k not in FONT_FACE_OPTIONS]
+    if unknown:
+        raise ValueError(
+            f"Unknown {key} key(s): {', '.join(unknown)}. "
+            f"Allowed: {', '.join(FONT_FACE_OPTIONS)}"
+        )
+    if not value.get("file"):
+        raise ValueError(
+            f"page_template.{key} as an object requires 'file' — the regular "
+            "face the family is named by."
+        )
+    for face, filename in value.items():
+        if not isinstance(filename, str) or not _FONT_FILENAME_RE.fullmatch(filename):
+            raise ValueError(
+                f"{key}.{face} must be a font file name ending in .ttf or "
+                f".otf, with no directory part and no underscore or other "
+                f"LaTeX special character, got {filename!r}"
+            )
+    return dict(value)
+
+
+def _fontspec_setup(command: str, value) -> str:
+    """The fontspec call selecting ``value`` for ``command``, or empty.
+
+    The file form emits ``Path=./`` — explicitly relative, so the engine
+    resolves the faces against its working directory, which the renderer sets
+    to the asset root. Face options are emitted only for the faces supplied;
+    fontspec then falls back to the regular face for the rest.
+    """
+    if not value:
+        return ""
+    if isinstance(value, str):
+        return command + "{" + value + "}"
+    options = ["Path=./"]
+    options += [
+        f"{option}={value[face]}"
+        for face, option in FONT_FACE_OPTIONS.items()
+        if option and value.get(face)
+    ]
+    return command + "{" + value["file"] + "}[" + ", ".join(options) + "]"
+
+
+def font_files(spec: dict | None) -> list[str]:
+    """Every font face file a ``page_template`` payload references, in
+    reference order and without duplicates.
+
+    The renderer preflights these against the asset root before compiling, so
+    a face file that never arrived is a named error instead of a fontspec
+    failure buried in the TeX log.
+    """
+    if not isinstance(spec, dict):
+        return []
+    out: list[str] = []
+    for key in ("font", "header_font"):
+        value = _check_font(key, spec.get(key))
+        if not isinstance(value, dict):
+            continue
+        for face in FONT_FACE_OPTIONS:
+            name = value.get(face)
+            if name and name not in out:
+                out.append(name)
+    return out
+
+
 # Document-level settings on the page_template object.
 DOCUMENT_SETTINGS: dict[str, dict] = {
     "page_numbers": {"type": "boolean", "description": "Show page numbers in the footer"},
     "first_page_header": {"type": "boolean", "description": "Show the header on the first page"},
     "font": {
-        "type": "string",
         "description": (
-            "Document font, as a fontspec family name. These families are "
-            f"guaranteed to be installed in the render environment "
-            f"(ghcr.io/swedev/klartex-base): {_GUARANTEED_FONTS_TEXT}. Any "
-            "other family name renders only where that font happens to be "
-            "installed on the machine doing the rendering."
+            "Document font, as a fontspec family name or as font files. These "
+            "families are guaranteed to be installed in the render "
+            "environment (ghcr.io/swedev/klartex-base): "
+            f"{_GUARANTEED_FONTS_TEXT}. Any other family name renders only "
+            "where that font happens to be installed on the machine doing the "
+            f"rendering. {_FONT_FILE_FORM}"
+        ),
+        "oneOf": _font_forms(
+            "A fontspec family name installed where the rendering happens, "
+            "e.g. \"Georgia\"."
         ),
     },
     "header_font": {
-        "type": "string",
         "description": (
-            "Font for the header and footer, as a fontspec family name — the "
-            "guaranteed families are the same as for font. Default: same as "
-            "font."
+            "Font for the header and footer, as a fontspec family name or as "
+            "font files — the guaranteed families are the same as for font, "
+            "and the file form works the same way. Default: same as font, "
+            "in whichever form font was given."
+        ),
+        "oneOf": _font_forms(
+            "A fontspec family name installed where the rendering happens."
         ),
     },
     "diff_style": {
@@ -479,8 +648,8 @@ class PageTemplate:
     footer: SlotSpec = field(default_factory=SlotSpec)
     page_numbers: bool = True
     first_page_header: bool = True
-    font: str | None = None
-    header_font: str | None = None
+    font: str | dict | None = None
+    header_font: str | dict | None = None
     diff_style: str = "color"
     margins: dict = field(default_factory=dict)
 
@@ -527,6 +696,20 @@ class PageTemplate:
                 "keyvals": footer_keyvals(self.footer.fields),
             },
         )
+
+    @property
+    def font_setup(self) -> str:
+        """The ``\\setmainfont`` call for the ``font`` setting, empty when unset."""
+        return _fontspec_setup(r"\setmainfont", self.font)
+
+    @property
+    def header_font_setup(self) -> str:
+        """The header font family and the ``\\kxheaderfont`` renewal that
+        points the chrome at it, empty when unset."""
+        setup = _fontspec_setup(r"\newfontfamily\kxheaderfontfamily", self.header_font)
+        if not setup:
+            return ""
+        return setup + "\n" + r"\renewcommand{\kxheaderfont}{\kxheaderfontfamily}"
 
     @property
     def margin_setup(self) -> str:
@@ -703,8 +886,8 @@ def load_page_template(
 
     # Document-level settings are not chrome, so they apply in every mode,
     # including alongside a custom slot source.
-    font = overrides.get("font")
-    header_font = overrides.get("header_font") or font
+    font = _check_font("font", overrides.get("font"))
+    header_font = _check_font("header_font", overrides.get("header_font")) or font
     diff_style = overrides.get("diff_style") or "color"
     margins = _check_margins(overrides.get("margins"))
 

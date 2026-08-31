@@ -898,6 +898,145 @@ def test_guaranteed_font_renders(family):
     assert len(pdf_bytes) > 1000
 
 
+#: The four Latin Modern OpenType faces, which ship with every TeX Live and
+#: are therefore locatable wherever xelatex is — no font install, no
+#: conditional skip. The names already satisfy FONT_FILENAME_PATTERN.
+_TEX_FONT_FACES = {
+    "file": "lmroman10-regular.otf",
+    "bold": "lmroman10-bold.otf",
+    "italic": "lmroman10-italic.otf",
+    "bold_italic": "lmroman10-bolditalic.otf",
+}
+
+
+def _copy_tex_fonts(dest: Path) -> dict[str, str]:
+    """Copy the Latin Modern faces into `dest`, returning the file form."""
+    for name in _TEX_FONT_FACES.values():
+        located = subprocess.run(
+            ["kpsewhich", name], capture_output=True, text=True
+        ).stdout.strip()
+        assert located, f"kpsewhich could not locate {name}"
+        shutil.copy(located, dest / name)
+    return dict(_TEX_FONT_FACES)
+
+
+def _font_setup_tex(page_template: dict) -> str:
+    """The block-engine preamble for a page_template, without compiling."""
+    from tests.test_block_engine import _render_tex
+
+    return _render_tex(
+        {"page_template": page_template, "body": [{"type": "heading", "text": "F"}]}
+    )
+
+
+def test_font_file_form_emitted_with_every_supplied_face():
+    tex = _font_setup_tex({"font": dict(_TEX_FONT_FACES)})
+    assert (
+        r"\setmainfont{lmroman10-regular.otf}[Path=./, "
+        r"BoldFont=lmroman10-bold.otf, ItalicFont=lmroman10-italic.otf, "
+        r"BoldItalicFont=lmroman10-bolditalic.otf]"
+    ) in tex
+
+
+def test_font_file_form_with_regular_face_only():
+    r"""Faces that were not supplied leave fontspec to fall back to the
+    regular one — no \*Font option, and no synthesis."""
+    tex = _font_setup_tex({"font": {"file": "lmroman10-regular.otf"}})
+    assert r"\setmainfont{lmroman10-regular.otf}[Path=./]" in tex
+    assert "BoldFont" not in tex
+    assert "AutoFakeBold" not in tex
+
+
+def test_header_font_defaults_to_the_font_files():
+    tex = _font_setup_tex({
+        "font": {"file": "lmroman10-regular.otf", "bold": "lmroman10-bold.otf"}
+    })
+    assert (
+        r"\newfontfamily\kxheaderfontfamily{lmroman10-regular.otf}"
+        r"[Path=./, BoldFont=lmroman10-bold.otf]"
+    ) in tex
+    assert r"\renewcommand{\kxheaderfont}{\kxheaderfontfamily}" in tex
+
+
+@pytest.mark.parametrize("face", ["file", "bold"])
+def test_missing_font_file_raises_before_compiling(tmp_path, face):
+    """A face file absent from the asset root is named, not left to fontspec.
+
+    The preflight runs before the xelatex-presence check, so this holds
+    without TeX installed — and the message states the resolution contract.
+    """
+    faces = dict(_TEX_FONT_FACES)
+    for name in faces.values():
+        (tmp_path / name).write_bytes(b"")
+    (tmp_path / faces[face]).unlink()
+
+    data = {"body": [{"type": "heading", "text": "F"}], "page_template": {"font": faces}}
+    with pytest.raises(ValueError, match=f"Font file '{faces[face]}' is not readable"):
+        render("_block", data, asset_dir=tmp_path)
+
+
+def test_font_file_preflight_uses_cwd_without_asset_dir(tmp_path, monkeypatch):
+    """With no asset_dir the asset root is the caller's cwd — the same single
+    root explicitly relative names resolve against."""
+    monkeypatch.chdir(tmp_path)
+    data = {
+        "body": [{"type": "heading", "text": "F"}],
+        "page_template": {"font": {"file": "lmroman10-regular.otf"}},
+    }
+    with pytest.raises(ValueError, match="lmroman10-regular.otf"):
+        render("_block", data)
+
+    (tmp_path / "lmroman10-regular.otf").write_bytes(b"")
+    # The file is there now, so the preflight passes and the failure that
+    # remains (if any) belongs to xelatex, not to the font contract.
+    with pytest.raises((RuntimeError, ValueError)) as exc:
+        render("_block", data)
+    assert "Font file" not in str(exc.value)
+
+
+def test_font_file_preflight_rejects_an_invalid_asset_dir(tmp_path):
+    """The preflight resolves the asset root the same way the compile does."""
+    data = {
+        "body": [{"type": "heading", "text": "F"}],
+        "page_template": {"font": {"file": "lmroman10-regular.otf"}},
+    }
+    with pytest.raises(ValueError, match="not a directory"):
+        render("_block", data, asset_dir=tmp_path / "does-not-exist")
+
+
+@pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+def test_font_file_form_renders(tmp_path):
+    """Font files travelling as assets compile, faces and all.
+
+    The faces come from TeX Live itself, so the case runs wherever the rest of
+    the compilation tests do.
+    """
+    faces = _copy_tex_fonts(tmp_path)
+    data = {
+        "body": [{"type": "text", "text": "Brödtext med **fet** och *kursiv* stil."}],
+        "page_template": {"font": faces, "header": "letterhead"},
+    }
+    pdf_bytes = render("_block", data, asset_dir=tmp_path)
+    assert pdf_bytes[:5] == b"%PDF-"
+    assert len(pdf_bytes) > 1000
+
+
+@pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
+def test_font_file_form_renders_with_the_regular_face_alone(tmp_path):
+    """Bold and italic markup with no face files supplied still compiles —
+    fontspec falls back to the regular face."""
+    located = subprocess.run(
+        ["kpsewhich", _TEX_FONT_FACES["file"]], capture_output=True, text=True
+    ).stdout.strip()
+    shutil.copy(located, tmp_path / _TEX_FONT_FACES["file"])
+    data = {
+        "body": [{"type": "text", "text": "Text med **fet** och *kursiv* stil."}],
+        "page_template": {"font": {"file": _TEX_FONT_FACES["file"]}},
+    }
+    pdf_bytes = render("_block", data, asset_dir=tmp_path)
+    assert pdf_bytes[:5] == b"%PDF-"
+
+
 def test_faktura_preamble_unchanged_from_golden():
     """The recipe path's default preamble (letterhead header, page-number
     footer with the title), captured from `main` before the slot model existed."""

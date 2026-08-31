@@ -12,7 +12,7 @@ import jsonschema
 
 from klartex.inline_markup import render_inline
 from klartex.jinja_env import make_env
-from klartex.page_templates import footer_keyvals
+from klartex.page_templates import font_files, footer_keyvals
 from klartex.registry import discover_templates
 from klartex.tex_escape import escape_data
 from klartex.block_engine import BLOCK_ENGINE_TEMPLATE
@@ -153,6 +153,11 @@ def render(
             against that single asset root, not against the including file's
             own directory.
 
+            Font files named by a file-form `page_template.font` /
+            `header_font` follow the explicitly relative contract, and are
+            checked against the asset root before compiling: a face file that
+            is not there raises `ValueError` naming it.
+
             Build artifacts stay in an internal tempdir (`-output-directory`);
             rendering never writes into `asset_dir` or the caller's cwd.
 
@@ -174,6 +179,8 @@ def render(
     # Validate block types and payloads before escaping (escaping mangles underscores)
     if template_info.is_block_engine:
         _validate_blocks(data.get("body", []), "body")
+
+    _preflight_font_files(data, asset_dir)
 
     # Escape user data for LaTeX safety
     escaped_data = escape_data(data)
@@ -199,6 +206,55 @@ def render(
         footer_source=footer_source,
     )
     return _compile_tex(tex_source, asset_dir=asset_dir)
+
+
+def _resolve_asset_root(asset_dir: Path | str | None) -> Path:
+    """The directory explicitly relative asset names resolve against.
+
+    The resolved `asset_dir` when one is given, else the caller's cwd.
+    `.resolve()` is what lets assets follow a symlinked template bundle to its
+    target directory, and the result has to be absolute because it serves as
+    both a TEXINPUTS entry and xelatex's working directory.
+
+    Raises:
+        ValueError: If `asset_dir` is not an existing directory. Raised here
+                    rather than at the subprocess, so the caller bug surfaces
+                    as a clear error even where TeX is not installed.
+    """
+    if asset_dir is None:
+        return Path(os.getcwd())
+    asset_root = Path(asset_dir).resolve()
+    if not asset_root.is_dir():
+        raise ValueError(f"asset_dir is not a directory: {asset_dir}")
+    return asset_root
+
+
+def _preflight_font_files(data: dict, asset_dir: Path | str | None) -> None:
+    """Check the font face files a file-form font references are present.
+
+    File fonts are emitted with `Path=./`, so the engine resolves them against
+    its working directory — the asset root, with no search chain behind it. A
+    face file that never arrived would otherwise surface as a fontspec error
+    buried in the TeX log; here it names the file and the contract, before
+    xelatex is even looked for.
+
+    Raises:
+        ValueError: If a referenced face file is not a readable file in the
+                    asset root, or if `asset_dir` is not a directory.
+    """
+    files = font_files(data.get("page_template"))
+    if not files:
+        return
+    asset_root = _resolve_asset_root(asset_dir)
+    for name in files:
+        path = asset_root / name
+        if not path.is_file() or not os.access(path, os.R_OK):
+            raise ValueError(
+                f"Font file '{name}' is not readable in the asset root "
+                f"({asset_root}). Font files resolve against asset_dir alone "
+                "(the working directory when no asset_dir is set) — there is "
+                "no search chain, so send the file with the render."
+            )
 
 
 def _child_block_lists(block: dict, path: str = "") -> list[tuple[str, list]]:
@@ -334,15 +390,9 @@ def _compile_tex(tex_source: str, asset_dir: Path | str | None = None) -> bytes:
     inherited) is unchanged by the cwd switch because the leading `.` entry
     is replaced with the absolute tempdir path.
     """
-    # Validate before the xelatex-presence check so a caller bug surfaces as a
-    # clear error even where TeX is not installed. With cwd=asset_root a bogus
+    # Resolved before the xelatex-presence check: with cwd=asset_root a bogus
     # directory would otherwise die as a raw FileNotFoundError from subprocess.
-    if asset_dir is not None:
-        asset_root = Path(asset_dir).resolve()
-        if not asset_root.is_dir():
-            raise ValueError(f"asset_dir is not a directory: {asset_dir}")
-    else:
-        asset_root = Path(os.getcwd())
+    asset_root = _resolve_asset_root(asset_dir)
 
     if not shutil.which("xelatex"):
         raise RuntimeError(

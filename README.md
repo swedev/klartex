@@ -54,6 +54,8 @@ Arial, Courier New, Georgia, Times New Roman, Trebuchet MS, Verdana, EB Garamond
 
 Den auktoritativa listan är schemabeskrivningarna för `font` och `header_font` (`klartex schema _block`); imagebygget faller om någon familj saknas. Andra fontspec-namn fungerar bara där teckensnittet råkar vara installerat.
 
+Ett teckensnitt utanför listan kan i stället följa med anropet: `font` och `header_font` tar också ett objekt med filnamn — `{"file": "Inter-Regular.ttf", "bold": "Inter-Bold.ttf", "italic": "Inter-Italic.ttf", "bold_italic": "Inter-BoldItalic.ttf"}`. Filerna slås upp i `asset_dir` (över `klartex serve`: i anropets `assets`), och bara `file` krävs — ett snitt vars fil inte skickats med renderas i det ordinarie snittet. Filnamnet är ett rent filnamn som slutar på `.ttf` eller `.otf`, utan understreck eller andra LaTeX-tecken.
+
 ```dockerfile
 FROM ghcr.io/swedev/klartex-base:<tagg>@sha256:<digest>
 ```

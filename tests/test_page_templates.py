@@ -6,6 +6,7 @@ from klartex.page_templates import (
     BLOCK_DEFAULT_SLOTS,
     HEADER_BAND_BOTTOM,
     RECIPE_DEFAULT_SLOTS,
+    font_files,
     list_slot_variants,
     load_page_template,
     read_slot_source,
@@ -100,6 +101,112 @@ class TestFontAndFooterOverrides:
         assert pt.footer.fields == {"company": "Bolaget AB"}
         assert pt.footer.has_fields is True
         assert pt.footer_has_payment is False
+
+
+class TestFontSetup:
+    """The fontspec commands the two font forms emit."""
+
+    def test_name_form_setups(self):
+        pt = load_page_template({"font": "Futura", "header_font": "Georgia"})
+        assert pt.font_setup == r"\setmainfont{Futura}"
+        assert pt.header_font_setup == (
+            "\\newfontfamily\\kxheaderfontfamily{Georgia}\n"
+            "\\renewcommand{\\kxheaderfont}{\\kxheaderfontfamily}"
+        )
+
+    def test_unset_fonts_emit_nothing(self):
+        pt = load_page_template({})
+        assert pt.font_setup == ""
+        assert pt.header_font_setup == ""
+
+    def test_file_form_emits_every_supplied_face(self):
+        pt = load_page_template({
+            "font": {
+                "file": "Inter-Regular.ttf",
+                "bold": "Inter-Bold.ttf",
+                "italic": "Inter-Italic.ttf",
+                "bold_italic": "Inter-BoldItalic.ttf",
+            }
+        })
+        assert pt.font_setup == (
+            r"\setmainfont{Inter-Regular.ttf}[Path=./, "
+            r"BoldFont=Inter-Bold.ttf, ItalicFont=Inter-Italic.ttf, "
+            r"BoldItalicFont=Inter-BoldItalic.ttf]"
+        )
+
+    def test_file_form_omits_the_faces_not_supplied(self):
+        """An absent face is left to fontspec, which falls back to the regular
+        face — no BoldFont option, and nothing synthesised."""
+        pt = load_page_template({"font": {"file": "Inter-Regular.ttf"}})
+        assert pt.font_setup == r"\setmainfont{Inter-Regular.ttf}[Path=./]"
+        assert "BoldFont" not in pt.font_setup
+        assert "AutoFakeBold" not in pt.font_setup
+
+    def test_header_font_reuses_the_font_files(self):
+        pt = load_page_template({
+            "font": {"file": "Inter-Regular.ttf", "bold": "Inter-Bold.ttf"}
+        })
+        assert pt.header_font == pt.font
+        assert pt.header_font_setup.startswith(
+            r"\newfontfamily\kxheaderfontfamily{Inter-Regular.ttf}"
+            r"[Path=./, BoldFont=Inter-Bold.ttf]"
+        )
+
+    def test_the_two_forms_mix(self):
+        pt = load_page_template({
+            "font": "Georgia", "header_font": {"file": "Inter-Regular.ttf"}
+        })
+        assert pt.font_setup == r"\setmainfont{Georgia}"
+        assert r"\kxheaderfontfamily{Inter-Regular.ttf}[Path=./]" in pt.header_font_setup
+
+
+class TestFontFileValidation:
+    """The loader states the file form's contract itself, for callers that
+    reach it without the JSON Schema."""
+
+    def test_file_is_required(self):
+        with pytest.raises(ValueError, match="requires 'file'"):
+            load_page_template({"font": {"bold": "Inter-Bold.ttf"}})
+
+    def test_unknown_face_key_is_rejected(self):
+        with pytest.raises(ValueError, match="Unknown font key"):
+            load_page_template({"font": {"file": "a.ttf", "black": "b.ttf"}})
+
+    @pytest.mark.parametrize(
+        "filename",
+        [
+            "Inter_Regular.ttf",   # underscore is a LaTeX special
+            "fonts/Inter.ttf",     # no directory part
+            "../Inter.ttf",
+            "Inter.TTF",           # lowercase extension only
+            "Inter.woff2",
+            "Inter",
+            "-Inter.ttf",          # must start alphanumeric
+            "Inter.ttf\n",         # a trailing newline is not a name
+        ],
+    )
+    def test_rejected_filenames(self, filename):
+        with pytest.raises(ValueError, match="must be a font file name"):
+            load_page_template({"font": {"file": filename}})
+
+    def test_wrong_type_is_rejected(self):
+        with pytest.raises(ValueError, match="header_font must be"):
+            load_page_template({"header_font": 7})
+
+
+class TestFontFiles:
+    """font_files() is what the renderer preflights."""
+
+    def test_no_files_for_the_name_form(self):
+        assert font_files({"font": "Georgia", "header_font": "Arial"}) == []
+        assert font_files(None) == []
+
+    def test_every_referenced_face_once_in_reference_order(self):
+        files = font_files({
+            "font": {"file": "Reg.ttf", "bold": "Bold.ttf"},
+            "header_font": {"file": "Reg.ttf", "italic": "It.otf"},
+        })
+        assert files == ["Reg.ttf", "Bold.ttf", "It.otf"]
 
 
 class TestDiffStyle:

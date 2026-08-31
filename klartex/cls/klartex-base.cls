@@ -7,12 +7,13 @@
 % Base class
 \LoadClass[10pt,a4paper]{article}
 
-% Margin profile. The `invoice` class option opts a document type into the
-% tighter business-document geometry (faktura/kvitto); everything else
-% keeps the defaults.
+% Margin profile. The `narrowmargins` class option opts a document type
+% into the tighter business-document geometry (2cm side margins, 1.7cm
+% reclaimed top — used by faktura/kvitto); everything else keeps the
+% defaults.
 \newcommand{\kxsidemargin}{3cm}
 \newcommand{\kxreclaimtop}{2cm}
-\DeclareOption{invoice}{%
+\DeclareOption{narrowmargins}{%
     \renewcommand{\kxsidemargin}{2cm}%
     \renewcommand{\kxreclaimtop}{1.7cm}%
 }

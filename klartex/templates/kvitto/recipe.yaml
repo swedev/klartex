@@ -6,7 +6,7 @@ template:
   lang: sv
 
 document:
-  class_options: invoice
+  class_options: narrowmargins
   title: "Kvitto {{ data.receipt_number }}"
   metadata:
     - field: payment_method

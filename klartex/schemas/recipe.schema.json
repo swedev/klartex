@@ -91,7 +91,7 @@
         },
         "class_options": {
           "type": "string",
-          "description": "documentclass options for klartex-base, e.g. 'invoice' — the tighter business-document geometry (2cm side margins, 1.7cm reclaimed top) used by faktura and kvitto."
+          "description": "documentclass options for klartex-base, e.g. 'narrowmargins' — the tighter business-document geometry (2cm side margins, 1.7cm reclaimed top) used by faktura and kvitto."
         }
       }
     },

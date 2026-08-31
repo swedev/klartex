@@ -53,14 +53,14 @@ def test_class_default_chrome():
     assert r"\definecolor{brandsecondary}{HTML}{000000}" in cls
 
 
-def test_invoice_class_option_scoped_to_faktura_and_kvitto():
-    r"""Only faktura and kvitto opt into the tighter `invoice` geometry.
+def test_narrowmargins_class_option_scoped_to_faktura_and_kvitto():
+    r"""Only faktura and kvitto opt into the tighter `narrowmargins` geometry.
 
     The option rides on `document.class_options` in recipe.yaml; the meta
     template turns it into `\documentclass[invoice]{klartex-base}`.
     """
     import yaml
-    for name, expect in [("faktura", "invoice"), ("kvitto", "invoice"),
+    for name, expect in [("faktura", "narrowmargins"), ("kvitto", "narrowmargins"),
                          ("protokoll", ""), ("resultatrakning", "")]:
         raw = yaml.safe_load((TEMPLATES_DIR / name / "recipe.yaml").read_text())
         assert raw.get("document", {}).get("class_options", "") == expect, name

@@ -129,15 +129,15 @@ jobs:
       # The point of the whole workflow: klartex must pass inside the image
       # before the image can be published. poppler-utils is installed here
       # rather than baked in — the image stays production-faithful and the
-      # pdftotext round-trip tests still run. KLARTEX_REQUIRE_GEORGIA turns
-      # the Georgia render test's skip into a failure, so a base that lost
-      # the fonts fails here instead of shipping.
+      # pdftotext round-trip tests still run. KLARTEX_REQUIRE_FONTS turns the
+      # guaranteed-font render tests' skips into failures, so a base that lost
+      # a family fails here instead of shipping.
       - name: Run klartex test suite inside the image
         shell: bash
         run: |
           set -euo pipefail
           docker run --rm -v "$PWD:/work" -w /work \
-            -e KLARTEX_REQUIRE_GEORGIA=1 \
+            -e KLARTEX_REQUIRE_FONTS=1 \
             klartex-base:selftest bash -c '
               set -euo pipefail
               apt-get update

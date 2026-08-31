@@ -46,7 +46,13 @@ Paketuppsättningen för Debian/Ubuntu är en snabb approximation av renderingsm
 
 ### Färdig renderingsmiljö (containerimage)
 
-Den miljö klartex släpps mot publiceras som `ghcr.io/swedev/klartex-base`: full TeX Live plus Microsoft core fonts (Georgia, Arial, Times New Roman …) och den Python-runtime som behövs för att installera paketet. Tjänster som renderar med klartex bygger vidare på den i stället för att återskapa apt-listan.
+Den miljö klartex släpps mot publiceras som `ghcr.io/swedev/klartex-base`: full TeX Live, en garanterad teckensnittsuppsättning och den Python-runtime som behövs för att installera paketet. Tjänster som renderar med klartex bygger vidare på den i stället för att återskapa apt-listan.
+
+Garanterade familjer — det `page_template.font` och `page_template.header_font` kan sättas till utan att veta något om maskinen som renderar:
+
+Arial, Courier New, Georgia, Times New Roman, Trebuchet MS, Verdana, EB Garamond, IBM Plex Mono, IBM Plex Sans, IBM Plex Serif, Inter, Lato, Noto Sans, Noto Serif, Open Sans, Roboto.
+
+Den auktoritativa listan är schemabeskrivningarna för `font` och `header_font` (`klartex schema _block`); imagebygget faller om någon familj saknas. Andra fontspec-namn fungerar bara där teckensnittet råkar vara installerat.
 
 ```dockerfile
 FROM ghcr.io/swedev/klartex-base:<tagg>@sha256:<digest>

@@ -50,10 +50,10 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
 
     env:
-      # Turns the Georgia render test's skip into a failure: a base image
-      # that lost the Microsoft core fonts blocks the release instead of
-      # silently shipping a version that cannot render with them.
-      KLARTEX_REQUIRE_GEORGIA: "1"
+      # Turns the guaranteed-font render tests' skips into failures: a base
+      # image that lost a family GUARANTEED_FONTS promises blocks the release
+      # instead of silently shipping a version that cannot render with it.
+      KLARTEX_REQUIRE_FONTS: "1"
 
     steps:
       - uses: actions/checkout@v4

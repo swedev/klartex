@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from klartex.page_templates import GUARANTEED_FONTS
 from klartex.renderer import render, get_registry, CLS_DIR
 
 TEMPLATES_DIR = CLS_DIR.parent / "templates"
@@ -17,18 +18,34 @@ FIXTURES = Path(__file__).parent / "fixtures"
 HAS_XELATEX = shutil.which("xelatex") is not None
 
 
-def _has_font(name: str) -> bool:
-    if shutil.which("fc-list") is None:
-        return False
-    out = subprocess.run(["fc-list"], capture_output=True, text=True).stdout
-    return name.lower() in out.lower()
+def _installed_families() -> frozenset[str]:
+    """Every font family fontconfig knows, as exact names.
 
+    ``fc-list : family`` prints one comma-separated alias list per face, so
+    the names are split and stripped. Exact names matter: a substring test
+    would let "Noto Sans Arabic" answer for "Noto Sans", or "Inter Display"
+    for "Inter".
+    """
+    if shutil.which("fc-list") is None:
+        return frozenset()
+    out = subprocess.run(
+        ["fc-list", ":", "family"], capture_output=True, text=True
+    ).stdout
+    return frozenset(
+        alias.strip()
+        for line in out.splitlines()
+        for alias in line.split(",")
+        if alias.strip()
+    )
+
+
+INSTALLED_FAMILIES = _installed_families()
 
 # Environments that are supposed to render like production (the base-image
 # self-test and the release gate) set this, turning the missing-font skip
-# below into a failure.
-REQUIRE_GEORGIA = os.environ.get("KLARTEX_REQUIRE_GEORGIA") == "1"
-HAS_GEORGIA = _has_font("Georgia")
+# below into a failure: a base image that lost a guaranteed family must not
+# pass silently.
+REQUIRE_FONTS = os.environ.get("KLARTEX_REQUIRE_FONTS") == "1"
 
 
 def test_unknown_template():
@@ -846,20 +863,37 @@ def test_faktura_font_options_emitted():
 
 
 @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
-@pytest.mark.skipif(
-    not HAS_GEORGIA and not REQUIRE_GEORGIA, reason="Georgia not installed"
-)
-def test_header_font_georgia_renders():
-    """A page-template font must survive a real xelatex run, not just the .tex.
+@pytest.mark.parametrize("family", GUARANTEED_FONTS)
+def test_guaranteed_font_renders(family):
+    r"""Every family the schema guarantees must survive a real xelatex run.
 
-    The skip reason deliberately avoids the word xelatex so the CI guard
-    against silently skipped xelatex tests is not tripped where mscorefonts
-    are genuinely absent.
+    The family is set as both ``font`` and ``header_font``, so ``\setmainfont``
+    and the ``\newfontfamily\kxheaderfontfamily`` path are both exercised, and
+    the text carries bold and italic markup so the face selection fontspec
+    derives from the family is used, not only the regular face.
+
+    Where the family is genuinely absent — GitHub runners install a minimal
+    TeX Live with no mscorefonts — the case skips. The skip reason
+    deliberately avoids the word xelatex so the CI guard against silently
+    skipped xelatex tests is not tripped. Environments that must render like
+    production set KLARTEX_REQUIRE_FONTS=1, which turns the skip into a
+    failure.
     """
-    data = _minimal_faktura(
-        page_template={"header_font": "Georgia"}
-    )
-    pdf_bytes = render("faktura", data)
+    if family not in INSTALLED_FAMILIES and not REQUIRE_FONTS:
+        pytest.skip(f"font family {family!r} not installed")
+
+    data = {
+        "body": [
+            {
+                "type": "text",
+                "text": (
+                    f"Brödtext i {family} med **fet stil** och *kursiv stil*."
+                ),
+            }
+        ],
+        "page_template": {"font": family, "header_font": family},
+    }
+    pdf_bytes = render("_block", data)
     assert pdf_bytes[:5] == b"%PDF-"
     assert len(pdf_bytes) > 1000
 

@@ -1,0 +1,21 @@
+# The font families klartex guarantees in the render environment. Generated
+# from GUARANTEED_FONTS in klartex/page_templates.py, which is the source of
+# truth; tests/test_schemas.py::test_dockerfile_font_list_matches_the_constant
+# fails if the two drift. docker/Dockerfile.base fails the image build unless
+# every name here is an exact family in `fc-list : family`.
+Arial
+Courier New
+Georgia
+Times New Roman
+Trebuchet MS
+Verdana
+EB Garamond
+IBM Plex Mono
+IBM Plex Sans
+IBM Plex Serif
+Inter
+Lato
+Noto Sans
+Noto Serif
+Open Sans
+Roboto

@@ -348,17 +348,58 @@ def _check_margins(margins) -> dict:
     return dict(margins)
 
 
+#: Font families the render environment guarantees. The Microsoft core fonts
+#: come from ttf-mscorefonts-installer, the rest from Debian font packages;
+#: docker/Dockerfile.base installs both and fails the image build unless every
+#: name here is an exact family in ``fc-list : family``. The font and
+#: header_font descriptions below enumerate this tuple, so the discovery
+#: surface and the image are one list, and a parametrized xelatex test renders
+#: each family.
+GUARANTEED_FONTS: tuple[str, ...] = (
+    # Microsoft core fonts
+    "Arial",
+    "Courier New",
+    "Georgia",
+    "Times New Roman",
+    "Trebuchet MS",
+    "Verdana",
+    # Open families from Debian packages
+    "EB Garamond",
+    "IBM Plex Mono",
+    "IBM Plex Sans",
+    "IBM Plex Serif",
+    "Inter",
+    "Lato",
+    "Noto Sans",
+    "Noto Serif",
+    "Open Sans",
+    "Roboto",
+)
+
+_GUARANTEED_FONTS_TEXT = ", ".join(GUARANTEED_FONTS)
+
+
 # Document-level settings on the page_template object.
 DOCUMENT_SETTINGS: dict[str, dict] = {
     "page_numbers": {"type": "boolean", "description": "Show page numbers in the footer"},
     "first_page_header": {"type": "boolean", "description": "Show the header on the first page"},
     "font": {
         "type": "string",
-        "description": "Document font (fontspec name, e.g. 'Futura'). Must be installed where rendering happens.",
+        "description": (
+            "Document font, as a fontspec family name. These families are "
+            f"guaranteed to be installed in the render environment "
+            f"(ghcr.io/swedev/klartex-base): {_GUARANTEED_FONTS_TEXT}. Any "
+            "other family name renders only where that font happens to be "
+            "installed on the machine doing the rendering."
+        ),
     },
     "header_font": {
         "type": "string",
-        "description": "Font for the header and footer. Default: same as font.",
+        "description": (
+            "Font for the header and footer, as a fontspec family name — the "
+            "guaranteed families are the same as for font. Default: same as "
+            "font."
+        ),
     },
     "diff_style": {
         "type": "string",

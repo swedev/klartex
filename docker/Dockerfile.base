@@ -35,10 +35,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         python3 python3-pip python3-venv curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Microsoft core fonts (Georgia, Arial, Times New Roman, …) — common in
-# user-supplied page templates. EULA accepted via debconf so install is
-# non-interactive. fc-cache registers them so fontspec finds them at
-# render time. Bundle authors can still ship their own .ttf as an asset.
+# The guaranteed font set: Microsoft core fonts (Georgia, Arial, Times New
+# Roman, …) plus open families from Debian packages. klartex/page_templates.py
+# enumerates the families in GUARANTEED_FONTS and the font/header_font schema
+# descriptions promise them, so a caller can pick one without knowing anything
+# about the machine that renders. The mscorefonts EULA is accepted via debconf
+# so the install is non-interactive. fc-cache registers everything so fontspec
+# finds it at render time. Bundle authors can still ship their own .ttf as an
+# asset.
 RUN . /etc/os-release \
     && echo "deb http://deb.debian.org/debian $VERSION_CODENAME contrib" \
         > /etc/apt/sources.list.d/contrib.list \
@@ -47,6 +51,13 @@ RUN . /etc/os-release \
         | debconf-set-selections \
     && apt-get install -y --no-install-recommends \
         ttf-mscorefonts-installer fontconfig \
+        fonts-ebgaramond \
+        fonts-ibm-plex \
+        fonts-inter \
+        fonts-lato \
+        fonts-noto-core \
+        fonts-open-sans \
+        fonts-roboto \
     && fc-cache -f \
     && rm -rf /var/lib/apt/lists/*
 
@@ -59,6 +70,23 @@ RUN ln -s "$(ls -d /usr/local/texlive/*/bin/* | head -1)" /usr/local/texlive-bin
 # the base is broken (dead symlink, missing TeX installation, failed font
 # install). Absolute paths: the TeX binaries are not on PATH here.
 RUN /usr/local/texlive-bin/xelatex --version \
-    && /usr/local/texlive-bin/kpsewhich fontspec.sty \
-    && fc-list | grep -qi georgia \
-    && fc-list | grep -qi arial
+    && /usr/local/texlive-bin/kpsewhich fontspec.sty
+
+# Every family GUARANTEED_FONTS promises must resolve, on both platforms.
+# The names are matched exactly against `fc-list : family`, one family per
+# line after splitting the comma-separated aliases: a substring match would
+# let "Noto Sans Arabic" satisfy a "Noto Sans" check, and a dropped Debian
+# package would then publish a base image that cannot render what the schema
+# advertises.
+COPY docker/guaranteed-fonts.txt /tmp/guaranteed-fonts.txt
+RUN fc-list : family | tr ',' '\n' | sed 's/^ *//; s/ *$//' | sort -u > /tmp/families \
+    && missing="" \
+    && while IFS= read -r family; do \
+           case "$family" in ''|'#'*) continue;; esac; \
+           grep -qxF "$family" /tmp/families || missing="$missing\n  $family"; \
+       done < /tmp/guaranteed-fonts.txt \
+    && if [ -n "$missing" ]; then \
+           printf 'Guaranteed font families missing from this image:%b\n' "$missing" >&2; \
+           exit 1; \
+       fi \
+    && rm -f /tmp/families /tmp/guaranteed-fonts.txt

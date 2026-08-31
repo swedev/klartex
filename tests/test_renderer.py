@@ -1038,8 +1038,9 @@ def test_font_file_form_renders_with_the_regular_face_alone(tmp_path):
 
 
 def test_faktura_preamble_unchanged_from_golden():
-    """The recipe path's default preamble (letterhead header, page-number
-    footer with the title), captured from `main` before the slot model existed."""
+    """The recipe path's default preamble: letterhead header, page-number
+    footer with the title. The golden is held by hand — a deliberate fragment
+    change updates it in the same commit, any other diff is a regression."""
     from tests.test_block_engine import golden_preamble
 
     data = json.loads((FIXTURES / "faktura.json").read_text())

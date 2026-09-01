@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.18.0 — 2026-09-01
+
+### Breaking changes
+- **Svart default-chrome.** `brandprimary` och `brandsecondary` defaultar båda till `#000000` (tidigare `#1A1A1A` respektive `#666666`), klassbrett — sidhuvud, sidfotslinje och sidfotstext renderar svart i stället för grått, och länkar (`linkcolor`/`urlcolor` = `brandprimary`) blir svarta. Omdefinierbart som förut via `\definecolor` i egen källa. (#86)
+- **Faktura/kvitto får tätare geometri via klassoptionen `narrowmargins`.** De två recepten sätter `document.class_options: narrowmargins` i sina recipe.yaml, vilket ger 2 cm sidmarginaler och 1,7 cm återtagen topp; alla andra dokumenttyper behåller klassdefaulterna 3 cm/2 cm. Explicita `page_template.margins` i payloaden overridar optionen per nyckel. (#86, #88)
+- **`logo_height`-default 0,8 cm → 1 cm** i faktura och kvitto (delad fallback i `_recipe_base`); `klartex example faktura`s footer följer den godkända fältformen (`web` borttagen). (#86)
+
+### New features
+- **Sidmarginaler på sidmallsytan.** `page_template.margins` tar `top`/`bottom`/`left`/`right` som strikta dimensionssträngar (`cm|mm|pt|in`) och komponerar med sidchromet i stället för att vara fyra råa tal: `top` tolkas som textblockets marginal och emitteras för båda chrome-regimerna (justerar `headsep` när sidhuvud finns, omdefinierar `\kxreclaimtop` när det återtas), och footer-bandets geometri är sent bunden via `\kxfooterbottom`/`\kxfooterfootskip` så `margins.bottom` inte skrivs över av `\kxfooter`. Subträdet genereras in i alla mallscheman. (#65)
+- **Garanterad fontuppsättning i renderingsmiljön.** `GUARANTEED_FONTS` — 16 familjer (MS core: Arial, Courier New, Georgia, Times New Roman, Trebuchet MS, Verdana; öppna: EB Garamond, IBM Plex Mono/Sans/Serif, Inter, Lato, Noto Sans, Noto Serif, Open Sans, Roboto) — genererar `font`/`header_font`-beskrivningarna i schemat, verifieras exakt i basimage-bygget (`docker/guaranteed-fonts.txt`, bevakad av workflow-filtren) och testas per familj via `KLARTEX_REQUIRE_FONTS`. Baspinnen flyttad till `klartex-base:20260831-12`. (#83)
+- **Externa fonter per anrop.** `font` och `header_font` tar en filform — `{"file": "Inter-Regular.ttf", "bold": …, "italic": …, "bold_italic": …}` — som emitterar `\setmainfont{…}[Path=./, …]`; utelämnad face faller tillbaka på regular utan syntes. Filnamn valideras escape-invariant, en preflight kontrollerar att varje refererad face finns i asset-roten (fel före xelatex-kravet, mappat till strukturerad 400 i `klartex serve`), och fontfiler reser som vanliga base64-`assets`. (#83)
+- **Helsidesmallen är tillbaka.** En `.tex.jinja` som äger båda slotarna: `page_template_source` på `render()` och `POST /render`, `--page-template` på CLI:t, plus autodetektering av `<stem>.tex.jinja`/`page_template.tex.jinja` bredvid datafilen (kräver riktig fil; slot-flaggor undertrycker den; `Using page template: <path>` på stderr). Dokumentnivå-inställningarna (`font`, `header_font`, `diff_style`, `margins`) fortsätter gälla bredvid källan, och kombination med per-slot-källa avvisas i en central kontrollpunkt (`ValueError` → CLI-fel/`400 input_error`). (#85)
+
+### Fixes
+- **Letterhead-sidhuvudet kolliderar inte längre.** Kolumnerna breddade till 0,30 + 0,25 `\textwidth` med 0,03-mellanrum, `\raggedright` och avstavning av i båda — långa adresser blöder inte in i kontaktkolumnen, inga utsträckta ordmellanrum, inga avstavade orgnamn. (#84)
+- **Serverisolering för filform-fonter.** Ett anrop med filform-font utan övriga assets etablerar nu per-request-asset-roten, så en fil i serverprocessens cwd aldrig kan bäddas in oombedd. (#83)
+- **Trailing newline avvisas i dimensions- och fontfilnamnssträngar** — `$`-ankaret ersatt med absolut slut (`fullmatch` + portabelt schemamönster), så `"2cm\n"` varken passerar validering eller läcker in i LaTeX. (#65, #83)
+
 ## 0.17.0 — 2026-08-30
 
 ### Breaking changes

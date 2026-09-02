@@ -232,6 +232,8 @@ def test_render_faktura_top_level_footer_reports_its_path():
     detail = r.json()["detail"]
     assert detail["type"] == "validation_error"
     assert detail["path"] == ["footer"]
+    # The message, not just the path, tells the producer where the fields go.
+    assert "page_template.footer" in detail["message"]
 
 
 def test_render_block_with_empty_type_carries_path():

@@ -56,7 +56,13 @@ _MINIMAL_RECIPE_PAYLOAD = {
 def test_top_level_footer_is_rejected(template_name):
     """The footer slot is the only footer surface on the two invoice-shaped
     recipes. A payload sending a top-level `footer` fails validation at that
-    path rather than rendering a document without its payment details."""
+    path rather than rendering a document without its payment details.
+
+    The guidance lives in the rejecting subschema's `description`, which
+    jsonschema interpolates into the message — so the producer is told where
+    the fields belong, not just that the value is disallowed. This test is
+    what keeps that true if the library's message format changes.
+    """
     registry = get_registry()
     data = dict(_MINIMAL_RECIPE_PAYLOAD[template_name])
     jsonschema.validate(data, registry[template_name].schema)
@@ -65,6 +71,20 @@ def test_top_level_footer_is_rejected(template_name):
     with pytest.raises(jsonschema.ValidationError) as excinfo:
         jsonschema.validate(data, registry[template_name].schema)
     assert list(excinfo.value.absolute_path) == ["footer"]
+    assert "page_template.footer" in excinfo.value.message
+    assert "columns" in excinfo.value.message
+
+
+@pytest.mark.parametrize("template_name", ["faktura", "kvitto"])
+def test_top_level_footer_is_rejected_in_every_shape(template_name):
+    """`footer` is not a property of these templates at all — no value shape
+    slips through as an unconstrained extra key."""
+    registry = get_registry()
+    for value in (None, "Bolaget AB", {}, [], {"company": "Bolaget AB"}):
+        data = dict(_MINIMAL_RECIPE_PAYLOAD[template_name])
+        data["footer"] = value
+        with pytest.raises(jsonschema.ValidationError):
+            jsonschema.validate(data, registry[template_name].schema)
 
 
 @pytest.mark.parametrize("template_name", ["faktura", "kvitto"])

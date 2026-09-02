@@ -20,4 +20,4 @@ All plan steps done on branch `issue/79-faktura-kvitto-footer-slot`.
 
 ### Deviation from the plan
 
-Step 4/8 specified `"footer": false`. Under jsonschema 4.26 a boolean-`false` subschema raises with an **empty** `absolute_path`, so neither the message nor the server's `detail.path` names the field. `{"not": {}, "description": …}` is equivalent in strictness, reports `path == ["footer"]`, and the description tells the producer where the fields belong.
+Step 4/8 specified `"footer": false`. Under jsonschema 4.26 a boolean-`false` subschema raises with an **empty** `absolute_path`, so neither the message nor the server's `detail.path` names the field. The rejection is spelled `{"not": {"description": …}}` instead: equally strict in every value shape, `path == ["footer"]`, and the description is interpolated into the validation message, so the producer is told where the fields belong. Tests in `test_schemas.py` and `test_server.py` assert the message content, so a change in the library's message format fails rather than silently dropping the guidance.

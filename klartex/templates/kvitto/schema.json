@@ -31,7 +31,7 @@
         "address_line2": { "type": "string" }
       }
     },
-    "footer": { "not": {}, "description": "Not a property of this template. Company, contact and payment details go in the page template's footer slot: `page_template.footer` with variant `columns` and its `fields`." },
+    "footer": { "not": { "description": "`footer` is not a property of kvitto. Company, contact and payment details go in the page template's footer slot: `page_template.footer` with variant `columns` and its `fields`." } },
     "receipt_number": { "type": "string" },
     "date": { "type": "string", "description": "Receipt date (YYYY-MM-DD)" },
     "total_amount": { "type": "number", "description": "Total amount paid. Authoritative — never computed from items." },

@@ -20,7 +20,7 @@
         "y": { "type": "number", "default": 0 }
       }
     },
-    "footer": { "not": {}, "description": "Not a property of this template. Company, contact and payment details go in the page template's footer slot: `page_template.footer` with variant `columns` and its `fields`." },
+    "footer": { "not": { "description": "`footer` is not a property of faktura. Company, contact and payment details go in the page template's footer slot: `page_template.footer` with variant `columns` and its `fields`." } },
     "invoice_number": { "type": "string" },
     "date": { "type": "string", "description": "Invoice date (YYYY-MM-DD)" },
     "due_date": { "type": "string", "description": "Due date (YYYY-MM-DD)" },

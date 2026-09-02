@@ -14,8 +14,8 @@ Klartex tar JSON-data + mallnamn och producerar PDF via XeLaTeX. Kan användas s
 |------|-------------|
 | `_block` | Universell blockmotor — agenten komponerar dokumentet fritt |
 | `protokoll` | Mötesprotokoll med dagordning, beslut och justerare |
-| `faktura` | Faktura med rader, moms och betalningsinformation |
-| `kvitto` | Kvitto med enkel radlista, betalsätt och totalbelopp |
+| `faktura` | Faktura med rader, moms och betalningsinformation. Kräver `sender`: namnet står som ordbild där logotypen annars står, och kolumnfoten härleds ur säljarens uppgifter |
+| `kvitto` | Kvitto med enkel radlista, betalsätt och totalbelopp. Kräver `sender` på samma sätt som `faktura` |
 | `resultatrakning` | Resultaträkning med jämförelseår och noter |
 | `balansrakning` | Balansräkning med tillgångar och skulder/eget kapital |
 | `budgetrapport` | Budgetrapport med kontokoder, budget och utfall |
@@ -153,7 +153,7 @@ En sidmall består av två oberoende delar: **header** (sidhuvud) och **footer**
 | `footer` | `columns` | Flerkolumnsfot med företags-, kontakt- och betalningsuppgifter (`fields`) |
 | `footer` | `null` | Tom sidfot |
 
-En del som utelämnas får ytans default: blockmotorn har tomt sidhuvud och sidnummerfoten, recepten letterhead-sidhuvudet och sidnummerfoten med dokumenttiteln före sidnumret (`footer: {"variant": "pagenumber", "title": true}`).
+En del som utelämnas får ytans default: blockmotorn har tomt sidhuvud och sidnummerfoten, recepten letterhead-sidhuvudet och sidnummerfoten med dokumenttiteln före sidnumret (`footer: {"variant": "pagenumber", "title": true}`). Ett recept kan deklarera egna defaultdelar: `faktura` och `kvitto` har kolumnfoten, med företag, adress, org.nr och betalningsuppgifter härledda ur `sender` och betalfälten i själva payloaden. Skickar producenten en egen kolumnfot vinner varje fält den sätter, fält för fält; en annan variant, `null` eller en egen källa används precis som den skickas. `klartex schema <mall>` beskriver mallens egen default.
 
 ```json
 "page_template": {

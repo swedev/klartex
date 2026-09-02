@@ -63,6 +63,7 @@ def test_class_default_chrome():
     assert r"\renewcommand{\kxreclaimtop}{1.7cm}" in cls
     assert r"\definecolor{brandprimary}{HTML}{000000}" in cls
     assert r"\definecolor{brandsecondary}{HTML}{000000}" in cls
+    assert r"\definecolor{kxmuted}{HTML}{6B6A63}" in cls
 
 
 def test_header_band_constant_matches_the_class_geometry():
@@ -595,18 +596,19 @@ def test_kvitto_sender_logo_and_footer():
     assert "bankgiro={1234-5678}" in tex
 
 
-def test_kvitto_without_sender_renders_no_party_block():
-    """Without sender/recipient the invoice_recipient component must render
-    nothing — no empty Mottagare label."""
+def test_kvitto_with_sender_and_no_recipient_leaves_the_right_column_empty():
+    """A receipt names an issuer but no recipient: the Avsändare block renders
+    and the right-hand column stays empty — no bare Mottagare label."""
     data = {
         "receipt_number": "K-3",
         "date": "2026-08-07",
         "total_amount": 100,
+        "sender": {"name": "Säljbolaget AB"},
         "items": [{"description": "Avgift"}],
     }
     tex = _render_recipe_tex("kvitto", data)
+    assert "Avsändare" in tex
     assert "Mottagare" not in tex
-    assert "Avsändare" not in tex
 
 
 def test_kvitto_minimal_payload_skips_metadata_list():
@@ -616,6 +618,7 @@ def test_kvitto_minimal_payload_skips_metadata_list():
         "receipt_number": "K-2",
         "date": "2026-07-06",
         "total_amount": 50,
+        "sender": {"name": "Säljbolaget AB"},
         "items": [{"description": "Avgift"}],
     }
     tex = _render_recipe_tex("kvitto", data)
@@ -698,6 +701,7 @@ def _minimal_faktura(**extra) -> dict:
         "invoice_number": "F-1",
         "date": "2026-08-06",
         "due_date": "2026-09-05",
+        "sender": {"name": "Säljbolaget AB"},
         "recipient": {"name": "Kund AB"},
         "lines": [
             {"description": "Tjänst", "quantity": 9, "unit_price": 3600.0, "vat_percent": 0}
@@ -857,8 +861,9 @@ def test_faktura_logo_default_height():
 
 
 def test_faktura_sender_block_rendered():
-    """An optional sender renders as an Avsändare block; without it the
-    layout stays recipient + references only."""
+    """The sender renders as an Avsändare block beside the recipient — the
+    legal seller identification, with the org number and the address the
+    header wordmark does not carry."""
     data = _minimal_faktura(
         sender={
             "name": "Säljbolaget AB",
@@ -870,9 +875,6 @@ def test_faktura_sender_block_rendered():
     assert "Avsändare" in tex
     assert "Säljbolaget AB" in tex
     assert "556111-2222" in tex
-
-    tex_without = _render_recipe_tex("faktura", _minimal_faktura())
-    assert "Avsändare" not in tex_without
 
 
 def test_faktura_top_level_footer_is_not_rendered():
@@ -886,11 +888,16 @@ def test_faktura_top_level_footer_is_not_rendered():
     tex = _render_recipe_tex("faktura", data)
     assert "Från data" not in tex
     assert "1111-1111" not in tex
-    assert r"\usepackage{klartex-footer}" not in tex
 
 
-def test_faktura_payment_info_renders_without_footer():
-    tex = _render_recipe_tex("faktura", _minimal_faktura(bankgiro="9999-9999"))
+def test_faktura_payment_info_renders_with_a_custom_footer_source():
+    """A custom footer source owns the slot, so no structured field carries
+    the payment details and the in-body block is the only place left."""
+    tex = _render_recipe_tex(
+        "faktura",
+        _minimal_faktura(bankgiro="9999-9999"),
+        footer_source="% egen sidfot",
+    )
     assert "Betalningsinformation" in tex
     assert "9999-9999" in tex
 
@@ -899,6 +906,193 @@ def test_faktura_payment_info_skipped_when_no_payment_fields():
     """No payment fields in data → no empty Betalningsinformation block."""
     tex = _render_recipe_tex("faktura", _minimal_faktura())
     assert "Betalningsinformation" not in tex
+
+
+class TestDerivedFooterFields:
+    r"""faktura and kvitto derive their default footer from the seller's own
+    data (`fields_from` in recipe.yaml). The payload's own columns footer wins
+    field by field; any other footer is used exactly as sent."""
+
+    def test_sender_and_payment_fields_fill_the_default_footer(self):
+        tex = _render_recipe_tex(
+            "faktura",
+            _minimal_faktura(
+                sender={
+                    "name": "Säljbolaget AB",
+                    "address_line1": "Storgatan 1",
+                    "address_line2": "123 45 Stad",
+                    "org_number": "556111-2222",
+                },
+                bankgiro="1234-5678",
+            ),
+        )
+        assert r"\usepackage{klartex-footer}" in tex
+        assert "company={Säljbolaget AB}" in tex
+        assert r"address={Storgatan 1\\123 45 Stad}" in tex
+        assert "orgnr={556111-2222}" in tex
+        assert "bankgiro={1234-5678}" in tex
+        assert "Betalningsinformation" not in tex
+
+    def test_sender_with_a_name_only_leaves_the_other_columns_to_the_labels(self):
+        tex = _render_recipe_tex(
+            "faktura", _minimal_faktura(sender={"name": "Säljbolaget AB"})
+        )
+        assert "company={Säljbolaget AB}" in tex
+        assert "address=" not in tex
+        assert "orgnr=" not in tex
+        assert "bankgiro=" not in tex
+        assert r"\kxfooterlabelmissingtrue" in tex
+
+    def test_payload_footer_fields_win_field_by_field(self):
+        tex = _render_recipe_tex(
+            "faktura",
+            _minimal_faktura(
+                sender={"name": "Säljbolaget AB", "address_line1": "Storgatan 1"},
+                bankgiro="1234-5678",
+                page_template={
+                    "footer": {
+                        "variant": "columns",
+                        "fields": {"company": "Annat namn", "email": "info@example.se"},
+                    }
+                },
+            ),
+        )
+        assert "company={Annat namn}" in tex
+        assert "Säljbolaget AB" not in tex.split(r"\begin{document}")[0]
+        assert "email={info@example.se}" in tex
+        assert "address={Storgatan 1}" in tex
+        assert "bankgiro={1234-5678}" in tex
+        assert "Betalningsinformation" not in tex
+
+    def test_a_gap_neither_side_fills_stays_a_gap(self):
+        """No org number in the payload's footer and none in `sender` either:
+        no keyval is invented — the label names it at compile time."""
+        tex = _render_recipe_tex(
+            "faktura",
+            _minimal_faktura(
+                sender={"name": "Säljbolaget AB"},
+                page_template={
+                    "footer": {
+                        "variant": "columns",
+                        "fields": {"company": "Säljbolaget AB", "f_tax": True},
+                    }
+                },
+            ),
+        )
+        assert "orgnr=" not in tex
+        assert "ftax=true" in tex
+
+    def test_an_empty_payload_value_counts_as_unset(self):
+        r"""`""` is what `footer_keyvals` and `footer_has_payment` already read
+        as unset, so the derived value fills it — the footer's label and the
+        body's fallback can never disagree about a payment detail."""
+        tex = _render_recipe_tex(
+            "faktura",
+            _minimal_faktura(
+                bankgiro="1234-5678",
+                page_template={
+                    "footer": {"variant": "columns", "fields": {"bankgiro": ""}},
+                },
+            ),
+        )
+        assert "bankgiro={1234-5678}" in tex
+        assert "Betalningsinformation" not in tex
+
+    @pytest.mark.parametrize("footer", ["pagenumber", None])
+    def test_another_footer_is_used_as_sent(self, footer):
+        """"Always rendered" is the default, not a rule: an explicit footer
+        choice stands, and the in-body payment block comes back with it."""
+        tex = _render_recipe_tex(
+            "faktura",
+            _minimal_faktura(bankgiro="9999-9999", page_template={"footer": footer}),
+        )
+        assert r"\kxfooter{" not in tex
+        assert r"\kxfooterlabelmissingtrue" not in tex
+        assert "Betalningsinformation" in tex
+        assert "9999-9999" in tex
+
+    def test_a_custom_footer_source_is_used_as_sent(self):
+        tex = _render_recipe_tex(
+            "faktura", _minimal_faktura(), footer_source="% egen sidfot"
+        )
+        assert "% egen sidfot" in tex
+        assert r"\kxfooter{" not in tex
+        assert r"\kxfooterlabelmissingtrue" not in tex
+
+    def test_the_derivation_does_not_leak_between_renders(self):
+        """A recipe is loaded once and rendered for many payloads, so the
+        merge must build a new SlotSpec rather than write into the loaded one."""
+        first = _render_recipe_tex(
+            "faktura", _minimal_faktura(sender={"name": "Första AB"})
+        )
+        second = _render_recipe_tex(
+            "faktura", _minimal_faktura(sender={"name": "Andra AB"})
+        )
+        assert "company={Första AB}" in first
+        assert "company={Andra AB}" in second
+        assert "Första AB" not in second
+
+    def test_kvitto_derives_the_sender_columns_but_has_no_payment_fields(self):
+        tex = _render_recipe_tex(
+            "kvitto",
+            {
+                "receipt_number": "K-4",
+                "date": "2026-08-07",
+                "total_amount": 100,
+                "sender": {"name": "Säljbolaget AB", "org_number": "556111-2222"},
+                "items": [{"description": "Avgift", "amount": 100}],
+            },
+        )
+        assert "company={Säljbolaget AB}" in tex
+        assert "orgnr={556111-2222}" in tex
+        assert "bankgiro=" not in tex
+        assert r"\kxfooterlabelmissingtrue" in tex
+
+    def test_label_mode_is_scoped_to_the_two_recipes(self):
+        """protokoll renders the same columns footer without the labels."""
+        data = json.loads((FIXTURES / "protokoll.json").read_text())
+        data["page_template"] = {
+            "footer": {"variant": "columns", "fields": {"company": "Föreningen"}}
+        }
+        tex = _render_recipe_tex("protokoll", data)
+        assert r"\kxfooter{" in tex
+        assert r"\kxfooterlabelmissingtrue" not in tex
+
+
+class TestSenderWordmark:
+    r"""Without a logo the seller's name stands in the header's logo box, at
+    the FAKTURA / KVITTO heading's size."""
+
+    WORDMARK = r"{\LARGE\bfseries\raggedright\hyphenpenalty=10000 Säljbolaget AB\par}"
+
+    def test_faktura_without_logo_sets_the_name_as_a_wordmark(self):
+        tex = _render_recipe_tex(
+            "faktura", _minimal_faktura(sender={"name": "Säljbolaget AB"})
+        )
+        assert self.WORDMARK in tex
+
+    def test_a_logo_replaces_the_wordmark(self):
+        tex = _render_recipe_tex(
+            "faktura",
+            _minimal_faktura(sender={"name": "Säljbolaget AB"}, logo="logo.pdf"),
+        )
+        assert r"\includegraphics[height=1cm]{logo.pdf}" in tex
+        # The name still reaches the Avsändare block and the footer keyvals,
+        # so the wrapper is what the assertion targets.
+        assert self.WORDMARK not in tex
+
+    def test_kvitto_without_logo_sets_the_name_as_a_wordmark(self):
+        tex = _render_recipe_tex(
+            "kvitto",
+            {
+                "receipt_number": "K-5",
+                "date": "2026-08-07",
+                "total_amount": 100,
+                "sender": {"name": "Säljbolaget AB"},
+                "items": [{"description": "Avgift", "amount": 100}],
+            },
+        )
+        assert self.WORDMARK in tex
 
 
 def test_faktura_font_options_emitted():

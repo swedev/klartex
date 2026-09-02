@@ -338,3 +338,67 @@ def test_margin_left_moves_the_body_text_by_the_delta():
         render(BLOCK_ENGINE_TEMPLATE, _anchor_payload(None, {"left": "2cm"})), "Ankarord"
     )[0]
     assert moved_x - base_x == pytest.approx((2 - 3) * _PT_PER_CM, abs=0.5)
+
+
+def _minimal_faktura(**extra) -> dict:
+    data = {
+        "invoice_number": "F-1",
+        "date": "2026-08-06",
+        "due_date": "2026-09-05",
+        "sender": {"name": "Säljbolaget AB"},
+        "recipient": {"name": "Kund AB"},
+        "lines": [{"description": "Tjänst", "quantity": 1, "unit_price": 100.0}],
+    }
+    data.update(extra)
+    return data
+
+
+FOOTER_LABELS = ("Adress saknas", "Org.nr saknas", "Betalningsuppgifter saknas")
+
+
+@requires_tools
+def test_bare_faktura_names_its_footer_gaps_on_one_page():
+    """An invoice with nothing but a seller's name still looks like one: the
+    name in the header, the three-column footer on the page with its gaps
+    named — and the columns footer's taller band does not push it to page two.
+    """
+    pages = _pages(render("faktura", _minimal_faktura()))
+    assert len(pages) == 1, f"expected a one-page invoice, got {len(pages)}"
+    assert "Säljbolaget AB" in pages[0]
+    for label in FOOTER_LABELS:
+        assert label in pages[0]
+
+
+@requires_tools
+def test_a_filled_faktura_footer_names_no_gaps():
+    data = _minimal_faktura(
+        sender={
+            "name": "Säljbolaget AB",
+            "address_line1": "Storgatan 1",
+            "address_line2": "123 45 Stad",
+            "org_number": "556111-2222",
+        },
+        bankgiro="1234-5678",
+    )
+    text = _text_layer(render("faktura", data))
+    assert "556111-2222" in text
+    assert "1234-5678" in text
+    for label in FOOTER_LABELS:
+        assert label not in text
+
+
+@requires_tools
+def test_label_mode_is_off_outside_the_invoice_recipes():
+    """The same columns footer on a block-engine document drops the columns it
+    has no content for, exactly as before."""
+    data = {
+        "lang": "sv",
+        "page_template": {
+            "footer": {"variant": "columns", "fields": {"company": "Föreningen"}}
+        },
+        "body": [{"type": "heading", "text": "Kallelse"}],
+    }
+    text = _text_layer(render(BLOCK_ENGINE_TEMPLATE, data))
+    assert "Föreningen" in text
+    for label in FOOTER_LABELS:
+        assert label not in text

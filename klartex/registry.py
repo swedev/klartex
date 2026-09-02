@@ -8,9 +8,9 @@ from pathlib import Path
 from klartex.block_engine import BLOCK_ENGINE_TEMPLATE
 from klartex.page_templates import (
     BLOCK_DEFAULT_TEXT,
-    RECIPE_DEFAULT_TEXT,
     page_template_schema,
 )
+from klartex.recipe import describe_recipe_defaults, load_recipe
 
 
 @dataclass
@@ -53,12 +53,17 @@ def discover_templates(templates_dir: Path) -> dict[str, TemplateInfo]:
         name = schema_path.parent.name
         if name.startswith("_"):
             continue
-        schema = json.loads(schema_path.read_text(encoding="utf-8"))
-        _inject_page_template(schema, RECIPE_DEFAULT_TEXT)
-
         recipe_yaml = schema_path.parent / "recipe.yaml"
         if not recipe_yaml.exists():
             continue
+
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        # The default text is the recipe's own: a recipe declaring its slots
+        # (faktura and kvitto's derived columns footer) must document them
+        # where an agent reads the schema.
+        _inject_page_template(
+            schema, describe_recipe_defaults(load_recipe(recipe_yaml).document)
+        )
 
         templates[name] = TemplateInfo(
             name=name,

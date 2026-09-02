@@ -222,6 +222,7 @@ def test_render_faktura_top_level_footer_reports_its_path():
                 "invoice_number": "F-1",
                 "date": "2026-08-06",
                 "due_date": "2026-09-05",
+                "sender": {"name": "Säljbolaget AB"},
                 "recipient": {"name": "Kund AB"},
                 "lines": [{"description": "Tjänst", "quantity": 1, "unit_price": 100.0}],
                 "footer": {"company": "Bolaget AB"},
@@ -234,6 +235,28 @@ def test_render_faktura_top_level_footer_reports_its_path():
     assert detail["path"] == ["footer"]
     # The message, not just the path, tells the producer where the fields go.
     assert "page_template.footer" in detail["message"]
+
+
+def test_render_faktura_without_sender_is_rejected():
+    """`sender` is required on the invoice recipes — the seller's name is the
+    header wordmark and the footer's company line."""
+    r = client.post(
+        "/render",
+        json={
+            "template": "faktura",
+            "data": {
+                "invoice_number": "F-1",
+                "date": "2026-08-06",
+                "due_date": "2026-09-05",
+                "recipient": {"name": "Kund AB"},
+                "lines": [{"description": "Tjänst", "quantity": 1, "unit_price": 100.0}],
+            },
+        },
+    )
+    assert r.status_code == 400
+    detail = r.json()["detail"]
+    assert detail["type"] == "validation_error"
+    assert "sender" in detail["message"]
 
 
 def test_render_block_with_empty_type_carries_path():

@@ -48,7 +48,12 @@
         },
         "page_template": {
           "type": "object",
-          "description": "The recipe's default page template as a slot object ({\"header\": …, \"footer\": …}). Omit for the recipe default (the letterhead header and the page-number footer with the document title). data.page_template overrides per slot at render time."
+          "description": "The recipe's default page template as a slot object ({\"header\": …, \"footer\": …}). Omit for the recipe default (the letterhead header and the page-number footer with the document title). data.page_template overrides per slot at render time. A footer slot object may carry a 'fields_from' map — footer field name to a dot-path into the payload data, or to a list of dot-paths whose set values become the field's lines — resolved at render time and merged under whatever the payload's footer of the same variant sets, key by key. 'fields_from' and a literal 'fields' cannot sit on the same slot object."
+        },
+        "label_missing_footer_fields": {
+          "type": "boolean",
+          "default": false,
+          "description": "true names the gaps in the columns footer instead of dropping the column: a column without content prints a muted label ('Adress saknas', 'Org.nr saknas', 'Betalningsuppgifter saknas'). Applies to every columns footer this recipe renders, whether the fields are derived or supplied by the payload."
         },
         "metadata": {
           "type": "array",

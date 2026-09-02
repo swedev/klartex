@@ -14,8 +14,8 @@ Klartex takes JSON data + template name and produces PDF via XeLaTeX. Can be use
 |----------|-------------|
 | `_block` | Universal block engine — the agent composes the document freely |
 | `protokoll` | Meeting minutes with agenda, decisions, and adjusters |
-| `faktura` | Invoice with line items, VAT, and payment information |
-| `kvitto` | Receipt with a simple items list, payment method, and total |
+| `faktura` | Invoice with line items, VAT, and payment information. Requires `sender`: the name stands as a wordmark where the logo would go, and the columns footer is derived from the seller's details |
+| `kvitto` | Receipt with a simple items list, payment method, and total. Requires `sender` the same way as `faktura` |
 | `resultatrakning` | Income statement with comparison years and notes |
 | `balansrakning` | Balance sheet with assets and liabilities/equity sections |
 | `budgetrapport` | Budget report with account codes, budget, and actuals |
@@ -153,7 +153,7 @@ A page template is composed of two independent slots: **header** and **footer**.
 | `footer` | `columns` | Multi-column footer with company, contact and payment details (`fields`) |
 | `footer` | `null` | Empty footer |
 
-A slot that is left out takes the surface's default: the block engine has an empty header and the page-number footer, recipes the letterhead header and the page-number footer with the document title before the page number (`footer: {"variant": "pagenumber", "title": true}`).
+A slot that is left out takes the surface's default: the block engine has an empty header and the page-number footer, recipes the letterhead header and the page-number footer with the document title before the page number (`footer: {"variant": "pagenumber", "title": true}`). A recipe may declare its own defaults: `faktura` and `kvitto` default to the columns footer, with company, address, org number and payment details derived from the payload's own `sender` and payment fields. A producer that sends its own columns footer wins field by field; another variant, `null` or a custom source is used exactly as sent. `klartex schema <template>` describes the template's own default.
 
 ```json
 "page_template": {

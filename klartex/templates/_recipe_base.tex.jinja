@@ -8,6 +8,11 @@
 
 %# --- Compose the page template from its header and footer slots ---
 \BLOCK{include '_page_template.tex.jinja'}
+%# Recipes that name their footer's gaps (faktura, kvitto) turn label mode on
+%# for whichever columns footer ends up resolved — derived or payload-supplied.
+\BLOCK{if label_missing_footer_fields and page_template.footer.is_predefined and page_template.footer.variant == 'columns'}
+\kxfooterlabelmissingtrue
+\BLOCK{endif}
 
 \BLOCK{if lang == 'en'}
 \setdoclang{en}
@@ -31,16 +36,22 @@
 \raisebox{\dimexpr\fontcharht\font`F-\height+\VAR{logo_offset.get('y') or 0}\height\relax}{\includegraphics[height=\VAR{cdata.get('logo_height') or '1cm'}]{\VAR{cdata.logo}}}}%
 \BLOCK{endmacro}
 
-%# Document header: optional logo on the left (in line with the party blocks
-%# below), title + rows on the right with left-aligned content whose left
-%# edge lines up with the right-hand party column.
+%# Document header: the logo — or, without one, the sender's name as a
+%# wordmark at the heading's size — on the left, in line with the party blocks
+%# below; title + rows on the right with left-aligned content whose left
+%# edge lines up with the right-hand party column. The wordmark wraps at a
+%# word boundary rather than hyphenating, as org names do in the letterhead.
 \BLOCK{macro doc_header(cdata, title, rows)}
 \noindent
 \begin{minipage}[t]{0.45\textwidth}
 \BLOCK{if cdata.get('logo')}
 \VAR{header_logo(cdata)}
-\BLOCK{endif}
 ~
+\BLOCK{elif cdata.get('sender_name')}
+{\LARGE\bfseries\raggedright\hyphenpenalty=10000 \VAR{cdata.sender_name}\par}
+\BLOCK{else}
+~
+\BLOCK{endif}
 \end{minipage}%
 \hfill
 \begin{minipage}[t]{0.45\textwidth}
@@ -175,9 +186,11 @@ Org.nr: \VAR{party.org_number}\\
 \vspace{2em}
 
 \BLOCK{elif comp.type == 'payment_info'}
-%# Suppressed when the page template's footer slot already carries payment
-%# details — the footer is the canonical place; these fields are the fallback
-%# — and when the data has no payment fields at all.
+%# The fallback for a footer that cannot show payment details: a custom
+%# footer or whole-page source, the page-number footer, or none at all. The
+%# columns footer is the canonical place, so this block is suppressed
+%# whenever the footer slot carries a payment field — and whenever the data
+%# has no payment fields at all.
 \BLOCK{set has_payment = comp.data.get('bankgiro') or comp.data.get('plusgiro') or comp.data.get('iban') or comp.data.get('bic') }
 \BLOCK{if has_payment and not page_template.footer_has_payment}
 \noindent\textbf{Betalningsinformation}\\[0.3em]

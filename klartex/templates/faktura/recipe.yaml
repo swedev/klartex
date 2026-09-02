@@ -8,6 +8,20 @@ template:
 document:
   class_options: narrowmargins
   title: "Faktura {{ data.invoice_number }}"
+  # The seller's own details are already in the payload, so the footer is
+  # derived from them; the payload's own page_template.footer wins per field.
+  page_template:
+    footer:
+      variant: columns
+      fields_from:
+        company: sender.name
+        address: [sender.address_line1, sender.address_line2]
+        org_number: sender.org_number
+        bankgiro: bankgiro
+        plusgiro: plusgiro
+        iban: iban
+        bic: bic
+  label_missing_footer_fields: true
 
 components:
   - type: invoice_header
@@ -15,6 +29,7 @@ components:
       invoice_number: invoice_number
       date: date
       due_date: due_date
+      sender_name: sender.name
       logo: logo
       logo_height: logo_height
       logo_offset: logo_offset

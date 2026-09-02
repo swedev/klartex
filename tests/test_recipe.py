@@ -94,6 +94,125 @@ components:
             load_recipe(Path("/nonexistent/recipe.yaml"))
 
 
+class TestFooterFieldsFrom:
+    r"""`fields_from` on a recipe's footer slot is the recipe's declaration of
+    where the footer's default content comes from. It is recipe syntax, not
+    payload syntax, so `load_recipe` takes it off the slot object and checks
+    it there — a typo must not survive to the first render."""
+
+    def _write(self, tmp_path, document_body):
+        recipe_yaml = tmp_path / "recipe.yaml"
+        recipe_yaml.write_text(
+            "template:\n"
+            "  name: test\n"
+            "  description: test\n"
+            "document:\n" + document_body + "components: []\n"
+        )
+        return recipe_yaml
+
+    def test_faktura_declares_its_derived_columns_footer(self):
+        recipe = load_recipe(TEMPLATES_DIR / "faktura" / "recipe.yaml")
+        assert recipe.document.page_template["footer"] == {"variant": "columns"}
+        assert recipe.document.footer_fields_from["company"] == "sender.name"
+        assert recipe.document.footer_fields_from["address"] == [
+            "sender.address_line1",
+            "sender.address_line2",
+        ]
+        assert recipe.document.footer_fields_from["bankgiro"] == "bankgiro"
+        assert recipe.document.footer_fields_from_variant == "columns"
+        assert recipe.document.label_missing_footer_fields is True
+
+    def test_kvitto_derives_the_sender_fields_only(self):
+        recipe = load_recipe(TEMPLATES_DIR / "kvitto" / "recipe.yaml")
+        assert set(recipe.document.footer_fields_from) == {
+            "company",
+            "address",
+            "org_number",
+        }
+        assert recipe.document.label_missing_footer_fields is True
+
+    def test_protokoll_declares_neither(self):
+        from klartex.page_templates import RECIPE_DEFAULT_SLOTS
+
+        recipe = load_recipe(TEMPLATES_DIR / "protokoll" / "recipe.yaml")
+        assert recipe.document.page_template == RECIPE_DEFAULT_SLOTS
+        assert recipe.document.footer_fields_from == {}
+        assert recipe.document.label_missing_footer_fields is False
+
+    def test_unknown_destination_field_rejected(self, tmp_path):
+        path = self._write(
+            tmp_path,
+            "  page_template:\n"
+            "    footer:\n"
+            "      variant: columns\n"
+            "      fields_from:\n"
+            "        compamy: sender.name\n",
+        )
+        with pytest.raises(ValueError, match="compamy"):
+            load_recipe(path)
+
+    def test_variant_without_fields_rejected(self, tmp_path):
+        path = self._write(
+            tmp_path,
+            "  page_template:\n"
+            "    footer:\n"
+            "      variant: pagenumber\n"
+            "      fields_from:\n"
+            "        company: sender.name\n",
+        )
+        with pytest.raises(ValueError, match="pagenumber"):
+            load_recipe(path)
+
+    def test_map_outside_a_footer_slot_object_rejected(self, tmp_path):
+        path = self._write(
+            tmp_path,
+            "  page_template:\n"
+            "    footer: columns\n"
+            "    fields_from:\n"
+            "      company: sender.name\n",
+        )
+        with pytest.raises(ValueError, match="footer slot object"):
+            load_recipe(path)
+
+    def test_empty_path_list_rejected(self, tmp_path):
+        path = self._write(
+            tmp_path,
+            "  page_template:\n"
+            "    footer:\n"
+            "      variant: columns\n"
+            "      fields_from:\n"
+            "        address: []\n",
+        )
+        with pytest.raises(ValueError, match="address"):
+            load_recipe(path)
+
+    def test_non_string_path_rejected(self, tmp_path):
+        path = self._write(
+            tmp_path,
+            "  page_template:\n"
+            "    footer:\n"
+            "      variant: columns\n"
+            "      fields_from:\n"
+            "        company: 7\n",
+        )
+        with pytest.raises(ValueError, match="company"):
+            load_recipe(path)
+
+    def test_fields_and_fields_from_on_one_slot_rejected(self, tmp_path):
+        path = self._write(
+            tmp_path,
+            "  page_template:\n"
+            "    footer:\n"
+            "      variant: columns\n"
+            "      fields:\n"
+            "        company: Bolaget AB\n"
+            "      fields_from:\n"
+            "        org_number: sender.org_number\n",
+        )
+        with pytest.raises(ValueError, match="not\n?\\s*both|both"):
+            load_recipe(path)
+
+
 class TestPrepareRecipeContext:
     """Tests for recipe context preparation."""
 

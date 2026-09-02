@@ -317,6 +317,12 @@ def test_schema_files_hold_only_the_placeholder():
         {"header": {"variant": "letterhead", "fields": {"org_name": "X", "logo": "my_logo.pdf"}}},
         {"header": {"variant": "letterhead", "fields": {"org_name": "X", "logo": "a&b.pdf"}}},
         {"header": {"variant": "logo", "fields": {"logo": "my_logo.pdf"}}},
+        # The pattern must anchor at the absolute end and exclude whitespace —
+        # Python's `$` matches before a final newline, and jsonschema uses
+        # Python's re.
+        {"header": {"variant": "logo", "fields": {"logo": "logo.pdf\n"}}},
+        {"header": {"variant": "logo", "fields": {"logo": "logo.pdf\r"}}},
+        {"header": {"variant": "logo", "fields": {"logo": "logo.pdf x"}}},
     ],
 )
 def test_block_schema_rejects_unrenderable_headers(page_template):

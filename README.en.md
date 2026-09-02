@@ -182,7 +182,7 @@ A slot that is left out takes the surface's default: the block engine has an emp
 "page_template": { "header": "logo", "footer": null }
 ```
 
-The object form of `letterhead` requires `fields.org_name` — the name is what the header is built around, and without it the other details would not be printed. A header with no details at all is written as the variant name on its own (`"header": "letterhead"`). `logo` is a filename free of LaTeX-special characters (`\ # $ % & _ { } ~ ^`).
+The object form of `letterhead` requires `fields.org_name` — the name is what the header is built around, and without it the other details would not be printed. A header with no details at all is written as the variant name on its own (`"header": "letterhead"`). `logo` is a filename free of whitespace and of LaTeX-special characters (`\ # $ % & _ { } ~ ^`).
 
 Beside the slots there are document-level settings — `font`, `header_font`, `diff_style` and `margins` — which apply whether or not a slot has its own LaTeX, plus `page_numbers` and `first_page_header`.
 

@@ -23,7 +23,7 @@
     "sender": {
       "type": "object",
       "required": ["name"],
-      "description": "Issuer/seller — shown as the Avsändare block in the receipt body. Give the company's legal name here even when a logo/footer is present.",
+      "description": "Issuer/seller — shown as the Avsändare block in the receipt body. Give the company's legal name here even when a logo or a page-template footer is present.",
       "properties": {
         "name": { "type": "string" },
         "org_number": { "type": "string" },
@@ -31,26 +31,7 @@
         "address_line2": { "type": "string" }
       }
     },
-    "footer": {
-      "type": "object",
-      "additionalProperties": false,
-      "description": "The receipt footer: company, contact and payment details on every page.",
-      "properties": {
-        "company": { "type": "string", "description": "Company name" },
-        "address": { "oneOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }], "description": "Postal address as an array with one line per element, e.g. ['Storgatan 1', '123 45 Stad'] — line-broken like a postal address. A string renders as a single line." },
-        "seat": { "type": "string", "description": "Registered seat of the board, e.g. 'Malmö'" },
-        "org_number": { "type": "string", "description": "Organisation number" },
-        "vat_number": { "type": "string", "description": "VAT registration number (SExxxxxxxxxx01)" },
-        "f_tax": { "type": "boolean", "description": "true shows the line 'Godkänd för F-skatt' (approved for F-tax)" },
-        "phone": { "type": "string", "description": "Phone" },
-        "email": { "type": "string", "description": "Email" },
-        "web": { "type": "string", "description": "Website" },
-        "bankgiro": { "type": "string" },
-        "plusgiro": { "type": "string" },
-        "iban": { "type": "string" },
-        "bic": { "type": "string" }
-      }
-    },
+    "footer": { "not": { "description": "`footer` is not a property of kvitto. Company, contact and payment details go in the page template's footer slot: `page_template.footer` with variant `columns` and its `fields`." } },
     "receipt_number": { "type": "string" },
     "date": { "type": "string", "description": "Receipt date (YYYY-MM-DD)" },
     "total_amount": { "type": "number", "description": "Total amount paid. Authoritative — never computed from items." },
@@ -70,6 +51,6 @@
       },
       "minItems": 1
     },
-    "note": { "type": "string", "description": "Footer note" }
+    "note": { "type": "string", "description": "Optional note shown below the receipt content." }
   }
 }

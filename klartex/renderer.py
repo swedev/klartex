@@ -12,7 +12,7 @@ import jsonschema
 
 from klartex.inline_markup import render_inline
 from klartex.jinja_env import make_env
-from klartex.page_templates import font_files, footer_keyvals
+from klartex.page_templates import font_files
 from klartex.registry import discover_templates
 from klartex.tex_escape import escape_data
 from klartex.block_engine import BLOCK_ENGINE_TEMPLATE
@@ -35,7 +35,6 @@ def get_registry():
 
 # Jinja2 environment with LaTeX-safe delimiters
 _jinja_env = make_env(jinja2.FileSystemLoader([str(TEMPLATES_DIR)]))
-_jinja_env.globals["footer_keyvals"] = footer_keyvals
 
 
 @jinja2.pass_context

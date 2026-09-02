@@ -20,26 +20,7 @@
         "y": { "type": "number", "default": 0 }
       }
     },
-    "footer": {
-      "type": "object",
-      "additionalProperties": false,
-      "description": "The invoice footer: company, contact and payment details on every page. This is the canonical place for payment details — the standalone bankgiro/plusgiro/iban/bic fields are only a fallback and are suppressed when the footer carries payment details.",
-      "properties": {
-        "company": { "type": "string", "description": "Company name" },
-        "address": { "oneOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }], "description": "Postal address as an array with one line per element, e.g. ['Storgatan 1', '123 45 Stad'] — line-broken like a postal address. A string renders as a single line." },
-        "seat": { "type": "string", "description": "Registered seat of the board, e.g. 'Malmö'" },
-        "org_number": { "type": "string", "description": "Organisation number" },
-        "vat_number": { "type": "string", "description": "VAT registration number (SExxxxxxxxxx01)" },
-        "f_tax": { "type": "boolean", "description": "true shows the line 'Godkänd för F-skatt' (approved for F-tax)" },
-        "phone": { "type": "string", "description": "Phone" },
-        "email": { "type": "string", "description": "Email" },
-        "web": { "type": "string", "description": "Website" },
-        "bankgiro": { "type": "string" },
-        "plusgiro": { "type": "string" },
-        "iban": { "type": "string" },
-        "bic": { "type": "string" }
-      }
-    },
+    "footer": { "not": { "description": "`footer` is not a property of faktura. Company, contact and payment details go in the page template's footer slot: `page_template.footer` with variant `columns` and its `fields`." } },
     "invoice_number": { "type": "string" },
     "date": { "type": "string", "description": "Invoice date (YYYY-MM-DD)" },
     "due_date": { "type": "string", "description": "Due date (YYYY-MM-DD)" },
@@ -50,7 +31,7 @@
     "sender": {
       "type": "object",
       "required": ["name"],
-      "description": "Sender/seller — shown as its own block next to the recipient in the invoice body. Give the company's legal name here even when a logo/footer is present.",
+      "description": "Sender/seller — shown as its own block next to the recipient in the invoice body. Give the company's legal name here even when a logo or a page-template footer is present.",
       "properties": {
         "name": { "type": "string" },
         "org_number": { "type": "string" },
@@ -83,10 +64,10 @@
       },
       "minItems": 1
     },
-    "bankgiro": { "type": "string", "description": "Fallback: payment details belong in the invoice's footer field. Use these fields only when no footer with payment details is configured — the in-body block is suppressed otherwise." },
+    "bankgiro": { "type": "string", "description": "Fallback: payment details belong in the page template's footer slot (`page_template.footer.fields`). The in-body block is suppressed when those structured fields carry a payment detail; a custom footer source or whole-page source is not inspected, so a caller whose own source prints payment details omits these fields." },
     "plusgiro": { "type": "string", "description": "Fallback — se bankgiro." },
     "iban": { "type": "string", "description": "Fallback — se bankgiro." },
     "bic": { "type": "string", "description": "Fallback — se bankgiro." },
-    "note": { "type": "string", "description": "Footer note" }
+    "note": { "type": "string", "description": "Optional note shown below the invoice content." }
   }
 }

@@ -31,16 +31,12 @@
 \VAR{page_template.header_fragment}
 \BLOCK{endif}
 %# --- Footer slot ---
-%# A template-level footer (e.g. faktura's own footer field, emitted by the
-%# recipe base after this include) takes precedence over the page template's.
 \BLOCK{if page_template.footer.is_custom}
 \BLOCK{if not page_template.footer.shared_source}
 \VAR{page_template.footer.source}
 \BLOCK{endif}
 \BLOCK{elif page_template.footer.is_predefined}
-\BLOCK{if page_template.footer.variant == 'columns' and data is defined and data.get('footer')}
-%# The template-level footer is emitted by the recipe base instead.
-\BLOCK{elif page_template.footer.variant == 'pagenumber' and not page_template.page_numbers}
+\BLOCK{if page_template.footer.variant == 'pagenumber' and not page_template.page_numbers}
 \fancyfoot[C]{}
 \BLOCK{else}
 \VAR{page_template.footer_fragment}

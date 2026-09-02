@@ -273,12 +273,16 @@ def test_letterhead_contact_column_survives_empty_leading_fields(contact):
 _PT_PER_CM = 72 / 2.54
 
 _WORD_BOX = re.compile(
-    r'<word xMin="([0-9.]+)" yMin="([0-9.]+)" xMax="[0-9.]+" yMax="[0-9.]+">([^<]*)</word>'
+    r'<word xMin="([0-9.]+)" yMin="([0-9.]+)" xMax="([0-9.]+)" yMax="([0-9.]+)">([^<]*)</word>'
 )
 
+#: One first-page word: ``(xMin, yMin, xMax, yMax, text)``. y grows downwards
+#: from the top of the page, so a smaller yMin is higher up.
+WordBox = tuple[float, float, float, float, str]
 
-def _word_box(pdf: bytes, word: str) -> tuple[float, float]:
-    """``(xMin, yMin)`` of ``word`` on the first page, in PDF units."""
+
+def _word_boxes(pdf: bytes) -> list[WordBox]:
+    """Every word on the first page, in reading order, in PDF units."""
     with tempfile.TemporaryDirectory() as tmp:
         path = Path(tmp) / "doc.pdf"
         path.write_bytes(pdf)
@@ -288,9 +292,17 @@ def _word_box(pdf: bytes, word: str) -> tuple[float, float]:
             check=True,
             timeout=60,
         )
-    for x_min, y_min, text in _WORD_BOX.findall(out.stdout.decode("utf-8")):
+    return [
+        (float(x_min), float(y_min), float(x_max), float(y_max), text)
+        for x_min, y_min, x_max, y_max, text in _WORD_BOX.findall(out.stdout.decode("utf-8"))
+    ]
+
+
+def _word_box(pdf: bytes, word: str) -> tuple[float, float]:
+    """``(xMin, yMin)`` of ``word`` on the first page, in PDF units."""
+    for x_min, y_min, _x_max, _y_max, text in _word_boxes(pdf):
         if text == word:
-            return float(x_min), float(y_min)
+            return x_min, y_min
     raise AssertionError(f"{word!r} not found in the first page's bbox output")
 
 
@@ -338,6 +350,79 @@ def test_margin_left_moves_the_body_text_by_the_delta():
         render(BLOCK_ENGINE_TEMPLATE, _anchor_payload(None, {"left": "2cm"})), "Ankarord"
     )[0]
     assert moved_x - base_x == pytest.approx((2 - 3) * _PT_PER_CM, abs=0.5)
+
+
+# --- the letterhead's contact column: a long address must stay inside it ---
+
+#: A4 in PDF units, and the class geometry's side margin (\kxsidemargin).
+_A4_WIDTH_PT = 595.276
+_SIDE_MARGIN_PT = 3 * _PT_PER_CM
+
+#: The contact column's edges, as fractions of \textwidth. The letterhead
+#: fragment lays the header out as a 0.30 details column, a 0.03 gap and a
+#: 0.25 contact column, so the contact column runs from 0.33 to 0.58 across
+#: the text block.
+_TEXT_WIDTH_PT = _A4_WIDTH_PT - 2 * _SIDE_MARGIN_PT
+_CONTACT_LEFT_PT = _SIDE_MARGIN_PT + 0.33 * _TEXT_WIDTH_PT
+_CONTACT_RIGHT_PT = _SIDE_MARGIN_PT + 0.58 * _TEXT_WIDTH_PT
+
+_LONG_EMAIL = "styrelsen@bostadsrattsforeningenekbacken.se"
+_LONG_WEB = "www.bostadsrattsforeningenekbacken.se"
+_LONG_URL = "https://www.bostadsrattsforeningenekbacken.se/styrelsen"
+
+
+def _header_words(pdf: bytes) -> tuple[list[WordBox], float]:
+    """The first page's header words and the body anchor's yMin. A header
+    word is one above the anchor — the header band is the only thing there."""
+    boxes = _word_boxes(pdf)
+    anchor_y = next(b[1] for b in boxes if b[4] == "Ankarord")
+    return [b for b in boxes if b[1] < anchor_y], anchor_y
+
+
+@requires_tools
+@pytest.mark.parametrize(
+    "field_name, address",
+    [("email", _LONG_EMAIL), ("web", _LONG_WEB), ("web", _LONG_URL)],
+    ids=["email", "www", "https"],
+)
+def test_a_long_letterhead_address_wraps_inside_the_contact_column(field_name, address):
+    """The column forbids hyphenation, so without break opportunities the
+    address is one unbreakable word that runs out over the logo and off the
+    page. Unpatched, the email's xMax is 368.7 against a 331.7 edge."""
+    data = _anchor_payload(
+        {"variant": "letterhead", "fields": {"org_name": "Brf Ekbacken", field_name: address}}
+    )
+    header, _ = _header_words(render(BLOCK_ENGINE_TEMPLATE, data))
+    assert header, "no header words above the body anchor"
+    for x_min, _y_min, x_max, _y_max, text in header:
+        assert x_max <= _CONTACT_RIGHT_PT + 0.5, f"{text!r} overruns the contact column"
+    # The breaks land at separators only: the pieces reassemble to the
+    # address with nothing inserted, dropped or reordered.
+    contact = sorted((b for b in header if b[0] >= _CONTACT_LEFT_PT), key=lambda b: (b[1], b[0]))
+    assert "".join(b[4] for b in contact) == address
+
+
+@requires_tools
+def test_the_tallest_realistic_contact_column_clears_the_page_and_the_body():
+    """Break opportunities buy horizontal containment with vertical growth.
+    The worst realistic letterhead — a three-line web address, a three-line
+    email and a phone — must still sit inside the header band."""
+    data = _anchor_payload(
+        {
+            "variant": "letterhead",
+            "fields": {
+                "org_name": "Brf Ekbacken",
+                "address": "Storgatan 1, 123 45 Stad",
+                "web": _LONG_URL,
+                "email": _LONG_EMAIL,
+                "phone": "070-123 45 67",
+            },
+        }
+    )
+    header, anchor_y = _header_words(render(BLOCK_ENGINE_TEMPLATE, data))
+    for x_min, y_min, x_max, y_max, text in header:
+        assert y_min > 0, f"{text!r} runs off the top of the page"
+        assert y_max < anchor_y, f"{text!r} reaches into the body text"
 
 
 def _minimal_faktura(**extra) -> dict:

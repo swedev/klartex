@@ -300,6 +300,21 @@ def test_every_template_schema_carries_the_generated_page_template(template_name
     assert all(v["pattern"] == DIMENSION_PATTERN for v in margins["properties"].values())
 
 
+@pytest.mark.parametrize("field_name", ["web", "email"])
+def test_letterhead_address_fields_document_where_they_wrap(field_name):
+    """The wrapping is invisible in the payload — an agent only learns about
+    it from the field description, and the structure tests above strip
+    descriptions, so this is what proves the clause reaches the schema."""
+    header = _block_schema()["properties"]["page_template"]["properties"]["header"]
+    letterhead = next(
+        form
+        for form in header["oneOf"]
+        if "org_name" in form.get("properties", {}).get("fields", {}).get("properties", {})
+    )
+    description = letterhead["properties"]["fields"]["properties"][field_name]["description"]
+    assert "may wrap after @, . and /" in description
+
+
 def test_schema_files_hold_only_the_placeholder():
     for path in [Path(__file__).parent.parent / "klartex/schemas/block_engine.schema.json"] + [
         TEMPLATES_DIR / name / "schema.json" for name in RECIPE_SCHEMA_NAMES

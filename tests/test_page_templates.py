@@ -448,6 +448,44 @@ class TestLetterheadRequiresOrgName:
         assert BLOCK_DEFAULT_SLOTS["header"] is None
 
 
+class TestLogoFileName:
+    """The logo name is emitted verbatim into \\renewcommand{\\brandlogo}{…},
+    so the loader states the contract the schema states."""
+
+    @pytest.mark.parametrize(
+        "logo",
+        [
+            "my_logo.pdf", "a&b.pdf", "logo%.pdf", "",
+            # Python's `$` also matches before a final newline, and the
+            # negated class would otherwise swallow the newline itself.
+            "logo.pdf\n", "logo.pdf\r", "logo.pdf x", " logo.pdf",
+            2.5, None, True,
+        ],
+    )
+    def test_unsafe_names_are_rejected(self, logo):
+        with pytest.raises(ValueError, match="fields.logo"):
+            load_page_template({"header": {"variant": "logo", "fields": {"logo": logo}}})
+
+    @pytest.mark.parametrize(
+        "logo",
+        ["logo.pdf", "../delat/logo.pdf", "branding/logo.pdf", "logotyp-åäö.pdf"],
+    )
+    def test_safe_names_pass(self, logo):
+        pt = load_page_template({"header": {"variant": "logo", "fields": {"logo": logo}}})
+        assert pt.header_macros == [("brandlogo", logo)]
+
+    def test_the_letterhead_logo_is_checked_too(self):
+        with pytest.raises(ValueError, match="fields.logo"):
+            load_page_template(
+                {
+                    "header": {
+                        "variant": "letterhead",
+                        "fields": {"org_name": "X", "logo": "logo.pdf\n"},
+                    }
+                }
+            )
+
+
 class TestMargins:
     """`margins` is the text-block geometry: paper edge to body text."""
 

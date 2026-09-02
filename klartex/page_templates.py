@@ -97,12 +97,27 @@ class FieldType:
     def is_bool(self) -> bool:
         return self.schema.get("type") == "boolean"
 
+    @property
+    def is_filename(self) -> bool:
+        return self.schema.get("pattern") == FILENAME_PATTERN
+
 
 def list_of(item: FieldType) -> FieldType:
     return FieldType({"type": "array", "items": item.schema})
 
 
-FILENAME_PATTERN = r"^[^\\#$%&_{}~^]+$"
+#: A file name a page template may reference. It admits no LaTeX special
+#: character and no whitespace, so a value passes escape_data() untouched and
+#: reaches \includegraphics as the single argument it was written as.
+#:
+#: Both halves of the anchoring matter. Python's ``$`` also matches before a
+#: final newline, so ``"logo.pdf\n"`` would otherwise satisfy jsonschema's
+#: ``pattern`` keyword; ``(?![\s\S])`` says "nothing follows" in every regex
+#: flavour a JSON Schema validator may use. And since the class is a negation,
+#: excluding ``\s`` is what keeps it from swallowing that newline itself.
+FILENAME_PATTERN = r"^[^\s\\#$%&_{}~^]+$(?![\s\S])"
+
+_FILENAME_RE = re.compile(FILENAME_PATTERN)
 
 #: A LaTeX dimension: a non-negative number with an explicit unit. The four
 #: units are the supported set — font-relative units (em, ex) have no stable
@@ -166,9 +181,9 @@ class Variant:
 # One word, one type, one macro, in both header variants.
 LOGO = Field(
     FILENAME,
-    "Logo file name, placed top right in the header. Must not contain LaTeX "
-    "special characters (\\ # $ % & _ { } ~ ^); looked up in asset_dir or "
-    "the working directory.",
+    "Logo file name, placed top right in the header. Must contain no "
+    "whitespace and no LaTeX special character (\\ # $ % & _ { } ~ ^); "
+    "looked up in asset_dir or the working directory.",
     macro="brandlogo",
 )
 
@@ -807,11 +822,19 @@ def _check_settings(slot: str, variant: str, settings: dict) -> None:
             raise ValueError(
                 f"'fields' on the {variant} {slot} variant must be an object"
             )
-        for key in fields:
+        for key, value in fields.items():
             if key not in spec.fields:
                 raise ValueError(
                     f"Unknown field '{key}' for the {variant} {slot} variant. "
                     f"Allowed: {', '.join(spec.fields)}"
+                )
+            if spec.fields[key].type.is_filename and (
+                not isinstance(value, str) or not _FILENAME_RE.fullmatch(value)
+            ):
+                raise ValueError(
+                    f"fields.{key} on the {variant} {slot} variant must be a "
+                    f"file name with no whitespace and no LaTeX special "
+                    f"character (\\ # $ % & _ {{ }} ~ ^), got {value!r}"
                 )
     for key in spec.required:
         if not (fields or {}).get(key):

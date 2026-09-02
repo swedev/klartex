@@ -272,8 +272,14 @@ def test_letterhead_contact_column_survives_empty_leading_fields(contact):
 #: PDF user-space units per centimetre (a unit is 1/72 in).
 _PT_PER_CM = 72 / 2.54
 
+#: A word's box in the ``pdftotext -bbox`` output. The coordinates are
+#: signed: a glyph that hangs off an edge of the page gets a negative
+#: ordinate, and that is exactly the case the containment tests below are
+#: written to catch — an unsigned pattern would drop such a word from the
+#: list instead, and the assertion would never see it.
 _WORD_BOX = re.compile(
-    r'<word xMin="([0-9.]+)" yMin="([0-9.]+)" xMax="([0-9.]+)" yMax="([0-9.]+)">([^<]*)</word>'
+    r'<word xMin="(-?[0-9.]+)" yMin="(-?[0-9.]+)" '
+    r'xMax="(-?[0-9.]+)" yMax="(-?[0-9.]+)">([^<]*)</word>'
 )
 
 #: One first-page word: ``(xMin, yMin, xMax, yMax, text)``. y grows downwards
@@ -370,13 +376,44 @@ _LONG_EMAIL = "styrelsen@bostadsrattsforeningenekbacken.se"
 _LONG_WEB = "www.bostadsrattsforeningenekbacken.se"
 _LONG_URL = "https://www.bostadsrattsforeningenekbacken.se/styrelsen"
 
+#: The words of ``_anchor_payload``'s body, and the anchor itself.
+_ANCHOR = "Ankarord"
+_BODY_WORDS = frozenset({_ANCHOR, "i", "brödtexten."})
 
-def _header_words(pdf: bytes) -> tuple[list[WordBox], float]:
-    """The first page's header words and the body anchor's yMin. A header
-    word is one above the anchor — the header band is the only thing there."""
+
+def _letterhead_payload(fields: dict) -> dict:
+    """The anchor payload with a letterhead and no footer. With the bottom of
+    the page empty, every word that is not the body is a header word — which
+    is what lets the tests below find the header without looking at where it
+    landed vertically."""
+    data = _anchor_payload({"variant": "letterhead", "fields": fields})
+    data["page_template"]["footer"] = None
+    return data
+
+
+def _letterhead_columns(pdf: bytes) -> tuple[list[WordBox], list[WordBox], float]:
+    """``(details column, contact column, the body anchor's yMin)``, each
+    column in reading order.
+
+    A header word is identified by *not* being body text, and the two columns
+    are told apart by x — never by height on the page. A filter like "above
+    the anchor" would hide the one word a containment test needs to see: the
+    header line that descended into the body.
+    """
     boxes = _word_boxes(pdf)
-    anchor_y = next(b[1] for b in boxes if b[4] == "Ankarord")
-    return [b for b in boxes if b[1] < anchor_y], anchor_y
+    anchor_y = next(b[1] for b in boxes if b[4] == _ANCHOR)
+    header = sorted((b for b in boxes if b[4] not in _BODY_WORDS), key=lambda b: (b[1], b[0]))
+    return (
+        [b for b in header if b[0] < _CONTACT_LEFT_PT],
+        [b for b in header if b[0] >= _CONTACT_LEFT_PT],
+        anchor_y,
+    )
+
+
+def _unspaced(*values: str) -> str:
+    """The values with all whitespace removed — the shape a wrapped column
+    comes back as, since a break replaces no character and adds none."""
+    return "".join("".join(v.split()) for v in values)
 
 
 @requires_tools
@@ -389,16 +426,13 @@ def test_a_long_letterhead_address_wraps_inside_the_contact_column(field_name, a
     """The column forbids hyphenation, so without break opportunities the
     address is one unbreakable word that runs out over the logo and off the
     page. Unpatched, the email's xMax is 368.7 against a 331.7 edge."""
-    data = _anchor_payload(
-        {"variant": "letterhead", "fields": {"org_name": "Brf Ekbacken", field_name: address}}
-    )
-    header, _ = _header_words(render(BLOCK_ENGINE_TEMPLATE, data))
-    assert header, "no header words above the body anchor"
-    for x_min, _y_min, x_max, _y_max, text in header:
+    data = _letterhead_payload({"org_name": "Brf Ekbacken", field_name: address})
+    details, contact, _ = _letterhead_columns(render(BLOCK_ENGINE_TEMPLATE, data))
+    assert contact, "no words found in the contact column"
+    for x_min, _y_min, x_max, _y_max, text in details + contact:
         assert x_max <= _CONTACT_RIGHT_PT + 0.5, f"{text!r} overruns the contact column"
-    # The breaks land at separators only: the pieces reassemble to the
-    # address with nothing inserted, dropped or reordered.
-    contact = sorted((b for b in header if b[0] >= _CONTACT_LEFT_PT), key=lambda b: (b[1], b[0]))
+    # The breaks land at separators only, and nothing was clipped off the
+    # page: the pieces reassemble to the address exactly.
     assert "".join(b[4] for b in contact) == address
 
 
@@ -407,20 +441,24 @@ def test_the_tallest_realistic_contact_column_clears_the_page_and_the_body():
     """Break opportunities buy horizontal containment with vertical growth.
     The worst realistic letterhead — a three-line web address, a three-line
     email and a phone — must still sit inside the header band."""
-    data = _anchor_payload(
-        {
-            "variant": "letterhead",
-            "fields": {
-                "org_name": "Brf Ekbacken",
-                "address": "Storgatan 1, 123 45 Stad",
-                "web": _LONG_URL,
-                "email": _LONG_EMAIL,
-                "phone": "070-123 45 67",
-            },
-        }
+    fields = {
+        "org_name": "Brf Ekbacken",
+        "address": "Storgatan 1, 123 45 Stad",
+        "web": _LONG_URL,
+        "email": _LONG_EMAIL,
+        "phone": "070-123 45 67",
+    }
+    details, contact, anchor_y = _letterhead_columns(
+        render(BLOCK_ENGINE_TEMPLATE, _letterhead_payload(fields))
     )
-    header, anchor_y = _header_words(render(BLOCK_ENGINE_TEMPLATE, data))
-    for x_min, y_min, x_max, y_max, text in header:
+    # Every field came back whole. A word pushed off the page edge is missing
+    # from the text layer entirely, so this is what makes the bounds below
+    # assertions about the whole header rather than about its survivors.
+    assert "".join(b[4] for b in details) == _unspaced(fields["org_name"], fields["address"])
+    assert "".join(b[4] for b in contact) == _unspaced(
+        fields["web"], fields["email"], fields["phone"]
+    )
+    for x_min, y_min, x_max, y_max, text in details + contact:
         assert y_min > 0, f"{text!r} runs off the top of the page"
         assert y_max < anchor_y, f"{text!r} reaches into the body text"
 

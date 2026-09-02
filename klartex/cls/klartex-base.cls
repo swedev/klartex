@@ -91,6 +91,16 @@
 \definecolor{brandsecondary}{HTML}{000000}
 \definecolor{brandaccent}{HTML}{0066CC}
 
+% Muted grey for placeholder text — a remark about what is missing, not
+% content. Redefinable like the brand colors.
+\definecolor{kxmuted}{HTML}{6B6A63}
+
+% Label mode for the columns footer: true names an empty column's gap
+% instead of dropping the column. Declared here, not in klartex-footer.sty,
+% so the meta-template can set it without knowing whether that package is
+% loaded.
+\newif\ifkxfooterlabelmissing
+
 % Header/footer font hook — a no-op by default so header and footer follow
 % the main font. Redefined (e.g. to a \newfontfamily switch) when a page
 % template or the header_font page-template option selects a separate font.

@@ -1,12 +1,18 @@
 \documentclass[narrowmargins]{klartex-base}
-\providecommand{\orgname}{}
 
-\providecommand{\orgname}{}
-\providecommand{\orgaddress}{}
-\providecommand{\orgwebsite}{}
-\providecommand{\orgemail}{}
-\providecommand{\orgphone}{}
-\providecommand{\brandlogo}{}
+
+
+
+
+
+
+
+
+
+
+
+
+
 \makeatletter
 \fancyhead[L]{%
     \ifdefempty{\orgname}{}{%
@@ -34,12 +40,15 @@
         \raisebox{-0.6cm}[0pt][0pt]{\includegraphics[height=0.855cm]{\brandlogo}}%
     }%
 }
-\fancyfoot[C]{%
-    \kx@setlang%
-    \fontsize{6pt}{9pt}\selectfont\color{brandsecondary}\kxheaderfont
-    \ifdefempty{\doctitle}{}{\doctitle\ \textbullet\ }\kx@page\ \thepage\ \kx@of\ \pageref{LastPage}%
-}
 \makeatother
+
+
+
+
+\usepackage{klartex-footer}
+\kxfooter{%
+company={Konsultbolaget AB},address={Verkstadsgatan 12\\211 32 Malmö},bankgiro={1234-5678},iban={SE12 3456 7890 1234 5678 9012},bic={ESSESESS},pagenumbers=true}
+
 \ifdefempty{\orgname}{\ifdefempty{\brandlogo}{%
   \geometry{top=\kxreclaimtop, headheight=0pt, headsep=0pt, includehead=false}%
   \fancyhead{}%
@@ -47,17 +56,7 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
+\kxfooterlabelmissingtrue
 
 
 \setdoctitle{Faktura 2026-001}

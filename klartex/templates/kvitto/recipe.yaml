@@ -8,6 +8,16 @@ template:
 document:
   class_options: narrowmargins
   title: "Kvitto {{ data.receipt_number }}"
+  # The issuer's own details are already in the payload, so the footer is
+  # derived from them; the payload's own page_template.footer wins per field.
+  page_template:
+    footer:
+      variant: columns
+      fields_from:
+        company: sender.name
+        address: [sender.address_line1, sender.address_line2]
+        org_number: sender.org_number
+  label_missing_footer_fields: true
   metadata:
     - field: payment_method
       label: "Betalsätt"
@@ -21,6 +31,7 @@ components:
     data_map:
       receipt_number: receipt_number
       date: date
+      sender_name: sender.name
       logo: logo
       logo_height: logo_height
       logo_offset: logo_offset

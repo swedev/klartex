@@ -3,6 +3,9 @@
   "date": "2026-07-06",
   "total_amount": 350,
   "currency": "SEK",
+  "sender": {
+    "name": "Föreningen Klartex"
+  },
   "payment_method": "Swish",
   "paid_by": "Anna Andersson",
   "items": [

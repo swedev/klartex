@@ -3,13 +3,13 @@
   "title": "Kvitto",
   "description": "Kvitto / Receipt",
   "type": "object",
-  "required": ["receipt_number", "date", "total_amount", "items"],
+  "required": ["receipt_number", "date", "total_amount", "sender", "items"],
   "properties": {
     "page_template": {
       "$comment": "Generated at load time from the slot model in klartex/page_templates.py (page_template_schema); see registry.py."
     },
     "number_format": { "type": "string", "enum": ["sv", "en"], "description": "Number format for amounts: 'sv' gives 32 400,00 (default), 'en' gives 32,400.00." },
-    "logo": { "type": "string", "description": "Image file (pdf/png) shown in the receipt's top-left corner, aligned with the KVITTO block. A plain file name is looked up via the asset directory (the page template's directory) and cwd." },
+    "logo": { "type": "string", "description": "Image file (pdf/png) shown in the receipt's top-left corner, aligned with the KVITTO block, in place of the sender wordmark. A plain file name is looked up via the asset directory (the page template's directory) and cwd." },
     "logo_height": { "type": "string", "default": "1cm", "description": "Logo height as a LaTeX dimension, e.g. '1.5cm'." },
     "logo_offset": {
       "type": "object",
@@ -23,9 +23,9 @@
     "sender": {
       "type": "object",
       "required": ["name"],
-      "description": "Issuer/seller — shown as the Avsändare block in the receipt body. Give the company's legal name here even when a logo or a page-template footer is present.",
+      "description": "Issuer/seller. Required — a receipt without an issuer is not a receipt. Shown as the Avsändare block in the receipt body; the name is also the header wordmark when there is no logo, and the default footer's company, address and org number are derived from these fields.",
       "properties": {
-        "name": { "type": "string" },
+        "name": { "type": "string", "pattern": "\\S", "description": "The company's legal name. At least one non-whitespace character — a blank name would render as a blank wordmark and a blank footer column." },
         "org_number": { "type": "string" },
         "address_line1": { "type": "string" },
         "address_line2": { "type": "string" }

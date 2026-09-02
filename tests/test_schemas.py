@@ -40,6 +40,7 @@ _MINIMAL_RECIPE_PAYLOAD = {
         "invoice_number": "F-1",
         "date": "2026-08-06",
         "due_date": "2026-09-05",
+        "sender": {"name": "Säljbolaget AB"},
         "recipient": {"name": "Kund AB"},
         "lines": [{"description": "Tjänst", "quantity": 1, "unit_price": 100.0}],
     },
@@ -47,9 +48,54 @@ _MINIMAL_RECIPE_PAYLOAD = {
         "receipt_number": "K-1",
         "date": "2026-08-06",
         "total_amount": 100,
+        "sender": {"name": "Säljbolaget AB"},
         "items": [{"description": "Avgift", "amount": 100}],
     },
 }
+
+
+@pytest.mark.parametrize("template_name", ["faktura", "kvitto"])
+def test_sender_is_required(template_name):
+    """A document without a seller is not an invoice or a receipt: the name
+    is the header wordmark and the footer's company line, so the schema names
+    the missing property rather than rendering a blank header."""
+    registry = get_registry()
+    data = dict(_MINIMAL_RECIPE_PAYLOAD[template_name])
+    del data["sender"]
+    with pytest.raises(jsonschema.ValidationError) as excinfo:
+        jsonschema.validate(data, registry[template_name].schema)
+    assert "sender" in excinfo.value.message
+
+
+@pytest.mark.parametrize("template_name", ["faktura", "kvitto"])
+@pytest.mark.parametrize("sender", [{}, {"name": ""}, {"name": "   "}])
+def test_sender_name_must_carry_a_non_whitespace_character(template_name, sender):
+    """`required` alone would admit a blank name — the state the wordmark and
+    the footer's company line are built on."""
+    registry = get_registry()
+    data = dict(_MINIMAL_RECIPE_PAYLOAD[template_name], sender=sender)
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(data, registry[template_name].schema)
+
+
+@pytest.mark.parametrize(
+    "template_name,expected",
+    [
+        ("faktura", "the columns footer, with fields derived from sender"),
+        ("kvitto", "the columns footer, with fields derived from sender"),
+        ("protokoll", "the page-number footer with the document title"),
+    ],
+)
+def test_injected_page_template_describes_the_recipes_own_default(
+    template_name, expected
+):
+    """`klartex schema <name>` is the agent's discovery surface: the default a
+    left-out slot resolves to is the recipe's, not a blanket sentence."""
+    registry = get_registry()
+    description = registry[template_name].schema["properties"]["page_template"][
+        "description"
+    ]
+    assert expected in description
 
 
 @pytest.mark.parametrize("template_name", ["faktura", "kvitto"])

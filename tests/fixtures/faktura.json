@@ -6,6 +6,11 @@
   "our_reference": "Anna Andersson",
   "payment_terms": "30 dagar netto",
   "currency": "SEK",
+  "sender": {
+    "name": "Konsultbolaget AB",
+    "address_line1": "Verkstadsgatan 12",
+    "address_line2": "211 32 Malmö"
+  },
   "recipient": {
     "name": "Kundföretaget AB",
     "org_number": "556123-4567",

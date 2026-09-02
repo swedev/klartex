@@ -10,10 +10,16 @@
 % All keys are optional: company, address, seat, phone, email, web,
 % bankgiro, plusgiro, iban, bic, orgnr, vatnr, ftax (bool), pagenumbers (bool).
 % Columns: Adress (company, address), Företag (orgnr, vatnr, seat, F-skatt,
-% phone/email/web), Betalning (bankgiro/plusgiro/iban/bic).
+% phone/email/web), Betalning (bankgiro/plusgiro/iban/bic). A column whose
+% keys are all empty is dropped, leaving its width blank.
 % Break the address into lines with \\ as in a postal address. Page numbers
 % render only when the document has more than one page. Labels follow the
 % document language (\kx@lang from klartex-base).
+%
+% Label mode (\kxfooterlabelmissingtrue, the conditional declared in
+% klartex-base): every column is typeset, and one that has no content names
+% its gap in \kxmuted grey — "Adress saknas", "Org.nr saknas",
+% "Betalningsuppgifter saknas".
 
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{klartex-footer}[2026/08/06 Klartex footer block]
@@ -65,6 +71,16 @@
 % skipped when empty. Use inside a kxf@col tabular.
 \newcommand{\kxf@row}[2]{\ifdefempty{#2}{}{#1 & #2\\}}
 
+% \kxf@missing{<sv>}{<en>} - the muted placeholder naming a column's gap.
+\newcommand{\kxf@missing}[2]{{\color{kxmuted}\kxf@T{#1}{#2}}}
+
+% \kxf@missingrow{<sv>}{<en>} - the same placeholder as a full-width row of
+% a kxf@coltab tabular.
+\newcommand{\kxf@missingrow}[2]{\multicolumn{2}{@{}l@{}}{\kxf@missing{#1}{#2}}\\}
+
+% \kxf@blank{<width>} - the width a dropped column leaves behind.
+\newcommand{\kxf@blank}[1]{\begin{minipage}[t]{#1\linewidth}~\end{minipage}}
+
 % \kxf@col{<title>}{<width>}{<content>} - one footer column
 \newcommand{\kxf@col}[3]{%
     \begin{minipage}[t]{#2\linewidth}%
@@ -104,19 +120,26 @@
         \fontsize{8pt}{11pt}\selectfont\color{brandsecondary}\kxheaderfont
         {\color{brandsecondary}\hrule height 0.4pt}%
         \vspace{15pt}%
-        \ifboolexpr{ test {\ifdefempty{\kxf@company}} and test {\ifdefempty{\kxf@address}} }{%
-            \begin{minipage}[t]{0.34\linewidth}~\end{minipage}%
+        % Adress: the company line when set, then the address lines — or,
+        % in label mode, the placeholder in place of missing address lines.
+        \ifboolexpr{ test {\ifdefempty{\kxf@company}} and test {\ifdefempty{\kxf@address}} and not bool {kxfooterlabelmissing} }{%
+            \kxf@blank{0.34}%
         }{%
             \kxf@col{\kxf@T{Adress}{Address}}{0.34}{%
                 \kxf@line{}{\kxf@company}%
-                \kxf@line{}{\kxf@address}%
+                \ifdefempty{\kxf@address}{%
+                    \ifkxfooterlabelmissing\kxf@missing{Adress saknas}{Address missing}\fi
+                }{\kxf@address}%
             }%
         }%
-        \ifboolexpr{ test {\ifdefempty{\kxf@orgnr}} and test {\ifdefempty{\kxf@vatnr}} and test {\ifdefempty{\kxf@seat}} and test {\ifdefempty{\kxf@phone}} and test {\ifdefempty{\kxf@email}} and test {\ifdefempty{\kxf@web}} and not bool {kxf@ftax} }{%
-            \begin{minipage}[t]{0.30\linewidth}~\end{minipage}%
+        % Företag: the Org.nr row, or its placeholder, above the other rows.
+        \ifboolexpr{ test {\ifdefempty{\kxf@orgnr}} and test {\ifdefempty{\kxf@vatnr}} and test {\ifdefempty{\kxf@seat}} and test {\ifdefempty{\kxf@phone}} and test {\ifdefempty{\kxf@email}} and test {\ifdefempty{\kxf@web}} and not bool {kxf@ftax} and not bool {kxfooterlabelmissing} }{%
+            \kxf@blank{0.30}%
         }{%
             \kxf@coltab{\kxf@T{Företag}{Company}}{0.30}{%
-                \kxf@row{Org.nr}{\kxf@orgnr}%
+                \ifdefempty{\kxf@orgnr}{%
+                    \ifkxfooterlabelmissing\kxf@missingrow{Org.nr saknas}{Org.\ no.\ missing}\fi
+                }{\kxf@row{Org.nr}{\kxf@orgnr}}%
                 \kxf@row{\kxf@T{Momsreg.nr}{VAT no}}{\kxf@vatnr}%
                 \kxf@row{\kxf@T{Säte}{Reg.\ office}}{\kxf@seat}%
                 \ifkxf@ftax\multicolumn{2}{@{}l@{}}{\kxf@T{Godkänd för F-skatt}{Approved for F-tax}}\\\fi
@@ -125,8 +148,15 @@
                 \ifdefempty{\kxf@web}{}{\multicolumn{2}{@{}l@{}}{\kxf@web}\\}%
             }%
         }%
+        % Betalning: the four payment rows, or their placeholder.
         \ifboolexpr{ test {\ifdefempty{\kxf@bankgiro}} and test {\ifdefempty{\kxf@plusgiro}} and test {\ifdefempty{\kxf@iban}} and test {\ifdefempty{\kxf@bic}} }{%
-            \begin{minipage}[t]{0.36\linewidth}~\end{minipage}%
+            \ifkxfooterlabelmissing
+                \kxf@coltab{\kxf@T{Betalning}{Payment}}{0.36}{%
+                    \kxf@missingrow{Betalningsuppgifter saknas}{Payment details missing}%
+                }%
+            \else
+                \kxf@blank{0.36}%
+            \fi
         }{%
             \kxf@coltab{\kxf@T{Betalning}{Payment}}{0.36}{%
                 \kxf@row{Bankgiro}{\kxf@bankgiro}%

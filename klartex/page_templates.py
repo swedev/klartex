@@ -13,7 +13,10 @@ footer with company, contact and payment details). A slot the payload
 leaves out takes the surface's default: the block engine has an empty header
 and the page-number footer, recipes the letterhead header and the
 page-number footer with the document title (``BLOCK_DEFAULT_SLOTS`` /
-``RECIPE_DEFAULT_SLOTS``).
+``RECIPE_DEFAULT_SLOTS``). A recipe may declare its own slots in
+recipe.yaml, and a footer slot may derive its fields from the payload
+(``fields_from``) — faktura and kvitto default to the columns footer, built
+from the seller's own data.
 
 Page template data in the render request is an object::
 
@@ -150,6 +153,8 @@ class Variant:
     """A predefined slot variant: its settings and its typed fields."""
 
     description: str
+    #: The variant named in running prose, as in "the letterhead header".
+    label: str = ""
     settings: dict[str, dict] = field(default_factory=dict)
     fields: dict[str, Field] = field(default_factory=dict)
     #: Fields that must be present and non-empty in the object form.
@@ -176,6 +181,7 @@ TITLE_SETTING = {
 HEADER_VARIANTS: dict[str, Variant] = {
     "letterhead": Variant(
         description="Organisation details on the left and the logo on the right of the header",
+        label="letterhead",
         fields={
             "org_name": Field(TEXT, "Organisation name, in bold at the top left.", macro="orgname"),
             "address": Field(TEXT, "Postal address, under the organisation name.", macro="orgaddress"),
@@ -194,6 +200,7 @@ HEADER_VARIANTS: dict[str, Variant] = {
     ),
     "logo": Variant(
         description="Logo only, on the right of the header",
+        label="logo",
         fields={"logo": LOGO},
         fields_description="The logo printed in the header.",
         empty_note="Without a logo the header's space is reclaimed.",
@@ -203,10 +210,12 @@ HEADER_VARIANTS: dict[str, Variant] = {
 FOOTER_VARIANTS: dict[str, Variant] = {
     "pagenumber": Variant(
         description="Page number centred in the footer, preceded by the document title when title is set",
+        label="page-number",
         settings={"title": TITLE_SETTING},
     ),
     "columns": Variant(
         description="Multi-column footer with company, contact and payment details from fields, and page numbers when the document runs past one page",
+        label="columns",
         fields={
             "company": Field(TEXT, "Company name"),
             "address": Field(
@@ -1049,8 +1058,10 @@ def page_template_schema(default_text: str) -> dict:
     }
 
 
+#: What a left-out slot resolves to on the block-engine surface, for the
+#: generated schema's description. The recipe surface's text is built per
+#: recipe from its own slots (``recipe.describe_recipe_defaults``).
 BLOCK_DEFAULT_TEXT = "an empty header and the page-number footer"
-RECIPE_DEFAULT_TEXT = "the letterhead header and the page-number footer with the document title"
 
 
 def read_slot_source(slot: str, variant: str) -> str:

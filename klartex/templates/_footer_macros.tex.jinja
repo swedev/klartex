@@ -1,9 +1,0 @@
-%# \kxfooter preamble call for a template-level footer dict (faktura's and
-%# kvitto's own footer field). The keyvals come from the same field table as
-%# the columns footer variant (page_templates.footer_keyvals).
-\BLOCK{macro emit_kxfooter(footer, page_numbers)}
-\usepackage{klartex-footer}
-\kxfooter{%
-\BLOCK{for kv in footer_keyvals(footer)}\VAR{kv},\BLOCK{endfor}
-pagenumbers=\BLOCK{if page_numbers}true\BLOCK{else}false\BLOCK{endif}}
-\BLOCK{endmacro}

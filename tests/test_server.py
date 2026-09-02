@@ -211,6 +211,29 @@ def test_render_schema_validation_path_is_unchanged():
     assert detail["path"] == []
 
 
+def test_render_faktura_top_level_footer_reports_its_path():
+    """The invoice recipes carry their footer in the page template's footer
+    slot; a payload sending a top-level `footer` gets the field named."""
+    r = client.post(
+        "/render",
+        json={
+            "template": "faktura",
+            "data": {
+                "invoice_number": "F-1",
+                "date": "2026-08-06",
+                "due_date": "2026-09-05",
+                "recipient": {"name": "Kund AB"},
+                "lines": [{"description": "Tjänst", "quantity": 1, "unit_price": 100.0}],
+                "footer": {"company": "Bolaget AB"},
+            },
+        },
+    )
+    assert r.status_code == 400
+    detail = r.json()["detail"]
+    assert detail["type"] == "validation_error"
+    assert detail["path"] == ["footer"]
+
+
 def test_render_block_with_empty_type_carries_path():
     """An empty `type` satisfies the top-level schema but not the core.
 

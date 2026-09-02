@@ -571,8 +571,8 @@ def test_kvitto_zero_amount_renders_missing_amount_empty():
 
 
 def test_kvitto_sender_logo_and_footer():
-    """kvitto mirrors faktura: sender block, header logo, and a top-level
-    footer that emits \\kxfooter."""
+    """kvitto mirrors faktura: sender block, header logo, and the columns
+    footer slot that emits \\kxfooter."""
     data = {
         "receipt_number": "K-2",
         "date": "2026-08-07",
@@ -580,7 +580,12 @@ def test_kvitto_sender_logo_and_footer():
         "items": [{"description": "Avgift", "amount": 100}],
         "sender": {"name": "Säljbolaget AB", "org_number": "556111-2222"},
         "logo": "logo.pdf",
-        "footer": {"company": "Säljbolaget AB", "bankgiro": "1234-5678"},
+        "page_template": {
+            "footer": {
+                "variant": "columns",
+                "fields": {"company": "Säljbolaget AB", "bankgiro": "1234-5678"},
+            }
+        },
     }
     tex = _render_recipe_tex("kvitto", data)
     assert "Avsändare" in tex
@@ -723,48 +728,39 @@ def test_whole_page_source_reaches_the_recipe_path():
     assert tex.count("% whole page") == 1
 
 
-def test_recipe_footer_still_wins_over_a_whole_page_source():
-    r"""faktura's own top-level `footer` is document content, not chrome: it is
-    emitted after the page-template composition, so it survives a whole-page
-    source owning both slots.
-    """
-    tex = _render_recipe_tex(
-        "faktura",
-        _minimal_faktura(footer={"company": "Bolaget AB"}),
-        page_template_source="% whole page",
-    )
-    assert tex.count("% whole page") == 1
-    assert r"\kxfooter{" in tex
-    assert "Bolaget AB" in tex
-    assert tex.index("% whole page") < tex.index(r"\kxfooter{")
-
-
-def test_page_numbers_still_reaches_the_recipe_footer_in_whole_page_mode():
-    r"""`page_numbers` is inert for the page-template footer (the source owns
-    it) but still plumbs through to a recipe-level `footer`.
-    """
-    with_numbers = _render_recipe_tex(
-        "faktura",
-        _minimal_faktura(footer={"company": "Bolaget AB"}),
-        page_template_source="% whole page",
-    )
-    without = _render_recipe_tex(
-        "faktura",
-        _minimal_faktura(footer={"company": "Bolaget AB"}, page_template={"page_numbers": False}),
-        page_template_source="% whole page",
-    )
-    assert with_numbers != without
-
-
-def test_faktura_margins_reach_its_own_footer_geometry():
-    r"""faktura's top-level `footer` is emitted after the page-template
-    include, so its `\kxfooter` must pick up the renewed bottom geometry.
+def test_whole_page_source_owns_the_footer_and_leaves_payment_info_in_body():
+    r"""A whole-page source owns both slots, so the slot's fields are not
+    emitted — and with no footer carrying payment details, the in-body
+    fallback block renders.
     """
     tex = _render_recipe_tex(
         "faktura",
         _minimal_faktura(
-            footer={"company": "Bolaget AB"},
-            page_template={"margins": {"bottom": "3cm"}},
+            bankgiro="9999-9999",
+            page_template={
+                "footer": {"variant": "columns", "fields": {"bankgiro": "1111-1111"}}
+            },
+        ),
+        page_template_source="% whole page",
+    )
+    assert tex.count("% whole page") == 1
+    assert r"\kxfooter{" not in tex
+    assert "1111-1111" not in tex
+    assert "Betalningsinformation" in tex
+    assert "9999-9999" in tex
+
+
+def test_faktura_margins_reach_the_footer_slot_geometry():
+    r"""The document-level settings are emitted before the footer slot, so the
+    slot's `\kxfooter` picks up the renewed bottom geometry.
+    """
+    tex = _render_recipe_tex(
+        "faktura",
+        _minimal_faktura(
+            page_template={
+                "margins": {"bottom": "3cm"},
+                "footer": {"variant": "columns", "fields": {"company": "Bolaget AB"}},
+            },
         ),
     )
     assert tex.index(r"\renewcommand{\kxfooterbottom}{3cm}") < tex.index(r"\kxfooter{")
@@ -879,33 +875,18 @@ def test_faktura_sender_block_rendered():
     assert "Avsändare" not in tex_without
 
 
-def test_faktura_top_level_footer_emitted_and_suppresses_payment_info():
-    """faktura's own footer field emits \\kxfooter (works with any page
-    template) and suppresses the in-body payment_info block."""
-    data = _minimal_faktura(
-        bankgiro="9999-9999",
-        footer={
-            "company": "Bolaget AB",
-            "address": ["Storgatan 1", "123 45 Stad"],
-            "bankgiro": "1234-5678",
-        },
-    )
-    tex = _render_recipe_tex("faktura", data)
-    assert r"\usepackage{klartex-footer}" in tex
-    assert "company={Bolaget AB}" in tex
-    assert r"address={Storgatan 1\\123 45 Stad}" in tex
-    assert "Betalningsinformation" not in tex
-    assert "9999-9999" not in tex
+def test_faktura_top_level_footer_is_not_rendered():
+    """The footer slot is the only footer surface. A top-level `footer` is
+    rejected by the schema; the template layer renders nothing from it.
 
-
-def test_faktura_data_footer_wins_over_page_template_footer():
-    data = _minimal_faktura(
-        footer={"bankgiro": "1111-1111"},
-        page_template={"footer": {"variant": "columns", "fields": {"bankgiro": "2222-2222"}}},
-    )
+    `_render_recipe_tex` bypasses validation, so this exercises the template
+    layer alone — the schema rejection is locked in `tests/test_schemas.py`.
+    """
+    data = _minimal_faktura(footer={"company": "Från data", "bankgiro": "1111-1111"})
     tex = _render_recipe_tex("faktura", data)
-    assert "bankgiro={1111-1111}" in tex
-    assert "2222-2222" not in tex
+    assert "Från data" not in tex
+    assert "1111-1111" not in tex
+    assert r"\usepackage{klartex-footer}" not in tex
 
 
 def test_faktura_payment_info_renders_without_footer():
@@ -1126,7 +1107,7 @@ def test_faktura_preamble_unchanged_from_golden():
 
 class TestRecipePageTemplateSlots:
     """The slot model on the recipe path, where the recipe supplies the
-    default slots and a template-level footer outranks the footer slot."""
+    default slots."""
 
     def test_slot_form_on_faktura(self):
         data = _minimal_faktura(
@@ -1138,22 +1119,16 @@ class TestRecipePageTemplateSlots:
         assert r"\fancyhead[R]" in tex
         assert r"\fancyhead[L]" not in tex
 
-    def test_data_footer_still_wins_over_the_footer_slot(self):
-        data = _minimal_faktura(
-            footer={"company": "Från data"},
-            page_template={"footer": {"variant": "columns", "fields": {"company": "Från sidmallen"}}},
-        )
-        tex = _render_recipe_tex("faktura", data)
-        assert "company={Från data}" in tex
-        assert "company={Från sidmallen}" not in tex
-
-    def test_data_footer_still_wins_over_a_custom_footer_source(self):
-        data = _minimal_faktura(footer={"company": "Från data"})
+    def test_custom_footer_source_leaves_payment_info_in_body(self):
+        """A custom footer source carries no structured fields, so
+        `footer_has_payment` is False and the in-body fallback renders."""
+        data = _minimal_faktura(bankgiro="9999-9999")
         tex = _render_recipe_tex(
             "faktura", data, footer_source=r"\fancyfoot[C]{Egen}"
         )
         assert r"\fancyfoot[C]{Egen}" in tex
-        assert tex.index(r"\fancyfoot[C]{Egen}") < tex.index("company={Från data}")
+        assert "Betalningsinformation" in tex
+        assert "9999-9999" in tex
 
     def test_partial_object_keeps_the_recipe_default(self):
         """The recipe default is the letterhead header, so a slot object that

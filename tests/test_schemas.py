@@ -35,6 +35,47 @@ def test_fixture_validates(template_name):
     jsonschema.validate(data, registry[template_name].schema)
 
 
+_MINIMAL_RECIPE_PAYLOAD = {
+    "faktura": {
+        "invoice_number": "F-1",
+        "date": "2026-08-06",
+        "due_date": "2026-09-05",
+        "recipient": {"name": "Kund AB"},
+        "lines": [{"description": "Tjänst", "quantity": 1, "unit_price": 100.0}],
+    },
+    "kvitto": {
+        "receipt_number": "K-1",
+        "date": "2026-08-06",
+        "total_amount": 100,
+        "items": [{"description": "Avgift", "amount": 100}],
+    },
+}
+
+
+@pytest.mark.parametrize("template_name", ["faktura", "kvitto"])
+def test_top_level_footer_is_rejected(template_name):
+    """The footer slot is the only footer surface on the two invoice-shaped
+    recipes. A payload sending a top-level `footer` fails validation at that
+    path rather than rendering a document without its payment details."""
+    registry = get_registry()
+    data = dict(_MINIMAL_RECIPE_PAYLOAD[template_name])
+    jsonschema.validate(data, registry[template_name].schema)
+
+    data["footer"] = {"company": "Bolaget AB", "bankgiro": "1234-5678"}
+    with pytest.raises(jsonschema.ValidationError) as excinfo:
+        jsonschema.validate(data, registry[template_name].schema)
+    assert list(excinfo.value.absolute_path) == ["footer"]
+
+
+@pytest.mark.parametrize("template_name", ["faktura", "kvitto"])
+def test_recipe_example_validates(template_name):
+    """The shipped example is what `klartex example <name>` hands an agent —
+    it must validate against the schema `klartex schema <name>` shows."""
+    registry = get_registry()
+    example_path = TEMPLATES_DIR / template_name / "example.json"
+    jsonschema.validate(json.loads(example_path.read_text()), registry[template_name].schema)
+
+
 def test_protokoll_missing_required():
     registry = get_registry()
     with pytest.raises(jsonschema.ValidationError):

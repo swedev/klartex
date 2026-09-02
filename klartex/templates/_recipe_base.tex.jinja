@@ -1,6 +1,5 @@
 \BLOCK{from '_financial_macros.tex.jinja' import render_resultatrakning, render_budgettabell, render_notapparat}
 \BLOCK{from '_block_macros.tex.jinja' import render_agenda, render_heading, render_description_list with context}
-\BLOCK{from '_footer_macros.tex.jinja' import emit_kxfooter}
 \BLOCK{if class_options}
 \documentclass[\VAR{class_options}]{klartex-base}
 \BLOCK{else}
@@ -9,13 +8,6 @@
 
 %# --- Compose the page template from its header and footer slots ---
 \BLOCK{include '_page_template.tex.jinja'}
-
-%# --- Template-level footer from the data (e.g. faktura's footer field). ---
-%# Emitted after the composition so it wins over the footer slot, predefined
-%# or custom.
-\BLOCK{if data.get('footer')}
-\VAR{emit_kxfooter(data.footer, page_template.page_numbers)}
-\BLOCK{endif}
 
 \BLOCK{if lang == 'en'}
 \setdoclang{en}
@@ -183,13 +175,11 @@ Org.nr: \VAR{party.org_number}\\
 \vspace{2em}
 
 \BLOCK{elif comp.type == 'payment_info'}
-%# Suppressed when a footer (the data's own or the page template's) already
-%# carries payment details — the footer is the canonical place; these fields
-%# are the fallback — and when the data has no payment fields at all.
+%# Suppressed when the page template's footer slot already carries payment
+%# details — the footer is the canonical place; these fields are the fallback
+%# — and when the data has no payment fields at all.
 \BLOCK{set has_payment = comp.data.get('bankgiro') or comp.data.get('plusgiro') or comp.data.get('iban') or comp.data.get('bic') }
-\BLOCK{set data_footer = data.get('footer') or {} }
-\BLOCK{set footer_payment = page_template.footer_has_payment or data_footer.get('bankgiro') or data_footer.get('plusgiro') or data_footer.get('iban') or data_footer.get('bic') }
-\BLOCK{if has_payment and not footer_payment}
+\BLOCK{if has_payment and not page_template.footer_has_payment}
 \noindent\textbf{Betalningsinformation}\\[0.3em]
 \begin{tabular}{@{}ll}
 \BLOCK{if comp.data.get('bankgiro')}

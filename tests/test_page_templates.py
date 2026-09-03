@@ -693,6 +693,32 @@ class TestDefaultsMargins:
         pt = load_page_template({"margins": margins}, defaults=self.NARROW)
         assert pt.margins == {"left": "2cm", "right": "2cm"}
 
+    @pytest.mark.parametrize("source_kw", ["header_source", "page_template_source"])
+    def test_a_default_top_is_not_applied_over_a_header_owning_source(self, source_kw):
+        """A default `top` describes what a reclaimed header leaves behind,
+        and a source owning the header slot suppresses the reclaim — applying
+        it would put `headsep` inside the header band."""
+        defaults = {**BLOCK_DEFAULT_SLOTS, "margins": {"left": "2cm", "top": "1.7cm"}}
+        pt = load_page_template(None, defaults=defaults, **{source_kw: "% custom"})
+        assert pt.margins == {"left": "2cm"}
+        assert "headsep" not in pt.margin_setup
+
+    @pytest.mark.parametrize("source_kw", ["header_source", "page_template_source"])
+    def test_a_payload_top_still_applies_over_such_a_source(self, source_kw):
+        """Only the default is scoped away; an explicit request is honoured."""
+        defaults = {**BLOCK_DEFAULT_SLOTS, "margins": {"left": "2cm", "top": "1.7cm"}}
+        pt = load_page_template(
+            {"margins": {"top": "5cm"}}, defaults=defaults, **{source_kw: "% custom"}
+        )
+        assert pt.margins == {"left": "2cm", "top": "5cm"}
+
+    def test_a_default_top_still_applies_to_a_footer_only_source(self):
+        """A footer source leaves the header slot predefined, so the reclaim
+        still runs and the default top is still the right value."""
+        defaults = {**BLOCK_DEFAULT_SLOTS, "margins": {"top": "1.7cm"}}
+        pt = load_page_template(None, defaults=defaults, footer_source="% custom")
+        assert pt.margins == {"top": "1.7cm"}
+
     def test_a_malformed_default_is_rejected(self):
         with pytest.raises(ValueError, match="margins.left must be a LaTeX dimension"):
             load_page_template(None, defaults={**BLOCK_DEFAULT_SLOTS, "margins": {"left": "2"}})

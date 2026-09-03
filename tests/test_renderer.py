@@ -1383,14 +1383,30 @@ class TestRecipePageTemplateSlots:
             _render_recipe_tex("faktura", data)
 
     @pytest.mark.parametrize("source_kw", ["header_source", "page_template_source"])
-    def test_custom_source_on_faktura_receives_the_recipe_margins(self, source_kw):
-        r"""A custom source owns its chrome, not the document-level settings:
-        the recipe's geometry is emitted before it, so a source that sets its
-        own `\geometry` wins and one that does not inherits the recipe's."""
+    def test_custom_source_on_faktura_receives_the_recipe_side_margins(self, source_kw):
+        r"""A custom source owns its chrome, not the document-level settings,
+        so the recipe's sides are emitted before it and a source with its own
+        `\geometry` still wins. The recipe's `top` is left out: it describes
+        the block a reclaimed header leaves behind, and a source owning the
+        header slot suppresses the reclaim, so applying it would set `headsep`
+        inside the header band and run the body text over the source's header.
+        """
         tex = _render_recipe_tex(
             "faktura", _minimal_faktura(), **{source_kw: "% custom"}
         )
         assert tex.count("% custom") == 1
-        assert tex.index(
-            r"\geometry{left=2cm, right=2cm, headsep=\dimexpr 1.7cm-2.1cm\relax}"
-        ) < tex.index("% custom")
+        assert tex.index(r"\geometry{left=2cm, right=2cm}") < tex.index("% custom")
+        assert "kxreclaimtop" not in tex
+        assert "headsep" not in tex
+
+    @pytest.mark.parametrize("source_kw", ["header_source", "page_template_source"])
+    def test_payload_top_still_applies_over_a_custom_source(self, source_kw):
+        """Only the recipe's default `top` is scoped away — a `top` the
+        payload sets is an explicit request and reaches the geometry."""
+        tex = _render_recipe_tex(
+            "faktura",
+            _minimal_faktura(page_template={"margins": {"top": "5cm"}}),
+            **{source_kw: "% custom"},
+        )
+        assert r"\geometry{left=2cm, right=2cm, headsep=\dimexpr 5cm-2.1cm\relax}" in tex
+        assert r"\renewcommand{\kxreclaimtop}{5cm}" in tex

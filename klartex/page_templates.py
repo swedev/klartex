@@ -941,7 +941,8 @@ def load_page_template(
                  payload syntax, for what ``spec`` leaves out — the rendering
                  surface's own default (``BLOCK_DEFAULT_SLOTS`` when
                  omitted). The payload's ``margins`` merges over the default
-                 one key at a time.
+                 one key at a time; a default ``top`` is left out when a
+                 source owns the header slot, since no reclaim runs there.
         header_source: Raw ``.tex.jinja`` content owning the header slot.
         footer_source: Raw ``.tex.jinja`` content owning the footer slot.
         page_template_source: Raw content owning both slots. In this mode the
@@ -986,10 +987,15 @@ def load_page_template(
     font = _check_font("font", overrides.get("font"))
     header_font = _check_font("header_font", overrides.get("header_font")) or font
     diff_style = overrides.get("diff_style") or "color"
-    margins = {
-        **_check_margins(defaults.get("margins")),
-        **_check_margins(overrides.get("margins")),
-    }
+    default_margins = _check_margins(defaults.get("margins"))
+    if header_source is not None or page_template_source is not None:
+        # A default `top` describes the text block a reclaimed header leaves
+        # behind. A source owning the header slot suppresses the reclaim, so
+        # the same value would be read as a text top and set `headsep` below
+        # the header band — the class geometry's own headsep is what a source
+        # without `\geometry` needs. A `top` the payload sets still applies.
+        default_margins.pop("top", None)
+    margins = {**default_margins, **_check_margins(overrides.get("margins"))}
 
     if page_template_source is not None:
         # One source owns both slots, so no chrome is read from the payload.

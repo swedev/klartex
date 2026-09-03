@@ -9,8 +9,9 @@ from pathlib import Path
 
 import pytest
 
+from klartex.block_engine import BLOCK_ENGINE_TEMPLATE
 from klartex.page_templates import GUARANTEED_FONTS
-from klartex.renderer import render, get_registry, CLS_DIR
+from klartex.renderer import render, get_registry, validate, CLS_DIR
 
 TEMPLATES_DIR = CLS_DIR.parent / "templates"
 
@@ -1410,3 +1411,105 @@ class TestRecipePageTemplateSlots:
         )
         assert r"\geometry{left=2cm, right=2cm, headsep=\dimexpr 5cm-2.1cm\relax}" in tex
         assert r"\renewcommand{\kxreclaimtop}{5cm}" in tex
+
+
+class TestValidate:
+    """`validate()` is the validation prefix of `render()`, reachable on its
+    own: same checks, same exceptions, no TeX toolchain."""
+
+    def test_validate_is_exported(self):
+        import klartex
+        from klartex import validate as exported
+
+        assert "validate" in klartex.__all__
+        assert exported is validate
+
+    @pytest.mark.parametrize("template_name,fixture", [
+        ("_block", "avtal_block.json"),
+        *[("_block", path.name) for path in sorted(FIXTURES.glob("block_*.json"))],
+        ("protokoll", "protokoll.json"),
+        ("faktura", "faktura.json"),
+        ("kvitto", "kvitto.json"),
+        ("balansrakning", "balansrakning.json"),
+        ("resultatrakning", "resultatrakning.json"),
+        ("budgetrapport", "budgetrapport.json"),
+        ("sie-exportrapport", "sie-exportrapport.json"),
+    ])
+    def test_validate_passes_fixtures_without_xelatex(
+        self, template_name, fixture, monkeypatch
+    ):
+        """Every canonical fixture validates, and none of it reaches a
+        subprocess — the checks run with xelatex absent from PATH."""
+        monkeypatch.setattr(shutil, "which", lambda *a, **kw: None)
+        monkeypatch.setattr(
+            subprocess, "run", lambda *a, **kw: pytest.fail("validate ran a subprocess")
+        )
+        data = json.loads((FIXTURES / fixture).read_text())
+        assert validate(template_name, data) is None
+
+    def test_unknown_template_lists_the_available_ones(self):
+        with pytest.raises(ValueError) as excinfo:
+            validate("nonexistent", {})
+        message = str(excinfo.value)
+        assert "Unknown template 'nonexistent'" in message
+        assert "Available: " in message
+        assert "protokoll" in message
+
+    def test_recipe_schema_violation(self):
+        """A recipe payload missing a required key fails the schema check."""
+        import jsonschema
+
+        data = json.loads((FIXTURES / "protokoll.json").read_text())
+        del data["attendees"]
+        with pytest.raises(jsonschema.ValidationError):
+            validate("protokoll", data)
+
+    def test_block_schema_violation(self):
+        """`body` must be an array — a base-schema failure, before any block
+        is looked at."""
+        import jsonschema
+
+        with pytest.raises(jsonschema.ValidationError):
+            validate(BLOCK_ENGINE_TEMPLATE, {"body": "not a list"})
+
+    def test_block_payload_failure_carries_path_and_cause(self):
+        """A known block whose payload fails its component schema raises
+        BlockValidationError pointing into the block."""
+        import jsonschema
+
+        from klartex import BlockValidationError
+
+        with pytest.raises(BlockValidationError) as excinfo:
+            validate(BLOCK_ENGINE_TEMPLATE, {"body": [{"type": "heading", "text": 123}]})
+        exc = excinfo.value
+        assert exc.path == ["body", 0, "text"]
+        assert isinstance(exc.__cause__, jsonschema.ValidationError)
+
+    def test_unknown_nested_block_type_carries_the_render_path(self):
+        """Nested blocks are walked exactly as `render()` walks them."""
+        from klartex import BlockValidationError
+
+        data = {"body": [
+            {"type": "list", "items": [{"text": "punkt", "content": [{"type": "text"}]}]},
+        ]}
+        with pytest.raises(BlockValidationError) as excinfo:
+            validate(BLOCK_ENGINE_TEMPLATE, data)
+        exc = excinfo.value
+        assert exc.path == ["body", 0, "items", 0, "content", 0]
+        assert "at body[0].items[0].content[0]" in str(exc)
+
+    def test_render_delegates_to_validate(self, monkeypatch):
+        """`render()` calls `validate()` before anything else, so the two
+        cannot drift apart."""
+        class Sentinel(Exception):
+            pass
+
+        def fail(template_name, data):
+            raise Sentinel(template_name)
+
+        monkeypatch.setattr("klartex.renderer.validate", fail)
+        monkeypatch.setattr(
+            subprocess, "run", lambda *a, **kw: pytest.fail("render compiled anyway")
+        )
+        with pytest.raises(Sentinel, match=BLOCK_ENGINE_TEMPLATE):
+            render(BLOCK_ENGINE_TEMPLATE, {"body": [{"type": "text", "text": "hej"}]})

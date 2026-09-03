@@ -66,12 +66,24 @@ Samma image är också releasegrind: `.github/workflows/publish.yml` kör hela t
 ### Som Python-bibliotek
 
 ```python
-from klartex import render
+from klartex import render, validate
 
 pdf_bytes = render("protokoll", data)
 ```
 
 Blockvalidering som fallerar höjer `klartex.BlockValidationError` (en `ValueError`) vars `path` pekar ut noden som fallerade i samma form som HTTP-API:ets `detail.path`.
+
+`validate(template_name, data)` kör samma kontroller — schemat, och per block på blockmotorn — utan att köra XeLaTeX, och returnerar `None` när datat är giltigt. Den höjer samma fel som `render()`: `ValueError` för okänt mallnamn, `jsonschema.ValidationError` för schemabrott (importeras från `jsonschema`, inte från klartex) och `BlockValidationError` för block. `render()` anropar samma funktion, så de kan inte glida isär. Sidmallens komposition ingår inte: ett `page_template.margins.top` inom sidhuvudets band, ett tomt `letterhead`-`org_name` eller en helsidesmall kombinerad med en slot-mall fallerar först vid rendering.
+
+```python
+import jsonschema
+from klartex import BlockValidationError, validate
+
+try:
+    validate("_block", data)
+except (ValueError, jsonschema.ValidationError) as e:
+    ...  # BlockValidationError är en ValueError och fångas av samma gren
+```
 
 ### Som CLI
 
@@ -84,6 +96,10 @@ cat data.json | klartex
 
 # Med explicit mall
 klartex -d data.json -t protokoll
+
+# Validera utan att rendera (tyst vid giltigt data, annars fel på stderr)
+klartex validate -d data.json
+klartex validate -d data.json -t protokoll
 
 # Med egen sidmall (hela sidan i en fil)
 klartex -d data.json --page-template sidmall.tex.jinja

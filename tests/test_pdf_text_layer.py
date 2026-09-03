@@ -463,6 +463,89 @@ def test_the_tallest_realistic_contact_column_clears_the_page_and_the_body():
         assert y_max < anchor_y, f"{text!r} reaches into the body text"
 
 
+# --- the columns footer's company column: a long address must stay inside it ---
+
+#: The footer's Företag column edges, as fractions of \textwidth.
+#: klartex-footer lays the footer out as a 0.34 Adress column, a 0.30
+#: Företag column and a 0.36 Betalning column, so Företag — which carries
+#: phone, email and web — runs from 0.34 to 0.64 across the text block.
+_COMPANY_LEFT_PT = _SIDE_MARGIN_PT + 0.34 * _TEXT_WIDTH_PT
+_COMPANY_RIGHT_PT = _SIDE_MARGIN_PT + 0.64 * _TEXT_WIDTH_PT
+
+#: A4 height in PDF units, for the footer's bottom edge.
+_A4_HEIGHT_PT = 841.89
+
+
+def _footer_payload(fields: dict) -> dict:
+    """The anchor payload with a columns footer and no header."""
+    data = _anchor_payload(None)
+    data["page_template"]["footer"] = {"variant": "columns", "fields": fields}
+    return data
+
+
+def _footer_company_column(pdf: bytes) -> list[WordBox]:
+    """The words of the footer's Företag column, in reading order.
+
+    A word belongs to the column when it *starts* inside it, never when it
+    fits inside it — the one word a containment test has to see is the one
+    that started in the column and ran out of it.
+    """
+    boxes = _word_boxes(pdf)
+    column = [b for b in boxes if _COMPANY_LEFT_PT - 0.5 <= b[0] < _COMPANY_RIGHT_PT - 0.5]
+    return sorted(column, key=lambda b: (b[1], b[0]))
+
+
+@requires_tools
+@pytest.mark.parametrize(
+    "field_name, address",
+    [("email", _LONG_EMAIL), ("web", _LONG_WEB), ("web", _LONG_URL)],
+    ids=["email", "www", "https"],
+)
+def test_a_long_footer_address_wraps_inside_the_company_column(field_name, address):
+    """The footer's contact lines are tabular cells — a single unbreakable
+    line each — so without a wrapping box a long address is set straight
+    through the Betalning column and off the page."""
+    data = _footer_payload({"org_number": "556123-4567", field_name: address})
+    column = _footer_company_column(render(BLOCK_ENGINE_TEMPLATE, data))
+    assert column, "no words found in the footer's company column"
+    for x_min, _y_min, x_max, _y_max, text in column:
+        assert x_max <= _COMPANY_RIGHT_PT + 0.5, f"{text!r} overruns the company column"
+    # The label row above it aside, the pieces reassemble to the address
+    # exactly: the breaks land at separators and nothing was clipped.
+    assert "".join(b[4] for b in column) == _unspaced("Företag", "Org.nr", "556123-4567", address)
+
+
+@requires_tools
+def test_the_tallest_realistic_footer_column_clears_the_page_and_the_body():
+    """Break opportunities buy horizontal containment with vertical growth,
+    and the footer grows upwards from the foot baseline. The worst realistic
+    company column must still sit between the body text and the page edge."""
+    fields = {
+        "company": "Brf Ekbacken",
+        "address": ["Storgatan 1", "123 45 Stad"],
+        "org_number": "556123-4567",
+        "phone": "070-123 45 67",
+        "email": _LONG_EMAIL,
+        "web": _LONG_URL,
+        "bankgiro": "1234-5678",
+    }
+    pdf = render(BLOCK_ENGINE_TEMPLATE, _footer_payload(fields))
+    boxes = _word_boxes(pdf)
+    anchor_bottom = next(b[3] for b in boxes if b[4] == _ANCHOR)
+    column = _footer_company_column(pdf)
+    assert "".join(b[4] for b in column) == _unspaced(
+        "Företag",
+        "Org.nr",
+        fields["org_number"],
+        fields["phone"],
+        fields["email"],
+        fields["web"],
+    )
+    for x_min, y_min, x_max, y_max, text in column:
+        assert y_min > anchor_bottom, f"{text!r} reaches into the body text"
+        assert y_max < _A4_HEIGHT_PT, f"{text!r} runs off the bottom of the page"
+
+
 def _minimal_faktura(**extra) -> dict:
     data = {
         "invoice_number": "F-1",

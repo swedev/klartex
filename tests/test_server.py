@@ -237,6 +237,33 @@ def test_render_faktura_top_level_footer_reports_its_path():
     assert "page_template.footer" in detail["message"]
 
 
+def test_render_recipe_unknown_key_reports_the_key_and_its_object():
+    """An unknown key anywhere in a recipe payload is a 400, not a silent drop.
+
+    The recipe schemas are closed at every object level (#78), so a producer
+    misspelling `subItems` gets the key named in `detail.message` and the
+    agenda item located by `detail.path` — jsonschema reports
+    `additionalProperties` against the parent object, so the path stops there.
+    """
+    r = client.post(
+        "/render",
+        json={
+            "template": "protokoll",
+            "data": {
+                "meeting_type": "Styrelsemöte",
+                "date": "2026-02-10",
+                "attendees": ["Anna Andersson"],
+                "agenda_items": [{"title": "Öppnande", "subitems": ["Punkt"]}],
+            },
+        },
+    )
+    assert r.status_code == 400
+    detail = r.json()["detail"]
+    assert detail["type"] == "validation_error"
+    assert "subitems" in detail["message"]
+    assert detail["path"] == ["agenda_items", 0]
+
+
 def test_render_faktura_without_sender_is_rejected():
     """`sender` is required on the invoice recipes — the seller's name is the
     header wordmark and the footer's company line."""

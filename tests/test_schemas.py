@@ -11,6 +11,16 @@ from klartex.renderer import get_registry, TEMPLATES_DIR
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
+RECIPE_SCHEMA_NAMES = (
+    "protokoll",
+    "faktura",
+    "kvitto",
+    "resultatrakning",
+    "balansrakning",
+    "budgetrapport",
+    "sie-exportrapport",
+)
+
 
 def test_discover_all_templates():
     registry = get_registry()
@@ -22,12 +32,14 @@ def test_discover_all_templates():
     assert "budgetrapport" in registry
     assert "sie-exportrapport" in registry
     assert "_block" in registry
+    # The tests below parametrize over the static tuple; discovery is what the
+    # renderer serves. They must name the same recipes.
+    assert {
+        name for name, info in registry.items() if not info.is_block_engine
+    } == set(RECIPE_SCHEMA_NAMES)
 
 
-@pytest.mark.parametrize("template_name", [
-    "protokoll", "faktura", "kvitto",
-    "resultatrakning", "balansrakning", "budgetrapport", "sie-exportrapport",
-])
+@pytest.mark.parametrize("template_name", RECIPE_SCHEMA_NAMES)
 def test_fixture_validates(template_name):
     registry = get_registry()
     fixture_path = FIXTURES / f"{template_name}.json"
@@ -148,13 +160,93 @@ def test_top_level_footer_is_rejected_in_every_shape(template_name):
             jsonschema.validate(data, registry[template_name].schema)
 
 
-@pytest.mark.parametrize("template_name", ["faktura", "kvitto"])
+@pytest.mark.parametrize("template_name", RECIPE_SCHEMA_NAMES)
 def test_recipe_example_validates(template_name):
     """The shipped example is what `klartex example <name>` hands an agent —
     it must validate against the schema `klartex schema <name>` shows."""
     registry = get_registry()
     example_path = TEMPLATES_DIR / template_name / "example.json"
     jsonschema.validate(json.loads(example_path.read_text()), registry[template_name].schema)
+
+
+def _object_nodes(node, path="$"):
+    """Yield every object node in a schema, with the path that locates it.
+
+    An object node is one a payload can put keys into: `type: "object"`, the
+    nullable `["object", "null"]` form, or a node carrying `properties`
+    without a `type`.
+    """
+    if isinstance(node, dict):
+        node_type = node.get("type")
+        if (
+            node_type == "object"
+            or (isinstance(node_type, list) and "object" in node_type)
+            or (node_type is None and "properties" in node)
+        ):
+            yield path, node
+        for key, value in node.items():
+            yield from _object_nodes(value, f"{path}.{key}")
+    elif isinstance(node, list):
+        for index, value in enumerate(node):
+            yield from _object_nodes(value, f"{path}[{index}]")
+
+
+@pytest.mark.parametrize(
+    "template_name",
+    [name for name, info in get_registry().items() if not info.is_block_engine],
+)
+def test_recipe_schemas_are_closed_at_every_object_level(template_name):
+    """A recipe payload's unknown key is rejected, not silently dropped (#78).
+
+    The recipe surface makes the same promise the block engine's block schemas
+    do: a producer's typo (`subitems` for `subItems`) fails validation with the
+    key named, instead of rendering as if the field had been omitted. The walk
+    covers the loaded schema, so the injected `page_template` subtree is held
+    to it too — an object reopened in the slot model reopens the recipe
+    surface just as surely as one in the schema file.
+
+    An object level that must stay open needs its reasoning written down here
+    as an exemption; that friction is the point.
+    """
+    schema = get_registry()[template_name].schema
+    for path, node in _object_nodes(schema, template_name):
+        assert node.get("additionalProperties") is False, path
+
+
+@pytest.mark.parametrize(
+    "template_name,parent_path,unknown_key",
+    [
+        # The typos the issue names: a misspelt property renders as nothing.
+        ("protokoll", ("agenda_items", 0), "subitems"),
+        ("protokoll", ("agenda_items", 0), "discusion"),
+        ("faktura", ("lines", 0), "price"),
+        ("faktura", ("sender",), "adress"),
+        ("kvitto", ("items", 0), "amout"),
+    ]
+    + [(name, (), "organisation") for name in RECIPE_SCHEMA_NAMES],
+)
+def test_recipe_unknown_key_is_rejected(template_name, parent_path, unknown_key):
+    """The message names the key and the path locates the object holding it.
+
+    `klartex serve` reports `detail.message` and `detail.path` straight from
+    this error, so the shape asserted here is the one a producer sees over
+    HTTP: jsonschema puts the offending key in the message and the *parent*
+    object in the path.
+    """
+    schema = get_registry()[template_name].schema
+    data = json.loads((FIXTURES / f"{template_name}.json").read_text())
+    jsonschema.validate(data, schema)
+
+    node = data
+    for step in parent_path:
+        node = node[step]
+    node[unknown_key] = "x"
+
+    with pytest.raises(jsonschema.ValidationError) as excinfo:
+        jsonschema.validate(data, schema)
+    assert excinfo.value.validator == "additionalProperties"
+    assert unknown_key in excinfo.value.message
+    assert list(excinfo.value.absolute_path) == list(parent_path)
 
 
 def test_protokoll_missing_required():
@@ -206,17 +298,6 @@ def test_faktura_missing_lines():
     }
     with pytest.raises(jsonschema.ValidationError):
         jsonschema.validate(data, registry["faktura"].schema)
-
-
-RECIPE_SCHEMA_NAMES = (
-    "protokoll",
-    "faktura",
-    "kvitto",
-    "resultatrakning",
-    "balansrakning",
-    "budgetrapport",
-    "sie-exportrapport",
-)
 
 
 def _block_schema():

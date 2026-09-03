@@ -5,6 +5,7 @@
   "description": "Income statement with comparison years and optional notes",
   "type": "object",
   "required": ["title", "period", "rubrik_ar1", "rubrik_ar2", "grupper"],
+  "additionalProperties": false,
   "properties": {
     "page_template": {
       "$comment": "Generated at load time from the slot model in klartex/page_templates.py (page_template_schema); see registry.py."

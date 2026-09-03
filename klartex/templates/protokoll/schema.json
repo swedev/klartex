@@ -4,6 +4,7 @@
   "description": "Mötesprotokoll / Meeting minutes",
   "type": "object",
   "required": ["meeting_type", "date", "attendees", "agenda_items"],
+  "additionalProperties": false,
   "properties": {
     "page_template": {
       "$comment": "Generated at load time from the slot model in klartex/page_templates.py (page_template_schema); see registry.py."
@@ -54,6 +55,7 @@
       "items": {
         "type": "object",
         "required": ["title"],
+        "additionalProperties": false,
         "properties": {
           "title": { "type": "string", "description": "Agenda item title. Inline markup applies: **bold**, *italic*, `code`, \"quotes\", and the change markers {+added text+} (green) / [-removed text-] (red strikethrough). A newline becomes a line break." },
           "discussion": { "type": "string", "description": "Discussion text. Inline markup applies: **bold**, *italic*, `code`, \"quotes\", and the change markers {+added text+} (green) / [-removed text-] (red strikethrough). A newline becomes a line break." },

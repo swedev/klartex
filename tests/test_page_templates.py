@@ -9,6 +9,7 @@ from klartex.page_templates import (
     RECIPE_DEFAULT_SLOTS,
     allow_breaks,
     font_files,
+    footer_keyvals,
     list_slot_variants,
     load_page_template,
     read_slot_source,
@@ -489,8 +490,9 @@ class TestLogoFileName:
 
 
 class TestAddressBreaks:
-    """The letterhead's contact column forbids hyphenation, so a web or email
-    address — one unspaced token — gets explicit break opportunities."""
+    """The letterhead header's contact column and the columns footer's
+    company column forbid hyphenation, so a web or email address — one
+    unspaced token — gets explicit break opportunities in both."""
 
     LONG_EMAIL = "styrelsen@bostadsrattsforeningenekbacken.se"
     LONG_WEB = "www.bostadsrattsforeningenekbacken.se"
@@ -554,6 +556,31 @@ class TestAddressBreaks:
             ("orgemail", allow_breaks(self.LONG_EMAIL, CONTACT_BREAKS)),
             ("orgphone", "070-123 45 67"),
             ("brandlogo", "logo.pdf"),
+        ]
+
+    def test_footer_keyvals_annotates_web_and_email_only(self):
+        pt = load_page_template(
+            {
+                "footer": {
+                    "variant": "columns",
+                    "fields": {
+                        "company": "Brf Ekbacken",
+                        "address": ["Storgatan 1", "123 45 Stad"],
+                        "phone": "070-123 45 67",
+                        "email": self.LONG_EMAIL,
+                        "web": self.LONG_WEB,
+                        "org_number": "556123-4567",
+                    },
+                }
+            }
+        )
+        assert footer_keyvals(pt.footer.fields) == [
+            "company={Brf Ekbacken}",
+            "address={Storgatan 1\\\\123 45 Stad}",
+            "phone={070-123 45 67}",
+            f"email={{{allow_breaks(self.LONG_EMAIL, CONTACT_BREAKS)}}}",
+            f"web={{{allow_breaks(self.LONG_WEB, CONTACT_BREAKS)}}}",
+            "orgnr={556123-4567}",
         ]
 
     def test_the_logo_field_is_never_annotated(self):

@@ -159,7 +159,7 @@ class Field:
     keyval: str | None = None
     #: Characters after which the rendered value may break onto the next
     #: line; empty means the value is emitted verbatim. Read by
-    #: ``PageTemplate.header_macros``.
+    #: ``PageTemplate.header_macros`` and ``footer_keyvals``.
     breaks_after: str = ""
 
     @property
@@ -198,9 +198,10 @@ class Variant:
     empty_note: str = ""
 
 
-#: Separators an address may wrap after in the letterhead's narrow contact
-#: column. The column forbids hyphenation, so a web or email address — one
-#: unspaced token — has no other break opportunity.
+#: Separators an address may wrap after in the narrow contact columns of the
+#: letterhead header and the columns footer. Neither column hyphenates, so a
+#: web or email address — one unspaced token — has no other break
+#: opportunity.
 CONTACT_BREAKS = "@./"
 
 # One word, one type, one macro, in both header variants.
@@ -278,8 +279,16 @@ FOOTER_VARIANTS: dict[str, Variant] = {
             ),
             "seat": Field(TEXT, "Registered seat of the board, e.g. 'Malmö'"),
             "phone": Field(TEXT, "Phone"),
-            "email": Field(TEXT, "Email"),
-            "web": Field(TEXT, "Website"),
+            "email": Field(
+                TEXT,
+                "Email. A long address may wrap after @, . and /.",
+                breaks_after=CONTACT_BREAKS,
+            ),
+            "web": Field(
+                TEXT,
+                "Website. A long address may wrap after @, . and /.",
+                breaks_after=CONTACT_BREAKS,
+            ),
             "bankgiro": Field(TEXT, "Bankgiro number"),
             "plusgiro": Field(TEXT, "Plusgiro number"),
             "iban": Field(TEXT, "IBAN"),
@@ -1042,7 +1051,8 @@ def _check_margin_top(template: PageTemplate) -> None:
 def footer_keyvals(fields: dict, variant: str = "columns") -> list[str]:
     """``key={value}`` strings for ``\\kxfooter``, one per set field of the
     footer variant, in the variant's field order. Values are expected to be
-    LaTeX-escaped already; a list value (lines) is joined with ``\\\\``."""
+    LaTeX-escaped already; a list value (lines) is joined with ``\\\\``, and a
+    string value gets the field's ``breaks_after`` opportunities."""
     out = []
     for name, typ in FOOTER_VARIANTS[variant].fields.items():
         value = fields.get(name)
@@ -1054,6 +1064,8 @@ def footer_keyvals(fields: dict, variant: str = "columns") -> list[str]:
             continue
         if isinstance(value, (list, tuple)):
             value = "\\\\".join(str(v) for v in value)
+        else:
+            value = allow_breaks(str(value), typ.breaks_after)
         out.append(f"{keyval}={{{value}}}")
     return out
 

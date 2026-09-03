@@ -71,6 +71,18 @@
 % skipped when empty. Use inside a kxf@col tabular.
 \newcommand{\kxf@row}[2]{\ifdefempty{#2}{}{#1 & #2\\}}
 
+% \kxf@wraprow{<value macro>} - full-width row of a kxf@coltab tabular whose
+% value wraps inside the column, skipped when empty. A tabular cell is a
+% single unbreakable line, so the \parbox puts the value back into paragraph
+% mode: without it a long address is set past the column's right edge and
+% over the next column, and the \allowbreak opportunities in a web or email
+% address have nowhere to take effect.
+\newcommand{\kxf@wraprow}[1]{%
+    \ifdefempty{#1}{}{%
+        \multicolumn{2}{@{}l@{}}{\parbox[t]{\linewidth}{\raggedright#1}}\\%
+    }%
+}
+
 % \kxf@missing{<sv>}{<en>} - the muted placeholder naming a column's gap.
 \newcommand{\kxf@missing}[2]{{\color{kxmuted}\kxf@T{#1}{#2}}}
 
@@ -143,9 +155,9 @@
                 \kxf@row{\kxf@T{Momsreg.nr}{VAT no}}{\kxf@vatnr}%
                 \kxf@row{\kxf@T{Säte}{Reg.\ office}}{\kxf@seat}%
                 \ifkxf@ftax\multicolumn{2}{@{}l@{}}{\kxf@T{Godkänd för F-skatt}{Approved for F-tax}}\\\fi
-                \ifdefempty{\kxf@phone}{}{\multicolumn{2}{@{}l@{}}{\kxf@phone}\\}%
-                \ifdefempty{\kxf@email}{}{\multicolumn{2}{@{}l@{}}{\kxf@email}\\}%
-                \ifdefempty{\kxf@web}{}{\multicolumn{2}{@{}l@{}}{\kxf@web}\\}%
+                \kxf@wraprow{\kxf@phone}%
+                \kxf@wraprow{\kxf@email}%
+                \kxf@wraprow{\kxf@web}%
             }%
         }%
         % Betalning: the four payment rows, or their placeholder.

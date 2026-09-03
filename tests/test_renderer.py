@@ -959,7 +959,8 @@ class TestDerivedFooterFields:
         )
         assert "company={Annat namn}" in tex
         assert "Säljbolaget AB" not in tex.split(r"\begin{document}")[0]
-        assert "email={info@example.se}" in tex
+        # The footer's email carries the contact column's break opportunities.
+        assert r"email={info@\allowbreak{}example.\allowbreak{}se}" in tex
         assert "address={Storgatan 1}" in tex
         assert "bankgiro={1234-5678}" in tex
         assert "Betalningsinformation" not in tex

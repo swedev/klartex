@@ -1147,31 +1147,35 @@ class TestNestedBlockValidation:
     are validated against their own schemas, with a path in the error."""
 
     def test_nested_list_missing_items_rejected(self):
+        from klartex import BlockValidationError
         from klartex.renderer import render
 
         data = {"body": [{"type": "clause", "number": "§ 1", "content": [{"type": "list"}]}]}
-        with pytest.raises(ValueError, match=r"Invalid 'list' block at body\[0\]\.content\[0\]"):
+        with pytest.raises(BlockValidationError, match=r"Invalid 'list' block at body\[0\]\.content\[0\]"):
             render(BLOCK_ENGINE_TEMPLATE, data)
 
     def test_nested_text_missing_text_rejected(self):
+        from klartex import BlockValidationError
         from klartex.renderer import render
 
         data = {"body": [{"type": "list", "items": [{"text": "punkt", "content": [{"type": "text"}]}]}]}
-        with pytest.raises(ValueError, match=r"Invalid 'text' block at body\[0\]\.items\[0\]\.content\[0\]"):
+        with pytest.raises(BlockValidationError, match=r"Invalid 'text' block at body\[0\]\.items\[0\]\.content\[0\]"):
             render(BLOCK_ENGINE_TEMPLATE, data)
 
     def test_columns_nested_block_validated(self):
+        from klartex import BlockValidationError
         from klartex.renderer import render
 
         data = {"body": [{"type": "columns", "items": [[{"type": "text"}]]}]}
-        with pytest.raises(ValueError, match=r"Invalid 'text' block at body\[0\]\.items\[0\]\[0\]"):
+        with pytest.raises(BlockValidationError, match=r"Invalid 'text' block at body\[0\]\.items\[0\]\[0\]"):
             render(BLOCK_ENGINE_TEMPLATE, data)
 
     def test_unknown_type_reports_path(self):
+        from klartex import BlockValidationError
         from klartex.renderer import render
 
         data = {"body": [{"type": "foo"}]}
-        with pytest.raises(ValueError, match=r"Unknown block type 'foo' at body\[0\]"):
+        with pytest.raises(BlockValidationError, match=r"Unknown block type 'foo' at body\[0\]"):
             render(BLOCK_ENGINE_TEMPLATE, data)
 
     def test_valid_nested_document_passes(self):
@@ -1186,6 +1190,109 @@ class TestNestedBlockValidation:
         ]}
         tex = _render_tex(data)
         assert "nested" in tex and "kolumn" in tex
+
+
+class TestBlockValidationError:
+    """Block validation raises BlockValidationError, whose `path` addresses the
+    failing node as a list — the same shape the HTTP API returns as
+    `detail.path` — beside the unchanged message text."""
+
+    def _raises(self, data):
+        from klartex import BlockValidationError
+        from klartex.renderer import render
+
+        with pytest.raises(BlockValidationError) as excinfo:
+            render(BLOCK_ENGINE_TEMPLATE, data)
+        return excinfo.value
+
+    def test_missing_type_carries_path(self):
+        exc = self._raises({"body": [
+            {"type": "text", "text": "ok"},
+            {"type": ""},
+        ]})
+        assert exc.path == ["body", 1]
+        assert str(exc) == "Block at body[1] is missing 'type'"
+
+    def test_unknown_type_carries_path(self):
+        from klartex.block_engine import KNOWN_BLOCK_TYPES
+
+        exc = self._raises({"body": [{"type": "foo"}]})
+        assert exc.path == ["body", 0]
+        available = ", ".join(sorted(KNOWN_BLOCK_TYPES))
+        assert str(exc) == f"Unknown block type 'foo' at body[0]. Available: {available}"
+
+    def test_unknown_type_cannot_forge_a_path(self):
+        """The type name is caller supplied; the path comes from the position."""
+        exc = self._raises({"body": [{"type": "x' at body[9]. Available: y"}]})
+        assert exc.path == ["body", 0]
+
+    def test_schema_failure_reaches_into_the_block(self):
+        import jsonschema
+
+        exc = self._raises({"body": [{"type": "heading", "text": 123}]})
+        assert exc.path == ["body", 0, "text"]
+        assert isinstance(exc.__cause__, jsonschema.ValidationError)
+        assert str(exc) == f"Invalid 'heading' block at body[0]: {exc.__cause__.message}"
+
+    def test_required_field_failure_stays_at_the_block(self):
+        """`required` failures have an empty absolute_path, so the path is the
+        bare block position — the field name is in the message, not the path."""
+        exc = self._raises({"body": [{"type": "heading"}]})
+        assert exc.path == ["body", 0]
+
+    def test_clause_content_path(self):
+        exc = self._raises({"body": [
+            {"type": "clause", "number": "§ 1", "content": [{"type": "list"}]},
+        ]})
+        assert exc.path == ["body", 0, "content", 0]
+        assert "at body[0].content[0]" in str(exc)
+
+    def test_list_item_content_path(self):
+        exc = self._raises({"body": [
+            {"type": "list", "items": [{"text": "punkt", "content": [{"type": "text"}]}]},
+        ]})
+        assert exc.path == ["body", 0, "items", 0, "content", 0]
+        assert "at body[0].items[0].content[0]" in str(exc)
+
+    def test_columns_path(self):
+        exc = self._raises({"body": [
+            {"type": "columns", "items": [
+                [{"type": "text", "text": "ok"}],
+                [{"type": "text"}],
+            ]},
+        ]})
+        assert exc.path == ["body", 0, "items", 1, 0]
+        assert "at body[0].items[1][0]" in str(exc)
+
+    def test_columns_field_path(self):
+        exc = self._raises({"body": [
+            {"type": "columns", "items": [
+                [{"type": "text", "text": "ok"}],
+                [{"type": "text", "text": 123}],
+            ]},
+        ]})
+        assert exc.path == ["body", 0, "items", 1, 0, "text"]
+        assert "at body[0].items[1][0]" in str(exc)
+
+    def test_is_a_value_error(self):
+        exc = self._raises({"body": [{"type": "foo"}]})
+        assert isinstance(exc, ValueError)
+
+
+class TestFormatBlockPath:
+    """The message text is rendered from the path list, so the two never drift."""
+
+    @pytest.mark.parametrize("path,expected", [
+        (["body"], "body"),
+        (["body", 0], "body[0]"),
+        (["body", 2, "content", 0], "body[2].content[0]"),
+        (["body", 0, "items", 1, 0], "body[0].items[1][0]"),
+        (["body", 0, "items", 0, "content", 0], "body[0].items[0].content[0]"),
+    ])
+    def test_format(self, path, expected):
+        from klartex.renderer import _format_block_path
+
+        assert _format_block_path(path) == expected
 
 
 class TestSignaturesContractIntro:

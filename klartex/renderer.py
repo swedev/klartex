@@ -5,6 +5,7 @@ import os
 import shutil
 import subprocess
 import tempfile
+from collections.abc import Sequence
 from pathlib import Path
 
 import jinja2
@@ -184,7 +185,7 @@ def render(
 
     # Validate block types and payloads before escaping (escaping mangles underscores)
     if template_info.is_block_engine:
-        _validate_blocks(data.get("body", []), "body")
+        _validate_blocks(data.get("body", []), ["body"])
 
     _preflight_font_files(data, asset_dir)
 
@@ -265,7 +266,38 @@ def _preflight_font_files(data: dict, asset_dir: Path | str | None) -> None:
             )
 
 
-def _child_block_lists(block: dict, path: str = "") -> list[tuple[str, list]]:
+class BlockValidationError(ValueError):
+    """Raised when a block on the block-engine path fails validation.
+
+    `path` addresses the failing node in the submitted data: `["body", 1]` is
+    the block itself, `["body", 0, "items", 1, 0, "text"]` a field inside a
+    nested block. The message is the human-readable form of the same position.
+    """
+
+    def __init__(self, message: str, path: Sequence[str | int]):
+        super().__init__(message)
+        self.path = list(path)
+
+
+def _format_block_path(path: Sequence[str | int]) -> str:
+    """Render a block path as the text form used in error messages.
+
+    `["body", 0, "items", 1, 0]` becomes ``body[0].items[1][0]``.
+    """
+    segments = []
+    for i, seg in enumerate(path):
+        if isinstance(seg, int):
+            segments.append(f"[{seg}]")
+        elif i == 0:
+            segments.append(str(seg))
+        else:
+            segments.append(f".{seg}")
+    return "".join(segments)
+
+
+def _child_block_lists(
+    block: dict, path: Sequence[str | int] = ()
+) -> list[tuple[list[str | int], list]]:
     """Return the nested block carriers of `block` as (path, blocks) pairs.
 
     Single source of truth for which block types nest other blocks. Both
@@ -275,42 +307,46 @@ def _child_block_lists(block: dict, path: str = "") -> list[tuple[str, list]]:
     btype = block.get("type")
     if btype == "list":
         return [
-            (f"{path}.items[{i}].content", item.get("content", []))
+            ([*path, "items", i, "content"], item.get("content", []))
             for i, item in enumerate(block.get("items", []))
             if isinstance(item, dict)
         ]
     if btype == "columns":
         return [
-            (f"{path}.items[{i}]", col)
+            ([*path, "items", i], col)
             for i, col in enumerate(block.get("items", []))
             if isinstance(col, list)
         ]
     if btype == "clause":
-        return [(f"{path}.content", block.get("content", []))]
+        return [([*path, "content"], block.get("content", []))]
     return []
 
 
-def _validate_blocks(blocks: list, path: str) -> None:
+def _validate_blocks(blocks: list, path: Sequence[str | int]) -> None:
     """Validate every block against its schema, recursing into nested carriers.
 
-    `path` locates the current block list in error messages, e.g.
-    ``body[2].content[0]`` or ``body[1].items[0][3]``.
+    `path` locates the current block list, e.g. ``["body", 2, "content"]`` or
+    ``["body", 1, "items", 0]``.
     """
     from klartex.block_engine import KNOWN_BLOCK_TYPES
     from klartex.components import get_component
 
     for i, block in enumerate(blocks):
-        where = f"{path}[{i}]"
+        where = [*path, i]
+        where_text = _format_block_path(where)
         if not isinstance(block, dict):
             continue  # non-dict shapes are rejected by the carrier's schema
         block_type = block.get("type")
         if not block_type:
-            raise ValueError(f"Block at {where} is missing 'type'")
+            raise BlockValidationError(
+                f"Block at {where_text} is missing 'type'", where
+            )
         if block_type not in KNOWN_BLOCK_TYPES:
             available = ", ".join(sorted(KNOWN_BLOCK_TYPES))
-            raise ValueError(
-                f"Unknown block type '{block_type}' at {where}. "
-                f"Available: {available}"
+            raise BlockValidationError(
+                f"Unknown block type '{block_type}' at {where_text}. "
+                f"Available: {available}",
+                where,
             )
         spec = get_component(block_type)
         block_schema = spec.get_block_schema()
@@ -318,8 +354,9 @@ def _validate_blocks(blocks: list, path: str) -> None:
             try:
                 jsonschema.validate(block, block_schema)
             except jsonschema.ValidationError as e:
-                raise ValueError(
-                    f"Invalid '{block_type}' block at {where}: {e.message}"
+                raise BlockValidationError(
+                    f"Invalid '{block_type}' block at {where_text}: {e.message}",
+                    [*where, *e.absolute_path],
                 ) from e
         for child_path, child_blocks in _child_block_lists(block, where):
             _validate_blocks(child_blocks, child_path)

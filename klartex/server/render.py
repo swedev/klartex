@@ -12,7 +12,9 @@ Validation errors and xelatex failures are mapped to HTTP responses with
 structured detail. Schema violations and block validation errors both
 carry `detail.path` — a `["body", 1, "items", 0, "text"]` list addressing
 the failing node in the submitted data — so the caller can pass it
-straight through to its own client.
+straight through to its own client. Both shapes come from the core:
+`ValidationError.absolute_path` for schema violations,
+`BlockValidationError.path` for block failures.
 """
 
 import base64
@@ -28,7 +30,7 @@ from fastapi.responses import Response
 from jsonschema import ValidationError
 from pydantic import BaseModel, Field
 
-from klartex import render as klartex_render
+from klartex import BlockValidationError, render as klartex_render
 from klartex.page_templates import font_files
 
 log = logging.getLogger(__name__)
@@ -77,48 +79,6 @@ ASSET_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 MAX_CONCURRENT_RENDERS = env_positive_int("KLARTEX_MAX_CONCURRENT", 2)
 
 _render_slots = threading.BoundedSemaphore(MAX_CONCURRENT_RENDERS)
-
-# Block position inside a klartex block-validation message, e.g. `body[1]`
-# or `body[0].items[1][0]` for a block nested in a carrier block.
-_BLOCK_POSITION = r"body(?:\[\d+\]|\.[a-z_]+)+"
-
-# The three message forms `klartex.renderer._validate_blocks` raises as
-# ValueError. Anchored on the full form rather than searching for
-# `at body[...]`: in the unknown-type message the type name is caller
-# supplied and may itself contain that substring. The greedy `'.*'` plus
-# the `. Available: ` anchor therefore selects the last occurrence.
-# A message form the core changes falls through to `None`; the endpoint
-# tests in tests/test_server.py pin the three forms against the core.
-_BLOCK_ERROR_RE = re.compile(
-    rf"^(?:Block at (?P<a>{_BLOCK_POSITION}) is missing 'type'$"
-    rf"|Unknown block type '.*' at (?P<b>{_BLOCK_POSITION})\. Available: "
-    rf"|Invalid '[a-z_]+' block at (?P<c>{_BLOCK_POSITION}): )",
-    re.DOTALL,
-)
-
-
-def _block_error_path(exc: ValueError) -> list[str | int] | None:
-    """Locate the node a klartex block-validation error refers to.
-
-    Returns the position as a `["body", 1, "items", 0, "text"]` list —
-    the same shape `list(ValidationError.absolute_path)` gives for the
-    schema-validation path — or None when the message carries no block
-    position (unknown template, invalid asset_dir).
-    """
-    m = _BLOCK_ERROR_RE.match(str(exc))
-    if m is None:
-        return None
-    where = m.group("a") or m.group("b") or m.group("c")
-    path: list[str | int] = [
-        int(part) if part.isdigit() else part
-        for part in re.findall(r"\d+|[a-z_]+", where)
-    ]
-    # The wrapped jsonschema error, when present, locates the field
-    # inside the block; appending it addresses the failing node itself.
-    cause = exc.__cause__
-    if isinstance(cause, ValidationError):
-        path.extend(cause.absolute_path)
-    return path
 
 
 class RenderRequest(BaseModel):
@@ -313,12 +273,20 @@ def render(req: RenderRequest) -> Response:
                 "path": list(e.absolute_path),
             },
         ) from e
+    except BlockValidationError as e:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "type": "input_error",
+                "message": str(e),
+                "path": e.path,
+            },
+        ) from e
     except ValueError as e:
-        detail: dict = {"type": "input_error", "message": str(e)}
-        path = _block_error_path(e)
-        if path is not None:
-            detail["path"] = path
-        raise HTTPException(status_code=400, detail=detail) from e
+        raise HTTPException(
+            status_code=400,
+            detail={"type": "input_error", "message": str(e)},
+        ) from e
     except (RuntimeError, OSError) as e:
         # OSError covers the asset writes and the tempdir itself: a full
         # disk is a server-side render failure, not caller input.

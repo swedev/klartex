@@ -71,6 +71,8 @@ from klartex import render
 pdf_bytes = render("protokoll", data)
 ```
 
+Blockvalidering som fallerar höjer `klartex.BlockValidationError` (en `ValueError`) vars `path` pekar ut noden som fallerade i samma form som HTTP-API:ets `detail.path`.
+
 ### Som CLI
 
 ```bash

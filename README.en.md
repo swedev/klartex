@@ -66,12 +66,24 @@ The same image is also the release gate: `.github/workflows/publish.yml` runs th
 ### As a Python library
 
 ```python
-from klartex import render
+from klartex import render, validate
 
 pdf_bytes = render("protokoll", data)
 ```
 
 Block validation failures raise `klartex.BlockValidationError` (a `ValueError`) whose `path` addresses the node that failed, in the same shape as the HTTP API's `detail.path`.
+
+`validate(template_name, data)` runs the same checks — the schema, and per block on the block engine — without running XeLaTeX, and returns `None` when the data is valid. It raises the same errors as `render()`: `ValueError` for an unknown template name, `jsonschema.ValidationError` for a schema violation (imported from `jsonschema`, not from klartex) and `BlockValidationError` for blocks. `render()` calls the same function, so the two cannot drift apart. Page-template composition is not included: a `page_template.margins.top` inside the header band, an empty `letterhead` `org_name`, or a whole-page template combined with a slot template all fail at render time.
+
+```python
+import jsonschema
+from klartex import BlockValidationError, validate
+
+try:
+    validate("_block", data)
+except (ValueError, jsonschema.ValidationError) as e:
+    ...  # BlockValidationError is a ValueError and is caught by the same branch
+```
 
 ### As CLI
 
@@ -84,6 +96,10 @@ cat data.json | klartex
 
 # With explicit template
 klartex -d data.json -t protokoll
+
+# Validate without rendering (silent when valid, otherwise an error on stderr)
+klartex validate -d data.json
+klartex validate -d data.json -t protokoll
 
 # With a custom page template (one file for the whole page)
 klartex -d data.json --page-template page.tex.jinja

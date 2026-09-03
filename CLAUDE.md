@@ -61,6 +61,8 @@ JSON data
        -output-directory=<tmpdir> → PDF bytes
 ```
 
+The first two steps are `renderer.py::validate(template_name, data)`, public and exported from `klartex`; `render()` calls it, so the checks reachable without a compile are exactly the checks a render runs. Page-template composition errors and the external-font preflight are outside it — they need the chrome and the asset root, which `validate()` does not take.
+
 Two consequences of the escape→restore pattern matter when adding blocks:
 - The escaped copy is what the Jinja templates iterate over, but `block.type` and any raw-LaTeX field must be restored from the original. `_restore_block_types` recurses through `list.items[].content[]`, `columns.items[][]`, and `clause.content[]`. **Any new block that nests other blocks must be added to that recursion.**
 - LaTeX-safe Jinja delimiters: `\BLOCK{…}`, `\VAR{…}`, `\#{…}` (configured in `renderer.py::_jinja_env`). The `| inline` filter parses inline markup against the document language and is the only sanctioned way to render user text inside a paragraph.

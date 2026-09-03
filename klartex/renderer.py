@@ -107,6 +107,58 @@ _jinja_env.filters["money"] = _money_filter
 _jinja_env.filters["num"] = _num_filter
 
 
+def validate(template_name: str, data: dict) -> None:
+    """Validate payload data against a template without rendering it.
+
+    Runs exactly the validation `render()` runs: the JSON-Schema check
+    against the template's validation schema (the base schema without the
+    blocks' `oneOf`, so messages stay readable), then — on the block-engine
+    path — the recursive per-block check of every block's type and payload.
+    `render()` calls this function, so the two cannot diverge.
+
+    No part of the TeX toolchain is touched: nothing is escaped, compiled or
+    written to disk, and `xelatex` need not be installed.
+
+    Args:
+        template_name: Name of the template (e.g. "protokoll", "_block")
+        data: Template data as a dict
+
+    Returns:
+        None. Validity is signalled by returning without raising.
+
+    Raises:
+        ValueError: The template name is unknown; the message lists the
+            available templates.
+        jsonschema.ValidationError: The data violates the template schema.
+        BlockValidationError: A block on the block-engine path has an unknown
+            type or a payload that fails its component schema. `path` locates
+            the offending block.
+
+    Page-template composition is *not* covered: those checks run at render
+    time, when the chrome is composed. A payload that passes here can still
+    raise from `render()` for a `page_template.margins.top` at or below the
+    header band while a predefined header carries content, a `letterhead`
+    whose `fields.org_name` is present but empty, or a whole-page source
+    combined with a per-slot source. External font files are likewise checked
+    against the asset root only by `render()`, which knows `asset_dir`.
+    """
+    registry = get_registry()
+
+    if template_name not in registry:
+        available = ", ".join(sorted(registry.keys()))
+        raise ValueError(f"Unknown template '{template_name}'. Available: {available}")
+
+    template_info = registry[template_name]
+
+    # Validate data against schema (use validation_schema to avoid oneOf noise;
+    # per-block validation below gives better error messages)
+    jsonschema.validate(data, template_info.get_validation_schema())
+
+    # Validate block types and payloads before escaping (escaping mangles underscores)
+    if template_info.is_block_engine:
+        _validate_blocks(data.get("body", []), ["body"])
+
+
 def render(
     template_name: str,
     data: dict,
@@ -171,21 +223,9 @@ def render(
     Returns:
         PDF file contents as bytes
     """
-    registry = get_registry()
+    validate(template_name, data)
 
-    if template_name not in registry:
-        available = ", ".join(sorted(registry.keys()))
-        raise ValueError(f"Unknown template '{template_name}'. Available: {available}")
-
-    template_info = registry[template_name]
-
-    # Validate data against schema (use validation_schema to avoid oneOf noise;
-    # per-block validation below gives better error messages)
-    jsonschema.validate(data, template_info.get_validation_schema())
-
-    # Validate block types and payloads before escaping (escaping mangles underscores)
-    if template_info.is_block_engine:
-        _validate_blocks(data.get("body", []), ["body"])
+    template_info = get_registry()[template_name]
 
     _preflight_font_files(data, asset_dir)
 

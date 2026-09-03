@@ -8,7 +8,7 @@ from typing import Optional
 
 import typer
 
-from klartex.renderer import render, get_registry
+from klartex.renderer import render, get_registry, validate as validate_data
 
 app = typer.Typer(help="Klartex — PDF generation via LaTeX", invoke_without_command=True)
 
@@ -38,6 +38,34 @@ def _autodetect_page_template(data_path: Optional[Path]) -> Optional[Path]:
     if cwd_default.is_file():
         return cwd_default
     return None
+
+
+def _load_data(data: Optional[Path]) -> dict:
+    """Read JSON payload data from a file, or from stdin when no path is given.
+
+    Exits with status 1 and an `Error: …` line on stderr when the path is
+    missing, is not a file, when stdin is a tty with nothing piped in, or
+    when the content is not valid JSON.
+    """
+    if data is not None:
+        if not data.exists():
+            typer.echo(f"Error: data file not found: {data}", err=True)
+            raise typer.Exit(1)
+        if not data.is_file():
+            typer.echo(f"Error: data path is not a file: {data}", err=True)
+            raise typer.Exit(1)
+        raw_text = data.read_text(encoding="utf-8")
+    else:
+        if sys.stdin.isatty():
+            typer.echo("Error: no data provided. Use -d <file> or pipe JSON to stdin.", err=True)
+            raise typer.Exit(1)
+        raw_text = sys.stdin.read()
+
+    try:
+        return json.loads(raw_text)
+    except json.JSONDecodeError as e:
+        typer.echo(f"Error: invalid JSON input: {e}", err=True)
+        raise typer.Exit(1)
 
 
 @app.callback()
@@ -93,20 +121,7 @@ def main(
     if ctx.invoked_subcommand is not None:
         return
 
-    # Read data from file or stdin
-    if data is not None:
-        if not data.exists():
-            typer.echo(f"Error: data file not found: {data}", err=True)
-            raise typer.Exit(1)
-        if not data.is_file():
-            typer.echo(f"Error: data path is not a file: {data}", err=True)
-            raise typer.Exit(1)
-        raw_text = data.read_text(encoding="utf-8")
-    else:
-        if sys.stdin.isatty():
-            typer.echo("Error: no data provided. Use -d <file> or pipe JSON to stdin.", err=True)
-            raise typer.Exit(1)
-        raw_text = sys.stdin.read()
+    raw = _load_data(data)
 
     # Custom sources from files. Assets referenced from them resolve against
     # the files' shared directory (asset_dir), with cwd as fallback. Explicit
@@ -170,12 +185,6 @@ def main(
         output = Path(data.stem + ".pdf") if data is not None else Path("output.pdf")
 
     try:
-        raw = json.loads(raw_text)
-    except json.JSONDecodeError as e:
-        typer.echo(f"Error: invalid JSON input: {e}", err=True)
-        raise typer.Exit(1)
-
-    try:
         pdf_bytes = render(
             template,
             raw,
@@ -194,6 +203,27 @@ def main(
         typer.echo(f"Error: could not write output to {output}: {e}", err=True)
         raise typer.Exit(1)
     typer.echo(f"Written {len(pdf_bytes)} bytes to {output}")
+
+
+@app.command("validate")
+def validate_command(
+    data: Optional[Path] = typer.Option(None, "--data", "-d", help="Path to JSON data file (or omit for stdin)"),
+    template: str = typer.Option("_block", "--template", "-t", help="Template name"),
+):
+    """Validate JSON data against a template schema without rendering it.
+
+    Runs the schema check and, on the block engine, the per-block check —
+    the same validation `klartex` runs before compiling. Prints nothing and
+    exits 0 when the payload is valid; prints `Error: …` on stderr and exits
+    1 when it is not. Page-template composition is not covered, so a payload
+    that validates here can still fail to render.
+    """
+    payload = _load_data(data)
+    try:
+        validate_data(template, payload)
+    except Exception as e:
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(1)
 
 
 @app.command("templates")

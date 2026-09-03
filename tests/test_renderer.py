@@ -1485,8 +1485,23 @@ class TestValidate:
         assert exc.path == ["body", 0, "text"]
         assert isinstance(exc.__cause__, jsonschema.ValidationError)
 
-    def test_unknown_nested_block_type_carries_the_render_path(self):
-        """Nested blocks are walked exactly as `render()` walks them."""
+    def test_unknown_block_type_carries_the_render_path(self):
+        """The unknown-type branch reports the block position and lists the
+        known types."""
+        from klartex import BlockValidationError
+        from klartex.block_engine import KNOWN_BLOCK_TYPES
+
+        with pytest.raises(BlockValidationError) as excinfo:
+            validate(BLOCK_ENGINE_TEMPLATE, {"body": [{"type": "nope"}]})
+        exc = excinfo.value
+        assert exc.path == ["body", 0]
+        available = ", ".join(sorted(KNOWN_BLOCK_TYPES))
+        assert str(exc) == f"Unknown block type 'nope' at body[0]. Available: {available}"
+
+    def test_nested_block_failure_carries_the_render_path(self):
+        """Blocks inside a carrier are validated recursively and reported at
+        their own path — a `text` block in a `list` item missing its required
+        `text` field addresses body[0].items[0].content[0]."""
         from klartex import BlockValidationError
 
         data = {"body": [

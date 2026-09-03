@@ -1,12 +1,14 @@
 """Tests for the `klartex validate` subcommand: exit codes and error shape."""
 
 import json
+from pathlib import Path
 
 from typer.testing import CliRunner
 
 from klartex.cli import app
 
-FIXTURE = "tests/fixtures/block_kallelse.json"
+FIXTURES = Path(__file__).parent / "fixtures"
+FIXTURE = str(FIXTURES / "block_kallelse.json")
 
 runner = CliRunner()
 
@@ -35,7 +37,7 @@ def test_valid_payload_from_stdin():
 
 def test_valid_recipe_payload_with_template_flag():
     result = runner.invoke(
-        app, ["validate", "-t", "protokoll", "-d", "tests/fixtures/protokoll.json"]
+        app, ["validate", "-t", "protokoll", "-d", str(FIXTURES / "protokoll.json")]
     )
     assert result.exit_code == 0
 

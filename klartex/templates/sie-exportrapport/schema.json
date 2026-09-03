@@ -5,6 +5,7 @@
   "description": "Human-readable PDF of SIE4 accounting data",
   "type": "object",
   "required": ["title", "period", "rubrik_ar1", "rubrik_ar2", "grupper", "org_name", "org_number"],
+  "additionalProperties": false,
   "properties": {
     "page_template": {
       "$comment": "Generated at load time from the slot model in klartex/page_templates.py (page_template_schema); see registry.py."

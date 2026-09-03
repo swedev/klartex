@@ -4,6 +4,7 @@
   "description": "Faktura / Invoice",
   "type": "object",
   "required": ["invoice_number", "date", "due_date", "sender", "recipient", "lines"],
+  "additionalProperties": false,
   "properties": {
     "page_template": {
       "$comment": "Generated at load time from the slot model in klartex/page_templates.py (page_template_schema); see registry.py."
@@ -31,6 +32,7 @@
     "sender": {
       "type": "object",
       "required": ["name"],
+      "additionalProperties": false,
       "description": "Sender/seller. Required — an invoice without a seller is not an invoice. Shown as its own block next to the recipient in the invoice body; the name is also the header wordmark when there is no logo, and the default footer's company, address and org number are derived from these fields.",
       "properties": {
         "name": { "type": "string", "pattern": "\\S", "description": "The company's legal name. At least one non-whitespace character — a blank name would render as a blank wordmark and a blank footer column." },
@@ -42,6 +44,7 @@
     "recipient": {
       "type": "object",
       "required": ["name"],
+      "additionalProperties": false,
       "properties": {
         "name": { "type": "string" },
         "org_number": { "type": "string" },
@@ -54,6 +57,7 @@
       "items": {
         "type": "object",
         "required": ["description", "quantity", "unit_price"],
+        "additionalProperties": false,
         "properties": {
           "description": { "type": "string" },
           "quantity": { "type": "number" },

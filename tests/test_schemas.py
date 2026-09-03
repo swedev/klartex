@@ -78,24 +78,39 @@ def test_sender_name_must_carry_a_non_whitespace_character(template_name, sender
         jsonschema.validate(data, registry[template_name].schema)
 
 
+MARGINS_CLAUSE = "margins default to left 2cm, right 2cm, top 1.7cm, overridden per key"
+
+
 @pytest.mark.parametrize(
     "template_name,expected",
     [
-        ("faktura", "the columns footer, with fields derived from sender"),
-        ("kvitto", "the columns footer, with fields derived from sender"),
-        ("protokoll", "the page-number footer with the document title"),
+        ("faktura", ["the columns footer, with fields derived from sender", MARGINS_CLAUSE]),
+        ("kvitto", ["the columns footer, with fields derived from sender", MARGINS_CLAUSE]),
+        ("protokoll", ["the page-number footer with the document title"]),
     ],
 )
 def test_injected_page_template_describes_the_recipes_own_default(
     template_name, expected
 ):
-    """`klartex schema <name>` is the agent's discovery surface: the default a
-    left-out slot resolves to is the recipe's, not a blanket sentence."""
+    """`klartex schema <name>` is the agent's discovery surface: the defaults a
+    left-out slot and left-out margins resolve to are the recipe's, not a
+    blanket sentence."""
     registry = get_registry()
     description = registry[template_name].schema["properties"]["page_template"][
         "description"
     ]
-    assert expected in description
+    for clause in expected:
+        assert clause in description
+    if MARGINS_CLAUSE not in expected:
+        assert "margins default to" not in description
+
+
+def test_recipe_schema_has_no_class_options():
+    """The document class carries no options, so a recipe cannot pass any."""
+    schema = json.loads(
+        (TEMPLATES_DIR.parent / "schemas" / "recipe.schema.json").read_text()
+    )
+    assert "class_options" not in schema["properties"]["document"]["properties"]
 
 
 @pytest.mark.parametrize("template_name", ["faktura", "kvitto"])

@@ -6,11 +6,16 @@ template:
   lang: sv
 
 document:
-  class_options: narrowmargins
   title: "Faktura {{ data.invoice_number }}"
   # The seller's own details are already in the payload, so the footer is
   # derived from them; the payload's own page_template.footer wins per field.
   page_template:
+    # The recipe's default text-block geometry; the payload's own
+    # page_template.margins wins per key.
+    margins:
+      left: 2cm
+      right: 2cm
+      top: 1.7cm
     footer:
       variant: columns
       fields_from:

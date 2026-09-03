@@ -7,10 +7,9 @@
 % Base class
 \LoadClass[10pt,a4paper]{article}
 
-% Margin profile. The `narrowmargins` class option opts a document type
-% into the tighter business-document geometry (2cm side margins, 1.7cm
-% reclaimed top — used by faktura/kvitto); everything else keeps the
-% defaults.
+% Margin profile: the class defaults for the side margins and for the top
+% a reclaimed header leaves behind. A page template's `margins` renews them,
+% so a document type that wants a different geometry declares it there.
 \newcommand{\kxsidemargin}{3cm}
 \newcommand{\kxreclaimtop}{2cm}
 % Bottom geometry the multi-column footer (klartex-footer) enlarges to for
@@ -18,11 +17,6 @@
 % before that package loads.
 \newcommand{\kxfooterbottom}{3.6cm}
 \newcommand{\kxfooterfootskip}{2.6cm}
-\DeclareOption{narrowmargins}{%
-    \renewcommand{\kxsidemargin}{2cm}%
-    \renewcommand{\kxreclaimtop}{1.7cm}%
-}
-\ProcessOptions\relax
 
 % Required packages
 \RequirePackage{fontspec}

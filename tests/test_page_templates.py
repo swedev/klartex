@@ -668,6 +668,36 @@ class TestMargins:
         ])
 
 
+class TestDefaultsMargins:
+    """A surface's `defaults` may carry `margins`; the payload's merge over
+    them one key at a time."""
+
+    NARROW = {**BLOCK_DEFAULT_SLOTS, "margins": {"left": "2cm", "right": "2cm"}}
+
+    def test_no_defaults_means_no_margins(self):
+        assert load_page_template().margins == {}
+
+    def test_defaults_are_used_when_the_payload_says_nothing(self):
+        assert load_page_template(None, defaults=self.NARROW).margins == {
+            "left": "2cm",
+            "right": "2cm",
+        }
+
+    def test_payload_overrides_one_key_and_keeps_the_rest(self):
+        pt = load_page_template({"margins": {"left": "4cm"}}, defaults=self.NARROW)
+        assert pt.margins == {"left": "4cm", "right": "2cm"}
+
+    @pytest.mark.parametrize("margins", [None, {}])
+    def test_null_and_empty_inherit_the_defaults(self, margins):
+        """There is no reset syntax — both mean "override nothing"."""
+        pt = load_page_template({"margins": margins}, defaults=self.NARROW)
+        assert pt.margins == {"left": "2cm", "right": "2cm"}
+
+    def test_a_malformed_default_is_rejected(self):
+        with pytest.raises(ValueError, match="margins.left must be a LaTeX dimension"):
+            load_page_template(None, defaults={**BLOCK_DEFAULT_SLOTS, "margins": {"left": "2"}})
+
+
 class TestMarginTopMinimum:
     """A top at or below the header band's bottom edge leaves no header–text
     gap — rejected wherever Python can tell the header renders."""
@@ -692,7 +722,8 @@ class TestMarginTopMinimum:
         ids=["empty", "content-less letterhead", "content-less logo"],
     )
     def test_reclaimed_header_takes_any_positive_top(self, header):
-        """narrowmargins reclaims to 1.7cm, so small values are legitimate."""
+        """A reclaimed header leaves the whole band to the text — faktura and
+        kvitto default to a 1.7cm top — so small values are legitimate."""
         pt = load_page_template({"header": header, "margins": {"top": "1.7cm"}})
         assert r"\renewcommand{\kxreclaimtop}{1.7cm}" in pt.margin_setup
 

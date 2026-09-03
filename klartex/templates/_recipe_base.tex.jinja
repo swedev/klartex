@@ -1,10 +1,6 @@
 \BLOCK{from '_financial_macros.tex.jinja' import render_resultatrakning, render_budgettabell, render_notapparat}
 \BLOCK{from '_block_macros.tex.jinja' import render_agenda, render_heading, render_description_list with context}
-\BLOCK{if class_options}
-\documentclass[\VAR{class_options}]{klartex-base}
-\BLOCK{else}
 \documentclass{klartex-base}
-\BLOCK{endif}
 
 %# --- Compose the page template from its header and footer slots ---
 \BLOCK{include '_page_template.tex.jinja'}

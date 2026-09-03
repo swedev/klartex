@@ -12,6 +12,7 @@ actually contains: quotation marks (which klartex generates itself, from
 plain ``"``), section signs, dashes, ellipsis, currency, accented letters.
 """
 
+import json
 import re
 import shutil
 import subprocess
@@ -608,3 +609,33 @@ def test_label_mode_is_off_outside_the_invoice_recipes():
     assert "Föreningen" in text
     for label in FOOTER_LABELS:
         assert label not in text
+
+
+# --- the invoice recipes' own margins --------------------------------------
+
+FIXTURES = Path(__file__).parent / "fixtures"
+
+#: A word from each invoice fixture's body — not from the page-chrome header
+#: or the derived footer, so its box measures the body text block and nothing
+#: else — with the (xMin, yMin) it occupies at faktura and kvitto's own
+#: margins: 2cm sides, 1.7cm top under a reclaimed header.
+_INVOICE_BODY_ANCHORS = {
+    "faktura": ("Betalningsvillkor:", 56.693, 253.276),
+    "kvitto": ("Betalsätt", 56.693, 311.275),
+}
+
+
+@requires_tools
+@pytest.mark.parametrize("template_name", sorted(_INVOICE_BODY_ANCHORS))
+def test_invoice_body_text_sits_at_the_recipes_own_margins(template_name):
+    """faktura and kvitto declare their geometry as recipe-default margins.
+    The committed coordinates are where the body text lands, and the x is the
+    2cm side margin itself — so the declaration cannot drift from the design
+    without a failing assertion.
+    """
+    word, expected_x, expected_y = _INVOICE_BODY_ANCHORS[template_name]
+    data = json.loads((FIXTURES / f"{template_name}.json").read_text())
+    x, y = _word_box(render(template_name, data), word)
+    assert x == pytest.approx(2 * _PT_PER_CM, abs=0.5)
+    assert x == pytest.approx(expected_x, abs=0.5)
+    assert y == pytest.approx(expected_y, abs=0.5)

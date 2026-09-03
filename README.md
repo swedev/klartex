@@ -14,12 +14,14 @@ Klartex tar JSON-data + mallnamn och producerar PDF via XeLaTeX. Kan användas s
 |------|-------------|
 | `_block` | Universell blockmotor — agenten komponerar dokumentet fritt |
 | `protokoll` | Mötesprotokoll med dagordning, beslut och justerare |
-| `faktura` | Faktura med rader, moms och betalningsinformation. Kräver `sender`: namnet står som ordbild där logotypen annars står, och kolumnfoten härleds ur säljarens uppgifter |
-| `kvitto` | Kvitto med enkel radlista, betalsätt och totalbelopp. Kräver `sender` på samma sätt som `faktura` |
+| `faktura` | Faktura med rader, moms och betalningsuppgifter |
+| `kvitto` | Kvitto med radlista, betalsätt och totalbelopp |
 | `resultatrakning` | Resultaträkning med jämförelseår och noter |
 | `balansrakning` | Balansräkning med tillgångar och skulder/eget kapital |
 | `budgetrapport` | Budgetrapport med kontokoder, budget och utfall |
 | `sie-exportrapport` | Läsbar PDF av SIE4-bokföringsdata |
+
+`klartex templates` listar mallarna, `klartex schema <mall>` visar vad varje mall kräver och `klartex example <mall>` ett komplett exempel — schemat är den auktoritativa beskrivningen av varje mall.
 
 ## Installation
 
@@ -37,22 +39,17 @@ Kräver Python ≥ 3.12 och XeLaTeX.
 # macOS
 brew install --cask mactex
 
-# Debian/Ubuntu
-sudo apt install texlive-xetex texlive-fonts-recommended \
-  texlive-latex-extra texlive-latex-recommended texlive-science texlive-plain-generic
+# BasicTeX eller en minimal TeX Live (t.ex. Debian/Ubuntu)
+tlmgr install $(grep -v '^#' .github/tl_packages)
 ```
 
-Paketuppsättningen för Debian/Ubuntu är en snabb approximation av renderingsmiljön. Den exakta listan över TeX Live-paket som behövs finns i `.github/tl_packages` — det är vad CI installerar, och med BasicTeX eller en minimal TeX Live räcker `tlmgr install $(grep -v '^#' .github/tl_packages)`. `texlive-xetex` ensamt räcker inte — bland annat `ulem` (i `texlive-plain-generic`), `tcolorbox` och `siunitx` behövs för att rendera.
+`.github/tl_packages` är den exakta listan över TeX Live-paket som behövs — det är vad CI installerar. Distributionens `texlive-xetex` ensamt räcker inte.
 
 ### Färdig renderingsmiljö (containerimage)
 
 Den miljö klartex släpps mot publiceras som `ghcr.io/swedev/klartex-base`: full TeX Live, en garanterad teckensnittsuppsättning och den Python-runtime som behövs för att installera paketet. Tjänster som renderar med klartex bygger vidare på den i stället för att återskapa apt-listan.
 
-Garanterade familjer — det `page_template.font` och `page_template.header_font` kan sättas till utan att veta något om maskinen som renderar:
-
-Arial, Courier New, Georgia, Times New Roman, Trebuchet MS, Verdana, EB Garamond, IBM Plex Mono, IBM Plex Sans, IBM Plex Serif, Inter, Lato, Noto Sans, Noto Serif, Open Sans, Roboto.
-
-Den auktoritativa listan är schemabeskrivningarna för `font` och `header_font` (`klartex schema _block`); imagebygget faller om någon familj saknas. Andra fontspec-namn fungerar bara där teckensnittet råkar vara installerat.
+De garanterade teckensnittsfamiljerna — det `page_template.font` och `page_template.header_font` kan sättas till utan att veta något om maskinen som renderar — står i schemabeskrivningarna för `font` och `header_font` (`klartex schema _block`); imagebygget faller om någon familj saknas. Andra fontspec-namn fungerar bara där teckensnittet råkar vara installerat.
 
 Ett teckensnitt utanför listan kan i stället följa med anropet: `font` och `header_font` tar också ett objekt med filnamn — `{"file": "Inter-Regular.ttf", "bold": "Inter-Bold.ttf", "italic": "Inter-Italic.ttf", "bold_italic": "Inter-BoldItalic.ttf"}`. Filerna slås upp i `asset_dir` (över `klartex serve`: i anropets `assets`), och bara `file` krävs — ett snitt vars fil inte skickats med renderas i det ordinarie snittet. Filnamnet är ett rent filnamn som slutar på `.ttf` eller `.otf`, utan understreck eller andra LaTeX-tecken.
 
@@ -121,10 +118,12 @@ Mall, data och eventuella mallkällor — `page_template_source` för hela sidan
 
 Svaret är `application/pdf`, eller ett fel vars `detail.type` är `input_error`, `validation_error`, `payload_too_large`, `render_error` eller `overloaded`. Schema- och blockfel bär dessutom `detail.path` — en lista som `["body", 1, "items", 0, "text"]` som pekar ut noden som fallerade.
 
-| Miljövariabel | Default | Betydelse |
-|---------------|---------|-----------|
-| `KLARTEX_MAX_CONCURRENT` | `2` | Samtidiga xelatex-körningar. Fler samtidiga anrop får `503` med `Retry-After`. |
-| `KLARTEX_MAX_BODY_MB` | `80` | Största begäran som läses. Kontrollen sker på `Content-Length` innan kroppen läses, så gränsen gäller den storlek anroparen uppger. |
+| Miljövariabel | Betydelse |
+|---------------|-----------|
+| `KLARTEX_MAX_CONCURRENT` | Samtidiga xelatex-körningar. Fler samtidiga anrop får `503` med `Retry-After`. |
+| `KLARTEX_MAX_BODY_MB` | Största begäran som läses. Kontrollen sker på `Content-Length` innan kroppen läses, så gränsen gäller den storlek anroparen uppger. |
+
+Defaultvärdena står i `klartex/server/app.py`.
 
 Tjänsten har varken autentisering eller rate limiting — den är ett kompileringslager och ska stå bakom en anropare som äger båda. Därför binder den till `127.0.0.1` om inget annat anges. Ett `latex`-block i indata kör godtycklig LaTeX i renderingsprocessen; kör tjänsten avskild från allt som inte tål det.
 
@@ -182,7 +181,7 @@ En del som utelämnas får ytans default: blockmotorn har tomt sidhuvud och sidn
 "page_template": { "header": "logo", "footer": null }
 ```
 
-Objektformen av `letterhead` kräver `fields.org_name` — namnet är det som sidhuvudet byggs runt, och utan det skulle övriga uppgifter inte skrivas ut. Ett sidhuvud helt utan uppgifter anges som variantnamnet självt (`"header": "letterhead"`). `logo` är ett filnamn utan blanktecken och utan LaTeX-specialtecken (`\ # $ % & _ { } ~ ^`). Kontaktkolumnen är smal och avstavar inte, så en lång `web` eller `email` radbryts efter `@`, `.` och `/` för att rymmas.
+Objektformen av `letterhead` kräver `fields.org_name` — namnet är det som sidhuvudet byggs runt, och utan det skulle övriga uppgifter inte skrivas ut. Ett sidhuvud helt utan uppgifter anges som variantnamnet självt (`"header": "letterhead"`). `logo` är ett filnamn utan blanktecken och LaTeX-specialtecken; schemat anger mönstret. Kontaktkolumnen är smal och avstavar inte, så en lång `web` eller `email` radbryts efter `@`, `.` och `/` för att rymmas.
 
 Utöver sloten finns inställningar på dokumentnivå — `font`, `header_font`, `diff_style` och `margins` — som gäller oavsett om en slot har egen LaTeX, plus `page_numbers` och `first_page_header`.
 
@@ -196,7 +195,7 @@ Utöver sloten finns inställningar på dokumentnivå — `font`, `header_font`,
 }
 ```
 
-Chromet anpassar sig efter måtten i stället för tvärtom: `top` mäts till första textraden, så med ett sidhuvud står bandet kvar där det står och glappet mellan sidhuvud och text växer eller krymper — därför måste `top` överstiga 2,1 cm, där bandet slutar. Är sidhuvudet tomt (eller saknar innehåll) återtas dess utrymme och vilket positivt `top` som helst fungerar. `bottom` mäts till sista textraden och sidfoten hänger under den, så lämna plats åt den — ett litet värde klipper foten. `left` och `right` flyttar även sidhuvudets och sidfotens band, som följer textbredden.
+Chromet anpassar sig efter måtten i stället för tvärtom: `top` mäts till första textraden, så med ett sidhuvud står bandet kvar där det står och glappet mellan sidhuvud och text växer eller krymper — därför måste `top` överstiga bandets nederkant (måttet står i schemabeskrivningen, och laddaren avvisar ett för litet värde). Är sidhuvudet tomt (eller saknar innehåll) återtas dess utrymme och vilket positivt `top` som helst fungerar. `bottom` mäts till sista textraden och sidfoten hänger under den, så lämna plats åt den — ett litet värde klipper foten. `left` och `right` flyttar även sidhuvudets och sidfotens band, som följer textbredden.
 
 En slot med egen LaTeX som sätter sin egen geometri vinner över `margins`, precis som den gör över `font`.
 
@@ -257,12 +256,12 @@ Var logotyper och andra filer hittas skiljer sig mellan de två ytorna:
 Klartex har en trelagers-arkitektur:
 
 1. **Dokumentnivå** — `klartex-base.cls` hanterar siduppställning och grundläggande sidhuvud/sidfot. Sidmallar (`.tex.jinja`) injiceras i preambeln och styr färger, logotyp och layout.
-2. **Komponentnivå** — Återanvändbara `.sty`-paket som ger strukturerade LaTeX-makron (t.ex. `klartex-signatureblock.sty`, `klartex-klausuler.sty`, `klartex-agenda.sty`)
+2. **Komponentnivå** — Återanvändbara `.sty`-paket som ger strukturerade LaTeX-makron (t.ex. `klartex-signatureblock.sty`, `klartex-callout.sty`, `klartex-agenda.sty`)
 3. **Receptnivå** — YAML-filer som deklarerar vilka komponenter och innehållsfält som ska kombineras
 
 ### Renderingsvägar
 
-- **Recipe-mallar** (`protokoll`, `faktura`, `kvitto`) — YAML-recept som deklarerar komponenter och mappningar
+- **Recipe-mallar** (alla namngivna mallar i `klartex templates`) — YAML-recept som deklarerar komponenter och mappningar
 - **Block engine** (`_block`) — Agenten komponerar `body[]` fritt från typade block
 
 ### Skapa en YAML-receptmall
@@ -282,36 +281,21 @@ document:
       field: date
 
 components:
-  - type: klausuler
+  - type: heading
+    data_map:
+      title: meeting_type
+  - type: agenda
     data_map:
       items: agenda_items
-    options:
-      item_title_field: title
-      item_body_field: body
 
 schema: schema.json
 ```
 
-Tillgängliga recept-komponenter: `heading`, `description_list`, `agenda`, `text`, `resultatrakning`, `budgettabell`, `notapparat`, `invoice_header`, `invoice_recipient`, `invoice_table`, `payment_info`, `invoice_note`, `receipt_header`, `receipt_table`. Block-motsvarigheterna (`agenda`, `description_list`, `heading`, `resultatrakning`, `budgettabell`, `notapparat`, `text`) renderas via samma delade makron som block-engine-vägen.
-
-Block engine-block: `heading`, `text`, `list`, `table`, `callout`, `quote`, `title_page`, `parties`, `clause`, `signatures`, `description_list`, `form`, `columns`, `agenda`, `name_roster`, `resultatrakning`, `budgettabell`, `notapparat`, `page_break`, `latex`.
+Komponenterna är registrerade i `klartex/components.py`; de som har ett blockschema är också blockmotorns blocktyper (`klartex blocks`). De befintliga recepten i `klartex/templates/*/recipe.yaml` är de kompletta exemplen.
 
 ## Årsmötespaket
 
-Blockmotorn kan komponera alla dokument som behövs för ett föreningsårsmöte:
-
-| Dokument | Blocktyper |
-|----------|-----------|
-| Kallelse + dagordning | heading, description_list, agenda |
-| Verksamhetsberättelse | heading, name_roster, text, signatures |
-| Ekonomisk årsredovisning | heading, text, resultatrakning, notapparat, signatures |
-| Revisionsberättelse | heading, text, signatures |
-| Budget | heading, budgettabell |
-| Valberedningens förslag | heading, name_roster, signatures |
-| Motion | heading, text, clause, signatures |
-| Styrelsens yttrande | heading, text, signatures |
-
-Agenten väljer och ordnar block för varje dokument — inga separata mallar behövs. Se `tests/fixtures/block_kallelse.json` m.fl. för fullständiga exempel.
+Blockmotorn kan komponera alla dokument som behövs för ett föreningsårsmöte — kallelse med dagordning, verksamhetsberättelse, årsredovisning, revisionsberättelse, budget, valberedningens förslag, motioner och styrelsens yttranden. Agenten väljer och ordnar block för varje dokument; inga separata mallar behövs. `tests/fixtures/block_*.json` är fullständiga exempel.
 
 ## Licens
 

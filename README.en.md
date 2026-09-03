@@ -14,12 +14,14 @@ Klartex takes JSON data + template name and produces PDF via XeLaTeX. Can be use
 |----------|-------------|
 | `_block` | Universal block engine — the agent composes the document freely |
 | `protokoll` | Meeting minutes with agenda, decisions, and adjusters |
-| `faktura` | Invoice with line items, VAT, and payment information. Requires `sender`: the name stands as a wordmark where the logo would go, and the columns footer is derived from the seller's details |
-| `kvitto` | Receipt with a simple items list, payment method, and total. Requires `sender` the same way as `faktura` |
+| `faktura` | Invoice with line items, VAT, and payment details |
+| `kvitto` | Receipt with an items list, payment method, and total |
 | `resultatrakning` | Income statement with comparison years and notes |
 | `balansrakning` | Balance sheet with assets and liabilities/equity sections |
 | `budgetrapport` | Budget report with account codes, budget, and actuals |
 | `sie-exportrapport` | Human-readable PDF of SIE4 accounting data |
+
+`klartex templates` lists the templates, `klartex schema <template>` shows what each one requires and `klartex example <template>` a complete payload — the schema is the authoritative description of every template.
 
 ## Installation
 
@@ -37,22 +39,17 @@ Requires Python ≥ 3.12 and XeLaTeX.
 # macOS
 brew install --cask mactex
 
-# Debian/Ubuntu
-sudo apt install texlive-xetex texlive-fonts-recommended \
-  texlive-latex-extra texlive-latex-recommended texlive-science texlive-plain-generic
+# BasicTeX or a minimal TeX Live (e.g. Debian/Ubuntu)
+tlmgr install $(grep -v '^#' .github/tl_packages)
 ```
 
-The Debian/Ubuntu package set is the one CI installs on every push — a fast approximation of the render environment. `texlive-xetex` alone is not enough — rendering needs `ulem` (in `texlive-plain-generic`), `tcolorbox` and `siunitx`, among others.
+`.github/tl_packages` is the exact list of TeX Live packages needed — it is what CI installs. A distribution's `texlive-xetex` alone is not enough.
 
 ### Ready-made render environment (container image)
 
 The environment klartex is released against is published as `ghcr.io/swedev/klartex-base`: full TeX Live, a guaranteed font set and the Python runtime needed to install the package. Services that render with klartex build on it instead of reconstructing the apt list.
 
-Guaranteed families — what `page_template.font` and `page_template.header_font` can be set to without knowing anything about the machine that renders:
-
-Arial, Courier New, Georgia, Times New Roman, Trebuchet MS, Verdana, EB Garamond, IBM Plex Mono, IBM Plex Sans, IBM Plex Serif, Inter, Lato, Noto Sans, Noto Serif, Open Sans, Roboto.
-
-The authoritative list is the `font` / `header_font` schema descriptions (`klartex schema _block`); the image build fails if any family is missing. Other fontspec names work only where that font happens to be installed.
+The guaranteed font families — what `page_template.font` and `page_template.header_font` can be set to without knowing anything about the machine that renders — are listed in the `font` / `header_font` schema descriptions (`klartex schema _block`); the image build fails if any family is missing. Other fontspec names work only where that font happens to be installed.
 
 A font outside the list can travel with the call instead: `font` and `header_font` also take an object of file names — `{"file": "Inter-Regular.ttf", "bold": "Inter-Bold.ttf", "italic": "Inter-Italic.ttf", "bold_italic": "Inter-BoldItalic.ttf"}`. The files are looked up in `asset_dir` (over `klartex serve`: in the request's `assets`), and only `file` is required — a face whose file was not sent renders in the regular face. A name is a bare file name ending in `.ttf` or `.otf`, with no underscore or other LaTeX special character.
 
@@ -121,10 +118,12 @@ Template, data and any template sources — `page_template_source` for the whole
 
 The answer is `application/pdf`, or an error whose `detail.type` is `input_error`, `validation_error`, `payload_too_large`, `render_error` or `overloaded`. Schema and block errors additionally carry `detail.path` — a list like `["body", 1, "items", 0, "text"]` addressing the node that failed.
 
-| Environment variable | Default | Meaning |
-|----------------------|---------|---------|
-| `KLARTEX_MAX_CONCURRENT` | `2` | Concurrent xelatex runs. Further concurrent calls get `503` with `Retry-After`. |
-| `KLARTEX_MAX_BODY_MB` | `80` | Largest request read. The check happens on `Content-Length` before the body is read, so the limit applies to the size the caller declares. |
+| Environment variable | Meaning |
+|----------------------|---------|
+| `KLARTEX_MAX_CONCURRENT` | Concurrent xelatex runs. Further concurrent calls get `503` with `Retry-After`. |
+| `KLARTEX_MAX_BODY_MB` | Largest request read. The check happens on `Content-Length` before the body is read, so the limit applies to the size the caller declares. |
+
+The defaults live in `klartex/server/app.py`.
 
 The service owns neither authentication nor rate limiting — it is a compile layer and belongs behind a caller that owns both. That is why it binds to `127.0.0.1` unless told otherwise. A `latex` block in the input runs arbitrary LaTeX in the render process; run the service isolated from anything that cannot take that.
 
@@ -182,7 +181,7 @@ A slot that is left out takes the surface's default: the block engine has an emp
 "page_template": { "header": "logo", "footer": null }
 ```
 
-The object form of `letterhead` requires `fields.org_name` — the name is what the header is built around, and without it the other details would not be printed. A header with no details at all is written as the variant name on its own (`"header": "letterhead"`). `logo` is a filename free of whitespace and of LaTeX-special characters (`\ # $ % & _ { } ~ ^`). The contact column is narrow and does not hyphenate, so a long `web` or `email` wraps after `@`, `.` and `/` to fit.
+The object form of `letterhead` requires `fields.org_name` — the name is what the header is built around, and without it the other details would not be printed. A header with no details at all is written as the variant name on its own (`"header": "letterhead"`). `logo` is a filename free of whitespace and LaTeX-special characters; the schema states the pattern. The contact column is narrow and does not hyphenate, so a long `web` or `email` wraps after `@`, `.` and `/` to fit.
 
 Beside the slots there are document-level settings — `font`, `header_font`, `diff_style` and `margins` — which apply whether or not a slot has its own LaTeX, plus `page_numbers` and `first_page_header`.
 
@@ -196,7 +195,7 @@ Beside the slots there are document-level settings — `font`, `header_font`, `d
 }
 ```
 
-The chrome adapts to the measurements rather than the other way round: `top` is measured to the first line of text, so with a header the band stays where it is and the gap between header and text grows or shrinks — which is why `top` must exceed 2.1 cm, where the band ends. With an empty (or content-less) header its space is reclaimed and any positive `top` works. `bottom` is measured to the last line of text and the footer hangs below it, so leave room for it — a small value clips the footer. `left` and `right` also move the header and footer band, which follows the text width.
+The chrome adapts to the measurements rather than the other way round: `top` is measured to the first line of text, so with a header the band stays where it is and the gap between header and text grows or shrinks — which is why `top` must exceed the band's bottom edge (the measurement is in the schema description, and the loader rejects a value that is too small). With an empty (or content-less) header its space is reclaimed and any positive `top` works. `bottom` is measured to the last line of text and the footer hangs below it, so leave room for it — a small value clips the footer. `left` and `right` also move the header and footer band, which follows the text width.
 
 A slot with custom LaTeX that sets its own geometry wins over `margins`, exactly as it does over `font`.
 
@@ -257,12 +256,12 @@ Where logos and other files are resolved differs between the two surfaces:
 Klartex uses a three-layer architecture:
 
 1. **Document level** — `klartex-base.cls` handles page setup and basic headers/footers. Page templates (`.tex.jinja`) are injected into the preamble and control colors, logos, and layout.
-2. **Component level** — Reusable `.sty` packages providing structured LaTeX macros (e.g. `klartex-signatureblock.sty`, `klartex-klausuler.sty`, `klartex-agenda.sty`)
+2. **Component level** — Reusable `.sty` packages providing structured LaTeX macros (e.g. `klartex-signatureblock.sty`, `klartex-callout.sty`, `klartex-agenda.sty`)
 3. **Recipe level** — YAML files that declare which components and content fields to combine
 
 ### Rendering paths
 
-- **Recipe templates** (`protokoll`, `faktura`, `kvitto`) — YAML recipes declaring components and data mappings
+- **Recipe templates** (every named template in `klartex templates`) — YAML recipes declaring components and data mappings
 - **Block engine** (`_block`) — The agent composes `body[]` freely from typed blocks
 
 ### Creating a YAML Recipe Template
@@ -282,36 +281,21 @@ document:
       field: date
 
 components:
-  - type: klausuler
+  - type: heading
+    data_map:
+      title: meeting_type
+  - type: agenda
     data_map:
       items: agenda_items
-    options:
-      item_title_field: title
-      item_body_field: body
 
 schema: schema.json
 ```
 
-Available recipe components: `heading`, `description_list`, `agenda`, `text`, `resultatrakning`, `budgettabell`, `notapparat`, `invoice_header`, `invoice_recipient`, `invoice_table`, `payment_info`, `invoice_note`, `receipt_header`, `receipt_table`. The shared types (`agenda`, `description_list`, `heading`, `resultatrakning`, `budgettabell`, `notapparat`, `text`) render through the same macros as the block-engine path.
-
-Block engine blocks: `heading`, `text`, `list`, `table`, `callout`, `quote`, `title_page`, `parties`, `clause`, `signatures`, `description_list`, `form`, `columns`, `agenda`, `name_roster`, `resultatrakning`, `budgettabell`, `notapparat`, `page_break`, `latex`.
+Components are registered in `klartex/components.py`; those with a block schema are also the block engine's block types (`klartex blocks`). The shipped recipes in `klartex/templates/*/recipe.yaml` are the complete examples.
 
 ## Annual Meeting Package
 
-The block engine can compose all documents needed for a Swedish association's annual meeting:
-
-| Document | Block types |
-|----------|-----------|
-| Summons + agenda | heading, description_list, agenda |
-| Annual report | heading, name_roster, text, signatures |
-| Financial report | heading, text, resultatrakning, notapparat, signatures |
-| Audit report | heading, text, signatures |
-| Budget | heading, budgettabell |
-| Nomination proposal | heading, name_roster, signatures |
-| Motion | heading, text, clause, signatures |
-| Board response | heading, text, signatures |
-
-The agent selects and orders blocks for each document — no separate templates needed. See `tests/fixtures/block_kallelse.json` etc. for complete examples.
+The block engine can compose all documents needed for a Swedish association's annual meeting — summons with agenda, annual report, financial statements, audit report, budget, nomination proposal, motions and board responses. The agent selects and orders blocks for each document; no separate templates are needed. `tests/fixtures/block_*.json` are complete examples.
 
 ## License
 

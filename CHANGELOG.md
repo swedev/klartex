@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.19.0 — 2026-09-03
+
+### Breaking changes
+- **Faktura och kvitto: det egna toppnivåfältet `footer` är borttaget.** Kontakt- och betalningsuppgifter skickas under `page_template.footer.fields` (variant `columns`) — den vanliga sidfotsslotten är den enda platsen. Ett toppnivå-`footer` avvisas av schemat med ett felmeddelande som pekar på slotten (`detail.path == ["footer"]` i `klartex serve`); `_footer_macros.tex.jinja` och template-nivåns `emit_kxfooter` är borta, och `footer_has_payment` (signalen som undertrycker `payment_info` i brödtexten) läser enbart slotten. `klartex example faktura`/`kvitto` visar slotformen. (#79)
+- **Faktura och kvitto: `sender` med `name` är obligatoriskt.** En faktura utan avsändare är ingen faktura. Utan `logo` sätts `sender.name` som ordmärke i logotypplatsen, i linje med FAKTURA/KVITTO-rubriken; med `logo` ändras inget. Avsändare-blocket bredvid mottagaren är kvar. (#99)
+
+### New features
+- **Kolumnfoten renderas alltid i faktura och kvitto, med saknade uppgifter markerade.** Receptens default-sidfot är `columns`, härledd från payloaden via `fields_from` i recipe.yaml (`sender.name`/adress/orgnr, `bankgiro`/`plusgiro`/`iban`/`bic`) och mergad nyckel för nyckel under en `page_template.footer` som producenten själv skickar. Varje kolumn renderas även utan innehåll — luckan namnges i kolumnens egen typografi i grått (`kxmuted`, `#6B6A63`): *Betalningsuppgifter saknas*, *Org.nr saknas*, *Adress saknas*. Ingen hård validering; ett explicit `footer: null`, `pagenumber` eller egen sidfotskälla respekteras. Etikettläget är receptstyrt (`document.label_missing_footer_fields`) och påverkar inte blockmotorns `columns`-fot. `klartex schema faktura` beskriver härledningen; registret laddar varje recept vid uppstart, så en ogiltig `recipe.yaml` felar vid discovery i stället för vid första rendering. (#99)
+
+### Fixes
+- **Långa e-postadresser och URL:er i letterhead-sidhuvudet bryts inuti kolumnen.** Letterheadens `web` och `email` får brytmöjligheter efter varje följd av `@`, `.` och `/` (aldrig i slutet av värdet, så `https://` hålls ihop), så ett obrytbart token längre än kontaktkolumnen inte längre rinner över minipagen. Fragment, goldens och JSON-ytan är oförändrade; sidhuvudet får växa upp till sju kontaktrader i standardgeometrin, låst av test. (#98)
+- **Trailing newline avvisas i logotypfilnamn.** `FILENAME_PATTERN` exkluderar all whitespace och ankras med absolut slut, och laddaren gör `fullmatch` på `logo`-fältet — `"logo.pdf\n"`, `"logo.pdf\r"` och `"logo.pdf x"` avvisas av både schema och laddare. Ett filnamn med mellanslag (`"my logo.pdf"`) är därmed inte längre giltigt. (#97)
+
 ## 0.18.0 — 2026-09-01
 
 ### Breaking changes

@@ -143,9 +143,9 @@ def test_render_minimal_block_doc():
 def test_render_validation_error_returns_structured_400():
     """Block validation errors carry both a message and a structured path.
 
-    klartex.render() wraps block validation as ValueError → input_error;
-    render.py recovers the block position from the message and reports it
-    as `detail.path`, in the same list shape the jsonschema path uses.
+    klartex.render() raises BlockValidationError → input_error; render.py
+    reports its `path` attribute as `detail.path`, in the same list shape
+    the jsonschema path uses.
     """
     detail = post_block_error([{"type": "heading"}])  # missing required `text`
     assert detail["type"] == "input_error"
@@ -289,9 +289,8 @@ def test_render_faktura_without_sender_is_rejected():
 def test_render_block_with_empty_type_carries_path():
     """An empty `type` satisfies the top-level schema but not the core.
 
-    It reaches `_validate_blocks`, which reports it as
-    `Block at body[i] is missing 'type'` — the third message form the
-    path extraction has to recognise.
+    It reaches `_validate_blocks`, which raises `Block at body[i] is
+    missing 'type'` with the block position as `BlockValidationError.path`.
     """
     detail = post_block_error(
         [{"type": "heading", "text": "ok"}, {"type": "", "text": "x"}]
@@ -301,8 +300,24 @@ def test_render_block_with_empty_type_carries_path():
     assert "body[1]" in detail["message"]
 
 
-def test_block_error_path_returns_none_for_other_errors():
-    assert render_module._block_error_path(ValueError("Unknown template")) is None
+def test_plain_value_error_carries_no_path(monkeypatch):
+    """The path comes from the exception type, not from the message text.
+
+    A plain ValueError whose text looks exactly like a block error must
+    still reach the client without a `path`.
+    """
+    def boom(*args, **kwargs):
+        raise ValueError("Block at body[9] is missing 'type'")
+
+    monkeypatch.setattr(render_module, "klartex_render", boom)
+    r = client.post(
+        "/render",
+        json={"template": "_block", "data": {"body": [{"type": "text", "text": "x"}]}},
+    )
+    assert r.status_code == 400
+    detail = r.json()["detail"]
+    assert detail["type"] == "input_error"
+    assert "path" not in detail
 
 
 def test_render_unknown_template_returns_400():

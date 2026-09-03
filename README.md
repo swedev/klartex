@@ -182,7 +182,7 @@ En del som utelämnas får ytans default: blockmotorn har tomt sidhuvud och sidn
 "page_template": { "header": "logo", "footer": null }
 ```
 
-Objektformen av `letterhead` kräver `fields.org_name` — namnet är det som sidhuvudet byggs runt, och utan det skulle övriga uppgifter inte skrivas ut. Ett sidhuvud helt utan uppgifter anges som variantnamnet självt (`"header": "letterhead"`). `logo` är ett filnamn utan blanktecken och utan LaTeX-specialtecken (`\ # $ % & _ { } ~ ^`).
+Objektformen av `letterhead` kräver `fields.org_name` — namnet är det som sidhuvudet byggs runt, och utan det skulle övriga uppgifter inte skrivas ut. Ett sidhuvud helt utan uppgifter anges som variantnamnet självt (`"header": "letterhead"`). `logo` är ett filnamn utan blanktecken och utan LaTeX-specialtecken (`\ # $ % & _ { } ~ ^`). Kontaktkolumnen är smal och avstavar inte, så en lång `web` eller `email` radbryts efter `@`, `.` och `/` för att rymmas.
 
 Utöver sloten finns inställningar på dokumentnivå — `font`, `header_font`, `diff_style` och `margins` — som gäller oavsett om en slot har egen LaTeX, plus `page_numbers` och `first_page_header`.
 

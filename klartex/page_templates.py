@@ -157,10 +157,30 @@ class Field:
     macro: str | None = None
     #: klartex-footer keyval the value becomes; defaults to the field name.
     keyval: str | None = None
+    #: Characters after which the rendered value may break onto the next
+    #: line; empty means the value is emitted verbatim. Read by
+    #: ``PageTemplate.header_macros``.
+    breaks_after: str = ""
 
     @property
     def schema(self) -> dict:
         return {**self.type.schema, "description": self.description}
+
+
+def allow_breaks(value: str, after: str) -> str:
+    """``value`` with ``\\allowbreak{}`` after each maximal run of the
+    characters in ``after``, so a long unspaced token may wrap there.
+
+    The lookahead requires a non-separator to follow, so a run at the end of
+    the value gets no insertion and a multi-character run stays whole —
+    ``https://`` breaks after the whole ``://``, never between the slashes.
+    The braces keep the following character from being read as part of the
+    macro name. ``\\allowbreak`` prints nothing, so the break leaves no
+    hyphen behind."""
+    if not after:
+        return value
+    chars = re.escape(after)
+    return re.sub(rf"[{chars}]+(?=[^{chars}])", lambda m: m.group(0) + r"\allowbreak{}", value)
 
 
 @dataclass(frozen=True)
@@ -177,6 +197,11 @@ class Variant:
     fields_description: str = ""
     empty_note: str = ""
 
+
+#: Separators an address may wrap after in the letterhead's narrow contact
+#: column. The column forbids hyphenation, so a web or email address — one
+#: unspaced token — has no other break opportunity.
+CONTACT_BREAKS = "@./"
 
 # One word, one type, one macro, in both header variants.
 LOGO = Field(
@@ -200,8 +225,20 @@ HEADER_VARIANTS: dict[str, Variant] = {
         fields={
             "org_name": Field(TEXT, "Organisation name, in bold at the top left.", macro="orgname"),
             "address": Field(TEXT, "Postal address, under the organisation name.", macro="orgaddress"),
-            "web": Field(TEXT, "Website, in the header's right-hand text column.", macro="orgwebsite"),
-            "email": Field(TEXT, "Email address, in the header's right-hand text column.", macro="orgemail"),
+            "web": Field(
+                TEXT,
+                "Website, in the header's right-hand text column. A long "
+                "address may wrap after @, . and /.",
+                macro="orgwebsite",
+                breaks_after=CONTACT_BREAKS,
+            ),
+            "email": Field(
+                TEXT,
+                "Email address, in the header's right-hand text column. A long "
+                "address may wrap after @, . and /.",
+                macro="orgemail",
+                breaks_after=CONTACT_BREAKS,
+            ),
             "phone": Field(TEXT, "Phone number, in the header's right-hand text column.", macro="orgphone"),
             "logo": LOGO,
         },
@@ -699,7 +736,7 @@ class PageTemplate:
         fields = self.header.fields
         variant = HEADER_VARIANTS[self.header.variant]
         return [
-            (typ.macro, fields[name])
+            (typ.macro, allow_breaks(fields[name], typ.breaks_after))
             for name, typ in variant.fields.items()
             if typ.macro and fields.get(name)
         ]

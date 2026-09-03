@@ -4,8 +4,10 @@ import pytest
 
 from klartex.page_templates import (
     BLOCK_DEFAULT_SLOTS,
+    CONTACT_BREAKS,
     HEADER_BAND_BOTTOM,
     RECIPE_DEFAULT_SLOTS,
+    allow_breaks,
     font_files,
     list_slot_variants,
     load_page_template,
@@ -484,6 +486,81 @@ class TestLogoFileName:
                     }
                 }
             )
+
+
+class TestAddressBreaks:
+    """The letterhead's contact column forbids hyphenation, so a web or email
+    address — one unspaced token — gets explicit break opportunities."""
+
+    LONG_EMAIL = "styrelsen@bostadsrattsforeningenekbacken.se"
+    LONG_WEB = "www.bostadsrattsforeningenekbacken.se"
+
+    @pytest.mark.parametrize(
+        "value,expected",
+        [
+            (
+                LONG_EMAIL,
+                "styrelsen@\\allowbreak{}bostadsrattsforeningenekbacken.\\allowbreak{}se",
+            ),
+            (
+                LONG_WEB,
+                "www.\\allowbreak{}bostadsrattsforeningenekbacken.\\allowbreak{}se",
+            ),
+            # A run breaks as a whole: https:// must not split into "https:/".
+            (
+                "https://example.se/a",
+                "https://\\allowbreak{}example.\\allowbreak{}se/\\allowbreak{}a",
+            ),
+        ],
+    )
+    def test_breaks_go_after_each_run_of_separators(self, value, expected):
+        assert allow_breaks(value, CONTACT_BREAKS) == expected
+
+    @pytest.mark.parametrize("value", ["https://", "slutar.", "a//", "utan separator"])
+    def test_a_trailing_run_gets_no_insertion(self, value):
+        assert allow_breaks(value, CONTACT_BREAKS) == value
+
+    def test_escape_sequences_survive(self):
+        """The value is already LaTeX-escaped, and the separator set never
+        appears in an escape sequence, so none can be split."""
+        assert allow_breaks("a\\_b@x.se", CONTACT_BREAKS) == (
+            "a\\_b@\\allowbreak{}x.\\allowbreak{}se"
+        )
+        assert allow_breaks("100\\%@x.se", CONTACT_BREAKS) == "100\\%@\\allowbreak{}x.\\allowbreak{}se"
+
+    def test_empty_separator_set_is_the_identity(self):
+        assert allow_breaks(self.LONG_EMAIL, "") == self.LONG_EMAIL
+
+    def test_header_macros_annotates_web_and_email_only(self):
+        pt = load_page_template(
+            {
+                "header": {
+                    "variant": "letterhead",
+                    "fields": {
+                        "org_name": "Brf Ekbacken",
+                        "address": "Storgatan 1, 123 45 Stad",
+                        "web": self.LONG_WEB,
+                        "email": self.LONG_EMAIL,
+                        "phone": "070-123 45 67",
+                        "logo": "logo.pdf",
+                    },
+                }
+            }
+        )
+        assert pt.header_macros == [
+            ("orgname", "Brf Ekbacken"),
+            ("orgaddress", "Storgatan 1, 123 45 Stad"),
+            ("orgwebsite", allow_breaks(self.LONG_WEB, CONTACT_BREAKS)),
+            ("orgemail", allow_breaks(self.LONG_EMAIL, CONTACT_BREAKS)),
+            ("orgphone", "070-123 45 67"),
+            ("brandlogo", "logo.pdf"),
+        ]
+
+    def test_the_logo_field_is_never_annotated(self):
+        """LOGO is shared by both header variants and carries no separators
+        flag, so the file name reaches \\includegraphics verbatim."""
+        pt = load_page_template({"header": {"variant": "logo", "fields": {"logo": "a.b.pdf"}}})
+        assert pt.header_macros == [("brandlogo", "a.b.pdf")]
 
 
 class TestMargins:

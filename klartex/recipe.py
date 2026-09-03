@@ -27,6 +27,7 @@ from klartex.page_templates import (
     HEADER_VARIANTS,
     RECIPE_DEFAULT_SLOTS,
     PageTemplate,
+    _check_margins,
     load_page_template,
 )
 
@@ -60,9 +61,8 @@ class RecipeDocument:
     """Document-level settings from a recipe."""
 
     title: str = ""
-    class_options: str = ""
-    #: Slot object, in payload syntax, for the slots data.page_template
-    #: leaves out.
+    #: Slots and, optionally, ``margins``, in payload syntax, for what
+    #: data.page_template leaves out.
     page_template: dict = field(default_factory=lambda: dict(RECIPE_DEFAULT_SLOTS))
     metadata: list[dict[str, Any]] = field(default_factory=list)
     #: Footer field name -> dot-path, or list of dot-paths, into the payload
@@ -151,6 +151,23 @@ def _pop_fields_from(page_template: dict, path: Path) -> tuple[dict, str | None]
     return fields_from, variant
 
 
+def _check_recipe_margins(page_template: dict, path: Path) -> None:
+    """Validate a recipe's default ``margins`` at load time.
+
+    A recipe is authored once and rendered many times, so a malformed
+    dimension belongs to the author's run — the registry loads every recipe
+    at startup.
+
+    Raises:
+        ValueError: If the object or one of its values is not what
+            ``page_template.margins`` accepts, reported with the recipe path.
+    """
+    try:
+        _check_margins(page_template.get("margins"))
+    except ValueError as exc:
+        raise ValueError(f"{path}: {exc}") from exc
+
+
 def _derive_slot_fields(
     fields_from: dict[str, str | list[str]], data: dict
 ) -> dict[str, Any]:
@@ -174,9 +191,9 @@ def _derive_slot_fields(
 
 
 def describe_recipe_defaults(document: RecipeDocument) -> str:
-    """One clause naming what a left-out page-template slot resolves to for
-    this recipe — the ``default_text`` of the injected ``page_template``
-    schema subtree."""
+    """One clause naming what a left-out page-template slot, and any default
+    margins, resolve to for this recipe — the ``default_text`` of the
+    injected ``page_template`` schema subtree."""
 
     def slot_text(slot: str, variants: dict) -> str:
         value = document.page_template.get(slot)
@@ -198,7 +215,12 @@ def describe_recipe_defaults(document: RecipeDocument) -> str:
             for path in (source if isinstance(source, list) else [source])
         )
         footer += f", with fields derived from {', '.join(sources)}"
-    return f"{slot_text('header', HEADER_VARIANTS)} and {footer}"
+    text = f"{slot_text('header', HEADER_VARIANTS)} and {footer}"
+    margins = document.page_template.get("margins")
+    if margins:
+        values = ", ".join(f"{key} {margins[key]}" for key in sorted(margins))
+        text += f"; margins default to {values}, overridden per key"
+    return text
 
 
 def load_recipe(path: Path) -> Recipe:
@@ -232,9 +254,9 @@ def load_recipe(path: Path) -> Recipe:
     # the slot object leaves behind something load_page_template accepts.
     page_template = copy.deepcopy(doc_raw.get("page_template") or {})
     fields_from, fields_from_variant = _pop_fields_from(page_template, path)
+    _check_recipe_margins(page_template, path)
     document = RecipeDocument(
         title=doc_raw.get("title", ""),
-        class_options=doc_raw.get("class_options", ""),
         # A partial slot object (one slot named) falls back to the recipe
         # default for the other slot, so load_page_template always gets both.
         page_template={**RECIPE_DEFAULT_SLOTS, **page_template},
@@ -379,7 +401,6 @@ def prepare_recipe_context(
         "recipe": recipe,
         "data": data,
         "title": rendered_title,
-        "class_options": recipe.document.class_options,
         "page_template": page_tmpl,
         "metadata": resolved_metadata,
         "components": resolved_components,

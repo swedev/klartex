@@ -48,7 +48,7 @@
         },
         "page_template": {
           "type": "object",
-          "description": "The recipe's default page template as a slot object ({\"header\": …, \"footer\": …}). Omit for the recipe default (the letterhead header and the page-number footer with the document title). data.page_template overrides per slot at render time. A footer slot object may carry a 'fields_from' map — footer field name to a dot-path into the payload data, or to a list of dot-paths whose set values become the field's lines — resolved at render time and merged under whatever the payload's footer of the same variant sets, key by key. 'fields_from' and a literal 'fields' cannot sit on the same slot object."
+          "description": "The recipe's default page template as a slot object ({\"header\": …, \"footer\": …}), which may also carry a 'margins' object (faktura and kvitto: 2cm left/right, 1.7cm top). Omit for the recipe default (the letterhead header and the page-number footer with the document title). data.page_template overrides per slot at render time. A footer slot object may carry a 'fields_from' map — footer field name to a dot-path into the payload data, or to a list of dot-paths whose set values become the field's lines — resolved at render time and merged under whatever the payload's footer of the same variant sets, key by key. 'fields_from' and a literal 'fields' cannot sit on the same slot object. data.page_template.margins overrides the default margins one key at a time. A custom header or page-template source that sets no \\geometry of its own receives the default side margins; the default top is left out, because a source owning the header slot suppresses the header-space reclaim the top describes."
         },
         "label_missing_footer_fields": {
           "type": "boolean",
@@ -93,10 +93,6 @@
             }
           },
           "description": "Metadata fields displayed in a table at the top of the document"
-        },
-        "class_options": {
-          "type": "string",
-          "description": "documentclass options for klartex-base, e.g. 'narrowmargins' — the tighter business-document geometry (2cm side margins, 1.7cm reclaimed top) used by faktura and kvitto."
         }
       }
     },

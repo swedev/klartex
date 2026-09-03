@@ -61,6 +61,46 @@ class TestLoadRecipe:
         assert recipe.document.page_template == RECIPE_DEFAULT_SLOTS
         assert len(recipe.document.metadata) > 0
 
+    @pytest.mark.parametrize("name", ["faktura", "kvitto"])
+    def test_invoice_recipes_declare_their_margins(self, name):
+        """The tighter business-document geometry is a recipe default on the
+        ordinary margins surface, not a document class option."""
+        recipe = load_recipe(TEMPLATES_DIR / name / "recipe.yaml")
+        assert recipe.document.page_template["margins"] == {
+            "left": "2cm",
+            "right": "2cm",
+            "top": "1.7cm",
+        }
+
+    def test_class_options_is_not_a_recipe_key(self, tmp_path):
+        """The key went with the class option; `additionalProperties: false`
+        is what makes a recipe still carrying it fail loudly."""
+        import shutil as _shutil
+
+        recipe_dir = tmp_path / "budgetrapport"
+        _shutil.copytree(TEMPLATES_DIR / "budgetrapport", recipe_dir)
+        yaml_path = recipe_dir / "recipe.yaml"
+        yaml_path.write_text(yaml_path.read_text().replace(
+            "\ndocument:\n", "\ndocument:\n  class_options: narrowmargins\n"
+        ))
+        with pytest.raises(jsonschema.ValidationError):
+            load_recipe(yaml_path)
+
+    def test_malformed_recipe_margins_rejected_at_load(self, tmp_path):
+        """A recipe is authored once and rendered many times, so the failure
+        belongs to the author's run — the registry loads every recipe."""
+        import shutil as _shutil
+
+        recipe_dir = tmp_path / "budgetrapport"
+        _shutil.copytree(TEMPLATES_DIR / "budgetrapport", recipe_dir)
+        yaml_path = recipe_dir / "recipe.yaml"
+        yaml_path.write_text(yaml_path.read_text().replace(
+            "\ndocument:\n",
+            "\ndocument:\n  page_template:\n    margins:\n      left: \"2\"\n",
+        ))
+        with pytest.raises(ValueError, match="margins.left must be a LaTeX dimension"):
+            load_recipe(yaml_path)
+
     def test_recipe_component_specs_resolved(self):
         recipe = load_recipe(TEMPLATES_DIR / "protokoll" / "recipe.yaml")
         for comp in recipe.components:

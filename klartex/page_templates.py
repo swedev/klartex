@@ -13,10 +13,10 @@ footer with company, contact and payment details). A slot the payload
 leaves out takes the surface's default: the block engine has an empty header
 and the page-number footer, recipes the letterhead header and the
 page-number footer with the document title (``BLOCK_DEFAULT_SLOTS`` /
-``RECIPE_DEFAULT_SLOTS``). A recipe may declare its own slots in
-recipe.yaml, and a footer slot may derive its fields from the payload
-(``fields_from``) — faktura and kvitto default to the columns footer, built
-from the seller's own data.
+``RECIPE_DEFAULT_SLOTS``). A recipe may declare its own slots and default
+``margins`` in recipe.yaml, and a footer slot may derive its fields from the
+payload (``fields_from``) — faktura and kvitto default to the columns footer,
+built from the seller's own data, and to 2cm side margins with a 1.7cm top.
 
 Page template data in the render request is an object::
 
@@ -937,9 +937,12 @@ def load_page_template(
 
     Args:
         spec: The ``page_template`` object from the payload, or None.
-        defaults: Slot values, in payload syntax, for the slots ``spec``
-                 leaves out — the rendering surface's own default
-                 (``BLOCK_DEFAULT_SLOTS`` when omitted).
+        defaults: Slot values and, optionally, a ``margins`` object, in
+                 payload syntax, for what ``spec`` leaves out — the rendering
+                 surface's own default (``BLOCK_DEFAULT_SLOTS`` when
+                 omitted). The payload's ``margins`` merges over the default
+                 one key at a time; a default ``top`` is left out when a
+                 source owns the header slot, since no reclaim runs there.
         header_source: Raw ``.tex.jinja`` content owning the header slot.
         footer_source: Raw ``.tex.jinja`` content owning the footer slot.
         page_template_source: Raw content owning both slots. In this mode the
@@ -984,7 +987,15 @@ def load_page_template(
     font = _check_font("font", overrides.get("font"))
     header_font = _check_font("header_font", overrides.get("header_font")) or font
     diff_style = overrides.get("diff_style") or "color"
-    margins = _check_margins(overrides.get("margins"))
+    default_margins = _check_margins(defaults.get("margins"))
+    if header_source is not None or page_template_source is not None:
+        # A default `top` describes the text block a reclaimed header leaves
+        # behind. A source owning the header slot suppresses the reclaim, so
+        # the same value would be read as a text top and set `headsep` below
+        # the header band — the class geometry's own headsep is what a source
+        # without `\geometry` needs. A `top` the payload sets still applies.
+        default_margins.pop("top", None)
+    margins = {**default_margins, **_check_margins(overrides.get("margins"))}
 
     if page_template_source is not None:
         # One source owns both slots, so no chrome is read from the payload.

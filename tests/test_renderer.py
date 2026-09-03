@@ -59,8 +59,7 @@ def test_class_default_chrome():
     assert r"\newcommand{\kxreclaimtop}{2cm}" in cls
     assert r"left=\kxsidemargin," in cls
     assert r"right=\kxsidemargin," in cls
-    assert r"\renewcommand{\kxsidemargin}{2cm}" in cls
-    assert r"\renewcommand{\kxreclaimtop}{1.7cm}" in cls
+    assert "narrowmargins" not in cls
     assert r"\definecolor{brandprimary}{HTML}{000000}" in cls
     assert r"\definecolor{brandsecondary}{HTML}{000000}" in cls
     assert r"\definecolor{kxmuted}{HTML}{6B6A63}" in cls
@@ -97,19 +96,23 @@ def test_footer_band_geometry_is_late_bound():
     assert r"\geometry{bottom=\kxfooterbottom, footskip=\kxfooterfootskip}" in sty
 
 
-def test_narrowmargins_class_option_scoped_to_faktura_and_kvitto():
-    r"""Only faktura and kvitto opt into the tighter `narrowmargins` geometry.
-
-    The option rides on `document.class_options` in recipe.yaml; the meta
-    template turns it into `\documentclass[invoice]{klartex-base}`.
+def test_narrow_margins_are_recipe_defaults_for_faktura_and_kvitto():
+    r"""Only faktura and kvitto declare the tighter business-document
+    geometry, and they declare it as recipe-default `page_template.margins`
+    in recipe.yaml — the same surface a payload uses. The meta template emits
+    one unconditional `\documentclass{klartex-base}`.
     """
     import yaml
-    for name, expect in [("faktura", "narrowmargins"), ("kvitto", "narrowmargins"),
-                         ("protokoll", ""), ("resultatrakning", "")]:
+    narrow = {"left": "2cm", "right": "2cm", "top": "1.7cm"}
+    for name, expect in [("faktura", narrow), ("kvitto", narrow),
+                         ("protokoll", None), ("resultatrakning", None)]:
         raw = yaml.safe_load((TEMPLATES_DIR / name / "recipe.yaml").read_text())
-        assert raw.get("document", {}).get("class_options", "") == expect, name
+        document = raw.get("document", {})
+        assert document.get("page_template", {}).get("margins") == expect, name
+        assert "class_options" not in document, name
     meta = (TEMPLATES_DIR / "_recipe_base.tex.jinja").read_text()
-    assert r"\documentclass[\VAR{class_options}]{klartex-base}" in meta
+    assert r"\documentclass{klartex-base}" in meta
+    assert "class_options" not in meta
 
 
 @pytest.mark.skipif(not HAS_XELATEX, reason="xelatex not installed")
@@ -711,18 +714,38 @@ def _minimal_faktura(**extra) -> dict:
     return data
 
 
-def test_faktura_margins_override_the_narrowmargins_defaults():
-    r"""faktura's `narrowmargins` class option is the recipe default; explicit
-    margins are emitted after `\documentclass` and win, per key.
+def test_faktura_default_margins_come_from_the_recipe():
+    r"""With no payload margins, faktura's own defaults are what reach the
+    geometry — the class carries no document-type option any more.
+    """
+    tex = _render_recipe_tex("faktura", _minimal_faktura())
+    assert r"\documentclass{klartex-base}" in tex
+    assert r"\geometry{left=2cm, right=2cm, headsep=\dimexpr 1.7cm-2.1cm\relax}" in tex
+    assert r"\renewcommand{\kxreclaimtop}{1.7cm}" in tex
+    assert r"\setlength{\headwidth}{\textwidth}" in tex
+
+
+def test_faktura_payload_margins_override_the_recipe_defaults_per_key():
+    r"""The payload's margins merge over the recipe's one key at a time, so
+    `right` keeps the recipe's 2cm while `left` and `top` are the payload's.
     """
     tex = _render_recipe_tex(
         "faktura",
         _minimal_faktura(page_template={"margins": {"left": "4cm", "top": "5cm"}}),
     )
-    assert tex.index(r"\documentclass[narrowmargins]{klartex-base}") < tex.index(
-        r"\geometry{left=4cm, headsep=\dimexpr 5cm-2.1cm\relax}"
+    assert tex.index(r"\documentclass{klartex-base}") < tex.index(
+        r"\geometry{left=4cm, right=2cm, headsep=\dimexpr 5cm-2.1cm\relax}"
     )
     assert r"\renewcommand{\kxreclaimtop}{5cm}" in tex
+
+
+@pytest.mark.parametrize("margins", [None, {}])
+def test_faktura_null_and_empty_margins_inherit_the_recipe_defaults(margins):
+    """There is no reset syntax: null and {} override nothing."""
+    tex = _render_recipe_tex(
+        "faktura", _minimal_faktura(page_template={"margins": margins})
+    )
+    assert r"\geometry{left=2cm, right=2cm, headsep=\dimexpr 1.7cm-2.1cm\relax}" in tex
 
 
 def test_whole_page_source_reaches_the_recipe_path():
@@ -1286,9 +1309,10 @@ def test_font_file_form_renders_with_the_regular_face_alone(tmp_path):
 
 
 def test_faktura_preamble_unchanged_from_golden():
-    """The recipe path's default preamble: letterhead header, page-number
-    footer with the title. The golden is held by hand — a deliberate fragment
-    change updates it in the same commit, any other diff is a regression."""
+    """The recipe path's default preamble: reclaimed letterhead header, the
+    columns footer derived from the seller, and the recipe's own margins. The
+    golden is held by hand — a deliberate fragment change updates it in the
+    same commit, any other diff is a regression."""
     from tests.test_block_engine import golden_preamble
 
     data = json.loads((FIXTURES / "faktura.json").read_text())
@@ -1335,8 +1359,54 @@ class TestRecipePageTemplateSlots:
         assert r"\fancyfoot" not in tex
 
     def test_header_slot_settings_reach_the_recipe_path(self):
+        """faktura's text top is 1.7cm, which no rendering header fits under,
+        so a payload that asks for one sends its own `margins.top` as well
+        (3.4cm is the class geometry's rendering-header text top)."""
         data = _minimal_faktura(
-            page_template={"header": {"variant": "letterhead", "fields": {"org_name": "Bolaget AB"}}}
+            page_template={
+                "header": {"variant": "letterhead", "fields": {"org_name": "Bolaget AB"}},
+                "margins": {"top": "3.4cm"},
+            }
         )
         tex = _render_recipe_tex("faktura", data)
         assert r"\renewcommand{\orgname}{Bolaget AB}" in tex
+
+    def test_rendering_header_on_faktura_needs_a_payload_margins_top(self):
+        """Without one it sits inside the recipe's 1.7cm top, which the
+        loader's minimum rejects — the same message any other document gets."""
+        data = _minimal_faktura(
+            page_template={
+                "header": {"variant": "letterhead", "fields": {"org_name": "Bolaget AB"}}
+            }
+        )
+        with pytest.raises(ValueError, match="margins.top must be greater"):
+            _render_recipe_tex("faktura", data)
+
+    @pytest.mark.parametrize("source_kw", ["header_source", "page_template_source"])
+    def test_custom_source_on_faktura_receives_the_recipe_side_margins(self, source_kw):
+        r"""A custom source owns its chrome, not the document-level settings,
+        so the recipe's sides are emitted before it and a source with its own
+        `\geometry` still wins. The recipe's `top` is left out: it describes
+        the block a reclaimed header leaves behind, and a source owning the
+        header slot suppresses the reclaim, so applying it would set `headsep`
+        inside the header band and run the body text over the source's header.
+        """
+        tex = _render_recipe_tex(
+            "faktura", _minimal_faktura(), **{source_kw: "% custom"}
+        )
+        assert tex.count("% custom") == 1
+        assert tex.index(r"\geometry{left=2cm, right=2cm}") < tex.index("% custom")
+        assert "kxreclaimtop" not in tex
+        assert "headsep" not in tex
+
+    @pytest.mark.parametrize("source_kw", ["header_source", "page_template_source"])
+    def test_payload_top_still_applies_over_a_custom_source(self, source_kw):
+        """Only the recipe's default `top` is scoped away — a `top` the
+        payload sets is an explicit request and reaches the geometry."""
+        tex = _render_recipe_tex(
+            "faktura",
+            _minimal_faktura(page_template={"margins": {"top": "5cm"}}),
+            **{source_kw: "% custom"},
+        )
+        assert r"\geometry{left=2cm, right=2cm, headsep=\dimexpr 5cm-2.1cm\relax}" in tex
+        assert r"\renewcommand{\kxreclaimtop}{5cm}" in tex

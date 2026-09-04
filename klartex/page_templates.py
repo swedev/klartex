@@ -37,7 +37,6 @@ Page template data in the render request is an object::
                 "bankgiro": "1234-5678"
             }
         },
-        "first_page_header": false,
         "font": "Futura",
         "header_font": "Futura",
         "margins": {"top": "3.4cm", "bottom": "2cm", "left": "3cm", "right": "3cm"}
@@ -631,7 +630,6 @@ def font_files(spec: dict | None) -> list[str]:
 
 # Document-level settings on the page_template object.
 DOCUMENT_SETTINGS: dict[str, dict] = {
-    "first_page_header": {"type": "boolean", "description": "Show the header on the first page"},
     "font": {
         "description": (
             "Document font, as a fontspec family name or as font files. These "
@@ -743,7 +741,6 @@ class PageTemplate:
 
     header: SlotSpec = field(default_factory=SlotSpec)
     footer: SlotSpec = field(default_factory=SlotSpec)
-    first_page_header: bool = True
     font: str | dict | None = None
     header_font: str | dict | None = None
     diff_style: str = "color"
@@ -1049,16 +1046,9 @@ def load_page_template(
                 "footer", overrides.get("footer", _MISSING), defaults["footer"]
             )
 
-    first_page_header = overrides.get("first_page_header")
-    if first_page_header is None:
-        # A header that puts nothing on the page has nothing to suppress on
-        # page one either, so the empty slot defaults this off.
-        first_page_header = not header.is_empty
-
     template = PageTemplate(
         header=header,
         footer=footer,
-        first_page_header=first_page_header,
         font=font,
         header_font=header_font,
         diff_style=diff_style,

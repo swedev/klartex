@@ -1,6 +1,10 @@
 % klartex-titelsida.sty - Title page component
 % Provides \makedoctitle command
 %
+% The title page is a page of its own and carries no chrome: the macro
+% opens with \clearpage and selects the empty page style, so no header
+% and no footer are printed there whatever the page template says.
+%
 % Usage: \usepackage{klartex-titelsida}
 
 \NeedsTeXFormat{LaTeX2e}
@@ -20,6 +24,8 @@
 % "Och" or blank party rows.
 \providecommand{\makedoctitle}[3]{%
     \kx@setlang%
+    \clearpage%
+    \thispagestyle{empty}%
     \def\kx@tmp@pa{#1}\def\kx@tmp@pb{#2}%
     \begin{center}
         \vspace*{4cm}
@@ -33,7 +39,6 @@
         \ifx\kx@tmp@pa\@empty\ifx\kx@tmp@pb\@empty\vspace*{2cm}\fi\fi
         {\LARGE\bfseries #3}
     \end{center}
-    \thispagestyle{fancy}
     \newpage
 }
 

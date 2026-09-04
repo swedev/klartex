@@ -356,6 +356,8 @@ def test_block_schema_accepts_slot_forms(page_template):
         {"footer": {"title": True}},
         {"footer": {"fields": {"company": "X"}}},
         {"header": "letterhead", "bogus": 1},
+        {"first_page_header": False},
+        {"header": "letterhead", "first_page_header": False},
         {"margins": "2cm"},
         {"margins": {"inner": "2cm"}},
         {"margins": {"top": "2,5cm"}},
@@ -401,6 +403,14 @@ def test_every_template_schema_carries_the_generated_page_template(template_name
     assert margins["additionalProperties"] is False
     assert set(margins["properties"]) == {"top", "bottom", "left", "right"}
     assert all(v["pattern"] == DIMENSION_PATTERN for v in margins["properties"].values())
+
+
+@pytest.mark.parametrize("template_name", RECIPE_SCHEMA_NAMES + ("_block",))
+def test_first_page_header_is_not_a_document_key(template_name):
+    """A title_page block renders chrome-free by itself, so no schema carries
+    a first-page header switch."""
+    pt = get_registry()[template_name].schema["properties"]["page_template"]
+    assert "first_page_header" not in pt["properties"]
 
 
 @pytest.mark.parametrize("template_name", RECIPE_SCHEMA_NAMES + ("_block",))

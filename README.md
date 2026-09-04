@@ -201,7 +201,9 @@ En del som utelämnas får ytans default: blockmotorn har tomt sidhuvud och sidn
 
 Objektformen av `letterhead` kräver `fields.org_name` — namnet är det som sidhuvudet byggs runt, och utan det skulle övriga uppgifter inte skrivas ut. Ett sidhuvud helt utan uppgifter anges som variantnamnet självt (`"header": "letterhead"`). `logo` är ett filnamn utan blanktecken och LaTeX-specialtecken; schemat anger mönstret. Kontaktkolumnen är smal och avstavar inte, så en lång `web` eller `email` radbryts efter `@`, `.` och `/` för att rymmas.
 
-Utöver sloten finns inställningar på dokumentnivå — `font`, `header_font`, `diff_style` och `margins` — som gäller oavsett om en slot har egen LaTeX, plus `first_page_header`.
+Utöver sloten finns inställningar på dokumentnivå — `font`, `header_font`, `diff_style` och `margins` — som gäller oavsett om en slot har egen LaTeX.
+
+Ett `title_page`-block är en egen sida och skrivs ut helt utan sidhuvud och sidfot, oavsett vad sidmallen säger.
 
 ### Sidnummer
 

@@ -306,7 +306,10 @@ def _require_xelatex() -> None:
         "Install TeX Live if klartex is to run as a library in this "
         "environment:\n"
         "  macOS:  brew install --cask mactex\n"
-        "  Ubuntu: apt install texlive-xetex"
+        "  Other:  a full TeX Live, or a minimal one plus the packages in\n"
+        "          https://github.com/swedev/klartex/blob/main/.github/tl_packages\n"
+        "          (tlmgr install) — a distribution's texlive-xetex alone is\n"
+        "          missing ulem, tcolorbox and siunitx."
     )
 
 

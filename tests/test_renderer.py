@@ -426,7 +426,23 @@ class TestMissingXelatex:
         assert "xelatex not found" in message
         image = message.index("ghcr.io/swedev/klartex-render:")
         assert image < message.index("brew install --cask mactex")
-        assert "apt install texlive-xetex" in message
+
+    def test_install_route_is_the_package_set_not_a_single_apt_package(
+        self, monkeypatch
+    ):
+        """`texlive-xetex` alone lacks ulem, tcolorbox and siunitx, so an
+        install that follows the message must be one that renders: the
+        package list CI installs, with the shortfall named."""
+        self._without_xelatex(monkeypatch)
+
+        data = {"body": [{"type": "heading", "text": "Utan TeX"}]}
+        with pytest.raises(RuntimeError) as excinfo:
+            render(BLOCK_ENGINE_TEMPLATE, data)
+
+        message = str(excinfo.value)
+        assert ".github/tl_packages" in message
+        assert "ulem, tcolorbox and siunitx" in message
+        assert "apt install texlive-xetex" not in message
 
     def test_image_tag_is_the_installed_version(self, monkeypatch):
         """Every release publishes the render image under a tag equal to the

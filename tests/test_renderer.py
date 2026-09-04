@@ -401,6 +401,102 @@ def test_invalid_asset_dir_raises_value_error(tmp_path, kind):
         render("_block", data, asset_dir=bogus)
 
 
+class TestMissingXelatex:
+    """The error a TeX-less environment gets from `render()`."""
+
+    @staticmethod
+    def _without_xelatex(monkeypatch):
+        from klartex import renderer as renderer_mod
+
+        monkeypatch.setattr(renderer_mod.shutil, "which", lambda _: None)
+        return renderer_mod
+
+    def test_message_names_the_render_image_before_the_install(self, monkeypatch):
+        """The image comes first: it renders without a TeX install on the
+        host, which is the cheaper answer for a caller producing one
+        document. Installing TeX Live stays, for callers embedding klartex
+        as a library in their own environment."""
+        self._without_xelatex(monkeypatch)
+
+        data = {"body": [{"type": "heading", "text": "Utan TeX"}]}
+        with pytest.raises(RuntimeError) as excinfo:
+            render(BLOCK_ENGINE_TEMPLATE, data)
+
+        message = str(excinfo.value)
+        assert "xelatex not found" in message
+        image = message.index("ghcr.io/swedev/klartex-render:")
+        assert image < message.index("brew install --cask mactex")
+
+    def test_install_route_is_the_package_set_not_a_single_apt_package(
+        self, monkeypatch
+    ):
+        """`texlive-xetex` alone lacks ulem, tcolorbox and siunitx, so an
+        install that follows the message must be one that renders: the
+        package list CI installs, with the shortfall named."""
+        self._without_xelatex(monkeypatch)
+
+        data = {"body": [{"type": "heading", "text": "Utan TeX"}]}
+        with pytest.raises(RuntimeError) as excinfo:
+            render(BLOCK_ENGINE_TEMPLATE, data)
+
+        message = str(excinfo.value)
+        assert ".github/tl_packages" in message
+        assert "ulem, tcolorbox and siunitx" in message
+        assert "apt install texlive-xetex" not in message
+
+    def test_image_tag_is_the_installed_version(self, monkeypatch):
+        """Every release publishes the render image under a tag equal to the
+        klartex version, so the tag in the message names an image that
+        exists."""
+        from importlib.metadata import version as pkg_version
+
+        self._without_xelatex(monkeypatch)
+
+        data = {"body": [{"type": "heading", "text": "Utan TeX"}]}
+        with pytest.raises(RuntimeError) as excinfo:
+            render(BLOCK_ENGINE_TEMPLATE, data)
+
+        expected = f"ghcr.io/swedev/klartex-render:{pkg_version('klartex')}"
+        assert expected in str(excinfo.value)
+
+    def test_check_precedes_escaping_and_template_rendering(self, monkeypatch):
+        """The failure is "this environment has no TeX", not something that
+        went wrong mid-render: nothing is escaped or rendered first."""
+        renderer_mod = self._without_xelatex(monkeypatch)
+        monkeypatch.setattr(
+            renderer_mod,
+            "escape_data",
+            lambda *a, **kw: pytest.fail("escaped before checking for xelatex"),
+        )
+        monkeypatch.setattr(
+            renderer_mod.subprocess,
+            "run",
+            lambda *a, **kw: pytest.fail("compiled without xelatex"),
+        )
+
+        data = {"body": [{"type": "heading", "text": "Utan TeX"}]}
+        with pytest.raises(RuntimeError, match="xelatex not found"):
+            render(BLOCK_ENGINE_TEMPLATE, data)
+
+    def test_payload_errors_still_win_over_the_toolchain_check(self, monkeypatch):
+        """Payload validation stays reachable without TeX, so a caller can
+        check a document anywhere and gets the error that is actually
+        theirs."""
+        from klartex import BlockValidationError
+
+        self._without_xelatex(monkeypatch)
+
+        with pytest.raises(BlockValidationError):
+            render(BLOCK_ENGINE_TEMPLATE, {"body": [{"type": "no_such_block"}]})
+
+        with pytest.raises(ValueError, match="not a directory"):
+            render(
+                BLOCK_ENGINE_TEMPLATE,
+                {"body": [{"type": "heading", "text": "H"}]},
+                asset_dir=Path("does-not-exist-anywhere"),
+            )
+
+
 def test_xelatex_invocation_shape(tmp_path, monkeypatch):
     """Both runs use an absolute .tex path, cwd=asset_root and -output-directory.
 

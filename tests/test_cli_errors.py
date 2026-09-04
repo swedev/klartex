@@ -51,3 +51,20 @@ def test_unwritable_output_reports_error_after_render(tmp_path):
     result = runner.invoke(app, ["-d", str(data), "-o", str(out)])
     assert result.exit_code == 1
     assert "could not write" in _all_output(result)
+
+
+def test_missing_xelatex_points_at_the_render_image_first(tmp_path, monkeypatch):
+    """The CLI surfaces the toolchain error as its `Error: …` line, with the
+    render image ahead of the TeX Live install."""
+    from klartex import renderer as renderer_mod
+
+    monkeypatch.setattr(renderer_mod.shutil, "which", lambda _: None)
+
+    data = tmp_path / "doc.json"
+    data.write_text(json.dumps({"body": [{"type": "text", "text": "hej"}]}), encoding="utf-8")
+    result = runner.invoke(app, ["-d", str(data), "-o", str(tmp_path / "ut.pdf")])
+
+    assert result.exit_code == 1
+    out = _all_output(result)
+    assert "xelatex not found" in out
+    assert out.index("ghcr.io/swedev/klartex-render:") < out.index("brew install --cask mactex")

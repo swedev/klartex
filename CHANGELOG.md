@@ -11,6 +11,7 @@
 
 ### Fixes
 - **`title_page` renderas utan sidhuvud och sidfot.** `\makedoctitle` inleder med `\clearpage` och sätter `\pagestyle{empty}` för hela blocket, så titelsidan är en egen sida helt utan chrome oavsett sidmall — fördefinierade slotar, egna slotkällor och helsidesmall lika. En titel som svämmar över till fler sidor lämnar var och en av dem bar. **Utseendet ändras för befintliga dokument** som kombinerar `title_page` med ett sidhuvud eller en sidfot: chromet försvinner från titelsidan. Sidbrytningen i inledningen betyder också att ett `title_page` efter annat innehåll börjar på ny sida, i stället för att dela sida med det föregående innehållet. (#66)
+- **Felmeddelandet när `xelatex` saknas pekar på renderingsimagen före en TeX Live-installation.** Kontrollen ligger i `render()`, direkt efter payloadkontrollerna och före escaping och mallrendering, så en miljö utan TeX misslyckas snabbt och som just det. Meddelandet namnger först `ghcr.io/swedev/klartex-render:<version>` — taggen är den installerade klartex-versionen — som renderar utan TeX på värden, och därefter installationsvägen för den som kör klartex som bibliotek i sin egen miljö: `brew install --cask mactex` på macOS, annars hela paketuppsättningen i `.github/tl_packages` — distributionens `texlive-xetex` ensamt saknar `ulem`, `tcolorbox` och `siunitx`. (#44)
 
 ## 0.19.0 — 2026-09-03
 

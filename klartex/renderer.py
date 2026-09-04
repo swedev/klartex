@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import tempfile
 from collections.abc import Sequence
+from importlib.metadata import PackageNotFoundError, version as pkg_version
 from pathlib import Path
 
 import jinja2
@@ -222,12 +223,23 @@ def render(
 
     Returns:
         PDF file contents as bytes
+
+    Raises:
+        RuntimeError: `xelatex` is not on PATH, or the compilation failed.
+            The toolchain check runs after every check on the payload — so
+            validation errors stay reportable where TeX is absent — and
+            before any escaping or template rendering, so a missing toolchain
+            surfaces as itself rather than as a failure mid-render.
     """
     validate(template_name, data)
 
     template_info = get_registry()[template_name]
 
+    # The payload checks first, so they remain reachable without TeX; both
+    # also settle the asset root the compile will run in.
     _preflight_font_files(data, asset_dir)
+    _resolve_asset_root(asset_dir)
+    _require_xelatex()
 
     # Escape user data for LaTeX safety
     escaped_data = escape_data(data)
@@ -255,6 +267,47 @@ def render(
         page_template_source=page_template_source,
     )
     return _compile_tex(tex_source, asset_dir=asset_dir)
+
+
+def _render_image_reference() -> str:
+    """The render image tag matching this installation.
+
+    Every release publishes `ghcr.io/swedev/klartex-render:X.Y.Z` with the
+    tag equal to the klartex version, so the installed version names an image
+    that exists. Falls back to the placeholder when no distribution metadata
+    is installed (a source tree on `sys.path`), where no version is known.
+    """
+    try:
+        return f"ghcr.io/swedev/klartex-render:{pkg_version('klartex')}"
+    except PackageNotFoundError:
+        return "ghcr.io/swedev/klartex-render:X.Y.Z"
+
+
+def _require_xelatex() -> None:
+    """Fail before any rendering work when the environment has no TeX.
+
+    Raises:
+        RuntimeError: If `xelatex` is not on PATH. The message names the
+            published render image before the TeX Live install, since the
+            image renders without a multi-gigabyte install and without root
+            on the host; installing is the answer for callers that embed
+            klartex as a library in their own environment.
+    """
+    if shutil.which("xelatex"):
+        return
+    raise RuntimeError(
+        "xelatex not found: this environment has no TeX installation.\n"
+        "\n"
+        "To render without installing TeX, run the published render image — "
+        "it serves POST /render locally and leaves the host without a TeX "
+        "install:\n"
+        f"  docker run --rm -p 127.0.0.1:8000:8000 {_render_image_reference()}\n"
+        "\n"
+        "Install TeX Live if klartex is to run as a library in this "
+        "environment:\n"
+        "  macOS:  brew install --cask mactex\n"
+        "  Ubuntu: apt install texlive-xetex"
+    )
 
 
 def _resolve_asset_root(asset_dir: Path | str | None) -> Path:
@@ -478,17 +531,15 @@ def _compile_tex(tex_source: str, asset_dir: Path | str | None = None) -> bytes:
     instead, whose order (tempdir, bundled cls/, asset_dir, caller cwd,
     inherited) is unchanged by the cwd switch because the leading `.` entry
     is replaced with the absolute tempdir path.
+
+    Presence of the toolchain is `render()`'s check (`_require_xelatex`),
+    made before any of the rendering work whose output arrives here.
     """
-    # Resolved before the xelatex-presence check: with cwd=asset_root a bogus
-    # directory would otherwise die as a raw FileNotFoundError from subprocess.
+    # `render()` has already resolved this and rejected a bogus directory,
+    # which with cwd=asset_root would otherwise die as a raw FileNotFoundError
+    # from subprocess.
     asset_root = _resolve_asset_root(asset_dir)
 
-    if not shutil.which("xelatex"):
-        raise RuntimeError(
-            "xelatex not found. Install TeX Live:\n"
-            "  macOS:  brew install --cask mactex\n"
-            "  Ubuntu: apt install texlive-xetex"
-        )
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp = Path(tmpdir)
 

@@ -7,6 +7,8 @@ from pathlib import Path
 import pytest
 
 from klartex.block_engine import prepare_block_context, BLOCK_ENGINE_TEMPLATE
+from klartex.renderer import render
+from tests.test_pdf_text_layer import _pages, requires_tools
 
 FIXTURES = Path(__file__).parent / "fixtures"
 HAS_XELATEX = shutil.which("xelatex") is not None
@@ -1399,6 +1401,142 @@ class TestTitlePageOptionalParties:
         assert r"\makedoctitle{}{}{Bara titel}" in tex
 
 
+class TestTitlePageChrome:
+    r"""Issue #66: a `title_page` block is its own page and carries neither
+    header nor footer, whatever the page template says — predefined slots,
+    per-slot custom sources and a whole-page source alike. The guarantee comes
+    from `\clearpage\thispagestyle{empty}` at the start of `\makedoctitle`;
+    nothing in the composition suppresses first-page chrome any more.
+    """
+
+    ORG = "Föreningen Kantlös"
+    LETTERHEAD_PAGENUMBER = {
+        "header": {"variant": "letterhead", "fields": {"org_name": ORG}},
+        "footer": {"variant": "pagenumber", "page_numbers": "on"},
+    }
+
+    @staticmethod
+    def _doc(page_template=None, lead=False):
+        """A title page plus a page of body text; `lead` puts ordinary text
+        before the title page."""
+        body = []
+        if lead:
+            body.append({"type": "text", "text": "Inledande text före titelsidan."})
+        body += [
+            {"type": "title_page", "title": "Chromefri titelsida"},
+            {"type": "heading", "text": "Efter titelsidan"},
+            {"type": "text", "text": "Brödtext på sidan efter titelsidan."},
+        ]
+        data = {"body": body}
+        if page_template is not None:
+            data["page_template"] = page_template
+        return data
+
+    # --- source level ------------------------------------------------------
+
+    def test_no_plain_page_style_is_emitted(self):
+        tex = _render_tex(self._doc(self.LETTERHEAD_PAGENUMBER))
+        assert r"\fancypagestyle{plain}" not in tex
+        assert r"\thispagestyle{plain}" not in tex
+
+    def test_no_plain_page_style_with_an_empty_header(self):
+        tex = _render_tex(self._doc({"header": None}))
+        assert r"\fancypagestyle{plain}" not in tex
+        assert r"\thispagestyle{plain}" not in tex
+
+    # --- PDF level ---------------------------------------------------------
+
+    @requires_tools
+    def test_predefined_slots_leave_the_title_page_bare(self):
+        pages = _pages(render(BLOCK_ENGINE_TEMPLATE, self._doc(self.LETTERHEAD_PAGENUMBER)))
+        assert len(pages) == 2
+        assert "Chromefri titelsida" in pages[0]
+        assert self.ORG not in pages[0]
+        assert "Sida 1" not in pages[0]
+        assert self.ORG in pages[1]
+        assert "Sida 2 av 2" in pages[1]
+
+    @requires_tools
+    def test_columns_footer_is_absent_from_the_title_page(self):
+        data = self._doc(
+            {
+                "footer": {
+                    "variant": "columns",
+                    "fields": {"company": "Bolaget Kantlös AB"},
+                    "page_numbers": "on",
+                }
+            }
+        )
+        pages = _pages(render(BLOCK_ENGINE_TEMPLATE, data))
+        assert len(pages) == 2
+        assert "Bolaget Kantlös AB" not in pages[0]
+        assert "Bolaget Kantlös AB" in pages[1]
+
+    @requires_tools
+    def test_per_slot_custom_sources_are_absent_from_the_title_page(self):
+        pdf = render(
+            BLOCK_ENGINE_TEMPLATE,
+            self._doc(),
+            header_source=r"\fancyhead[L]{HUVUDMARKOR}",
+            footer_source=r"\fancyfoot[C]{FOTMARKOR}",
+        )
+        pages = _pages(pdf)
+        assert len(pages) == 2
+        assert "HUVUDMARKOR" not in pages[0]
+        assert "FOTMARKOR" not in pages[0]
+        assert "HUVUDMARKOR" in pages[1]
+        assert "FOTMARKOR" in pages[1]
+
+    @requires_tools
+    def test_whole_page_source_is_absent_from_the_title_page(self):
+        pdf = render(
+            BLOCK_ENGINE_TEMPLATE,
+            self._doc(),
+            page_template_source=r"\fancyhead[L]{HUVUDMARKOR}\fancyfoot[C]{FOTMARKOR}",
+        )
+        pages = _pages(pdf)
+        assert len(pages) == 2
+        assert "HUVUDMARKOR" not in pages[0]
+        assert "FOTMARKOR" not in pages[0]
+        assert "HUVUDMARKOR" in pages[1]
+        assert "FOTMARKOR" in pages[1]
+
+    @requires_tools
+    def test_a_title_block_spanning_pages_leaves_every_page_bare(self):
+        r"""The block sets `\pagestyle{empty}` for its whole extent, not just
+        `\thispagestyle` for the page the title starts on, so a title long
+        enough to overflow does not pick the chrome back up on the way."""
+        long_party = " ".join(
+            ["Sammanslutningen för Långnamnade Föreningar i Norra Distriktet"] * 30
+        )
+        data = self._doc(self.LETTERHEAD_PAGENUMBER)
+        data["body"][0]["party1"] = long_party
+        pages = _pages(render(BLOCK_ENGINE_TEMPLATE, data))
+        assert len(pages) == 3, "the title block must still span two pages here"
+        for page in pages[:2]:
+            assert self.ORG not in page
+            assert "Sida" not in page
+        assert self.ORG in pages[2]
+        assert "Sida 3 av 3" in pages[2]
+
+    @requires_tools
+    def test_a_mid_document_title_page_starts_its_own_page(self):
+        r"""The leading `\clearpage` keeps the preceding content's chrome on
+        its own page instead of stripping it along with the title page's."""
+        pages = _pages(
+            render(BLOCK_ENGINE_TEMPLATE, self._doc(self.LETTERHEAD_PAGENUMBER, lead=True))
+        )
+        assert len(pages) == 3
+        assert "Inledande text före titelsidan." in pages[0]
+        assert self.ORG in pages[0]
+        assert "Sida 1 av 3" in pages[0]
+        assert "Chromefri titelsida" in pages[1]
+        assert self.ORG not in pages[1]
+        assert "Sida 2" not in pages[1]
+        assert self.ORG in pages[2]
+        assert "Sida 3 av 3" in pages[2]
+
+
 class TestSpacingOverrides:
     """Issue #29: per-instance spacing_before/spacing_after and document-level
     block_settings, resolution per-instance > block_settings > default."""
@@ -2109,12 +2247,11 @@ class TestPageTemplateSlots:
 
     def test_custom_footer_keeps_the_predefined_header(self):
         tex = self._tex(
-            {"header": "letterhead", "first_page_header": False},
+            {"header": "letterhead"},
             footer_source=r"\fancyfoot[C]{\thepage}",
         )
         assert r"\fancyhead[L]{%" in tex
         assert r"\fancyfoot[C]{\thepage}" in tex
-        assert r"\thispagestyle{plain}" in tex
 
     def test_custom_footer_owns_page_numbers(self):
         """A custom source is emitted verbatim; nothing wraps it in the
@@ -2302,11 +2439,11 @@ class TestWholePageTemplateSource:
         assert tex.index(r"\setmainfont{Futura}") < tex.index("% whole page")
         assert tex.index(r"\renewcommand{\kxreclaimtop}{3cm}") < tex.index("% whole page")
 
-    def test_first_page_plain_style_is_suppressed(self):
-        tex = self._tex(
-            {"first_page_header": False}, page_template_source="% whole page"
-        )
-        assert r"\thispagestyle{plain}" not in tex
+    def test_first_page_header_is_rejected_with_a_whole_page_source(self):
+        """The loader's unknown-key check runs before any source handling, so
+        the retired key is rejected in this mode too."""
+        with pytest.raises(ValueError, match="first_page_header"):
+            self._tex({"first_page_header": False}, page_template_source="% whole page")
 
     def test_no_header_space_reclaim(self):
         tex = self._tex({}, page_template_source="% whole page")

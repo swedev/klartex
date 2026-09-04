@@ -201,7 +201,9 @@ A slot that is left out takes the surface's default: the block engine has an emp
 
 The object form of `letterhead` requires `fields.org_name` — the name is what the header is built around, and without it the other details would not be printed. A header with no details at all is written as the variant name on its own (`"header": "letterhead"`). `logo` is a filename free of whitespace and LaTeX-special characters; the schema states the pattern. The contact column is narrow and does not hyphenate, so a long `web` or `email` wraps after `@`, `.` and `/` to fit.
 
-Beside the slots there are document-level settings — `font`, `header_font`, `diff_style` and `margins` — which apply whether or not a slot has its own LaTeX, plus `first_page_header`.
+Beside the slots there are document-level settings — `font`, `header_font`, `diff_style` and `margins` — which apply whether or not a slot has its own LaTeX.
+
+A `title_page` block is a page of its own and renders without header or footer, whatever the page template says.
 
 ### Page numbers
 

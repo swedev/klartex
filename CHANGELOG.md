@@ -3,10 +3,14 @@
 ## Orealiserat
 
 ### Breaking changes
+- **`page_template.first_page_header` är borta.** Titelsidans chrome ägs av `title_page`-blocket, och en flagga som bara rörde sidhuvudet hade ingen sammanhängande innebörd kvar. Inget alias: nyckeln avvisas av schemat och av laddaren (`Unknown page_template key(s): first_page_header`, `detail.path == ["page_template"]` i `klartex serve`). Ett dokument utan `title_page` kan därmed inte längre få sidhuvudslös förstasida. (#66)
 - **`page_template.page_numbers` är borta från dokumentnivån och sitter på den sidfotsvariant som skriver ut sidnumret.** Inställningen är tristate — `"auto"` (standard, sidnummer bara när dokumentet är längre än en sida), `"on"` (alltid) och `"off"` (aldrig) — och finns på både `pagenumber` och `columns`. Inget alias: ett toppnivå-`page_numbers` avvisas av schemat och av laddaren (`detail.path == ["page_template"]` i `klartex serve`), och en boolean på slotten avvisas med de tre tillåtna värdena i felmeddelandet. **Standardläget ändrar utseendet:** ett ensidigt dokument med `pagenumber`-foten skrev tidigare `Sida 1 av 1` och skriver nu inget sidnummer — begär `"on"` för det gamla beteendet. `columns`-foten behåller sitt nuvarande beteende, som redan var `auto`. Producenter måste sluta skicka toppnivå-`page_numbers` före den här releasen. (#67)
 
 ### New features
 - **Sidnumrets villkor är ett delat klassmakro.** `\kxifpagenumbers{<läge>}{<innehåll>}` i `klartex-base.cls` avgör vid LaTeX-tid om sidnumret skrivs ut; det används av `pagenumber`-fragmentet, av `klartex-footer.sty` och kan anropas från en sidfot med egen LaTeX. `auto` läser `LastPage`, som är definierat först på andra xelatex-körningen — renderaren kör alltid två. Laddaren validerar dessutom enum-inställningars värden, inte bara nycklarna, så en boolean fångas även från anropare som aldrig kört JSON-schemat. (#67)
+
+### Fixes
+- **`title_page` renderas utan sidhuvud och sidfot.** `\makedoctitle` inleder med `\clearpage` och sätter `\pagestyle{empty}` för hela blocket, så titelsidan är en egen sida helt utan chrome oavsett sidmall — fördefinierade slotar, egna slotkällor och helsidesmall lika. En titel som svämmar över till fler sidor lämnar var och en av dem bar. **Utseendet ändras för befintliga dokument** som kombinerar `title_page` med ett sidhuvud eller en sidfot: chromet försvinner från titelsidan. Sidbrytningen i inledningen betyder också att ett `title_page` efter annat innehåll börjar på ny sida, i stället för att dela sida med det föregående innehållet. (#66)
 
 ## 0.19.0 — 2026-09-03
 

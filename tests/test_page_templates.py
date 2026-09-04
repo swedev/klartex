@@ -27,7 +27,6 @@ class TestDefaults:
         assert pt.header.is_empty
         assert pt.footer.variant == "pagenumber"
         assert pt.footer.page_numbers == "auto"
-        assert pt.first_page_header is False
 
     def test_empty_object_equals_none_spec(self):
         assert load_page_template({}) == load_page_template(None)
@@ -39,7 +38,6 @@ class TestDefaults:
         assert pt.footer.settings["title"] is True
         assert pt.footer.page_numbers == "auto"
         assert pt.footer.has_fields is False
-        assert pt.first_page_header is True
 
     def test_partial_object_keeps_the_default_for_the_other_slot(self):
         pt = load_page_template({"footer": None}, defaults=RECIPE_DEFAULT_SLOTS)
@@ -62,16 +60,16 @@ class TestPageTemplateOverrides:
         with pytest.raises(ValueError, match="page_numbers"):
             load_page_template({**LETTERHEAD_TITLE, "page_numbers": False})
 
-    def test_first_page_header_override(self):
-        pt = load_page_template({**LETTERHEAD_TITLE, "first_page_header": False})
-        assert pt.first_page_header is False
+    def test_first_page_header_is_not_a_page_template_key(self):
+        with pytest.raises(ValueError, match="first_page_header"):
+            load_page_template({**LETTERHEAD_TITLE, "first_page_header": False})
 
     def test_multiple_overrides(self):
         pt = load_page_template(
-            {"header": "logo", "footer": None, "first_page_header": False}
+            {"header": "logo", "footer": None, "diff_style": "underline"}
         )
         assert pt.footer.is_empty
-        assert pt.first_page_header is False
+        assert pt.diff_style == "underline"
 
 
 class TestFooterPageNumbers:
@@ -273,12 +271,10 @@ class TestSlotForm:
         pt = load_page_template({"header": "logo"})
         assert pt.header.variant == "logo"
         assert pt.footer.variant == "pagenumber"
-        assert pt.first_page_header is True
 
     def test_null_header_is_empty(self):
         pt = load_page_template({"header": None})
         assert pt.header.is_empty
-        assert pt.first_page_header is False
 
     def test_null_footer_is_empty(self):
         pt = load_page_template({"footer": None})

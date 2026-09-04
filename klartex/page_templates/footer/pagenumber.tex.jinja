@@ -1,7 +1,13 @@
+%# Page-number footer: the document title (when `title` is set) prints
+%# unconditionally; the page number and the bullet separator that introduces
+%# it are governed by `page_numbers` (\kxifpagenumbers, klartex-base).
 \makeatletter
 \fancyfoot[C]{%
     \kx@setlang%
     \fontsize{6pt}{9pt}\selectfont\color{brandsecondary}\kxheaderfont
-    \BLOCK{+ if title}\ifdefempty{\doctitle}{}{\doctitle\ \textbullet\ }\BLOCK{endif}\kx@page\ \thepage\ \kx@of\ \pageref{LastPage}%
+\BLOCK{if title}
+    \ifdefempty{\doctitle}{}{\doctitle}%
+\BLOCK{endif}
+    \kxifpagenumbers{\VAR{page_numbers}}{\BLOCK{if title}\ifdefempty{\doctitle}{}{\ \textbullet\ }\BLOCK{endif}\kx@page\ \thepage\ \kx@of\ \pageref{LastPage}}%
 }
 \makeatother

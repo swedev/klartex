@@ -4,8 +4,9 @@
 %#      before both slots, so a custom slot source's own geometry wins
 %#   2. header slot — custom source, or variant fragment preceded by the
 %#      \renewcommand's for its fields
-%#   3. footer slot — custom source or the variant fragment. A whole-page
-%#      source owns both slots and is emitted once, in the header arm.
+%#   3. footer slot — custom source or the variant fragment; a fragment owns
+%#      its own page-number conditional. A whole-page source owns both slots
+%#      and is emitted once, in the header arm.
 %#   4. header-space reclaim — after both slots, so its \ifdefempty test sees
 %#      the final value of the contract macros
 %#   5. first-page style
@@ -36,11 +37,7 @@
 \VAR{page_template.footer.source}
 \BLOCK{endif}
 \BLOCK{elif page_template.footer.is_predefined}
-\BLOCK{if page_template.footer.variant == 'pagenumber' and not page_template.page_numbers}
-\fancyfoot[C]{}
-\BLOCK{else}
 \VAR{page_template.footer_fragment}
-\BLOCK{endif}
 \BLOCK{endif}
 %# --- Header-space reclaim ---
 \BLOCK{if page_template.header_reclaim}

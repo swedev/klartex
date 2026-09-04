@@ -5,16 +5,18 @@
 %   \usepackage{klartex-footer}
 %   \kxfooter{company={Bolaget AB}, address={Storgatan 1\\123 45 Stad},
 %             orgnr={556123-4567}, ftax=true, bankgiro={1234-5678},
-%             pagenumbers=true}
+%             pagenumbers=auto}
 %
 % All keys are optional: company, address, seat, phone, email, web,
-% bankgiro, plusgiro, iban, bic, orgnr, vatnr, ftax (bool), pagenumbers (bool).
+% bankgiro, plusgiro, iban, bic, orgnr, vatnr, ftax (bool),
+% pagenumbers (auto|on|off).
 % Columns: Adress (company, address), Företag (orgnr, vatnr, seat, F-skatt,
 % phone/email/web), Betalning (bankgiro/plusgiro/iban/bic). A column whose
 % keys are all empty is dropped, leaving its width blank.
 % Break the address into lines with \\ as in a postal address. Page numbers
-% render only when the document has more than one page. Labels follow the
-% document language (\kx@lang from klartex-base).
+% follow pagenumbers: auto (the default) renders them only when the document
+% has more than one page, on always, off never. Labels follow the document
+% language (\kx@lang from klartex-base).
 %
 % Label mode (\kxfooterlabelmissingtrue, the conditional declared in
 % klartex-base): every column is typeset, and one that has no content names
@@ -26,7 +28,6 @@
 
 \RequirePackage{keyval}
 \RequirePackage{etoolbox}
-\RequirePackage{refcount}
 
 \makeatletter
 
@@ -43,7 +44,7 @@
 \def\kxf@orgnr{}
 \def\kxf@vatnr{}
 \newif\ifkxf@ftax
-\newif\ifkxf@pagenumbers
+\def\kxf@pagenumbers{auto}
 
 \define@key{kxfooter}{company}{\def\kxf@company{#1}}
 \define@key{kxfooter}{address}{\def\kxf@address{#1}}
@@ -58,7 +59,7 @@
 \define@key{kxfooter}{orgnr}{\def\kxf@orgnr{#1}}
 \define@key{kxfooter}{vatnr}{\def\kxf@vatnr{#1}}
 \define@key{kxfooter}{ftax}[true]{\csname kxf@ftax#1\endcsname}
-\define@key{kxfooter}{pagenumbers}[true]{\csname kxf@pagenumbers#1\endcsname}
+\define@key{kxfooter}{pagenumbers}[auto]{\def\kxf@pagenumbers{#1}}
 
 % \kxf@T{<sv>}{<en>} - pick text by document language
 \newcommand{\kxf@T}[2]{\ifdefstring{\kx@lang}{en}{#2}{#1}}
@@ -177,16 +178,15 @@
                 \kxf@row{BIC}{\kxf@bic}%
             }%
         }%
-        % Page number: only when the document actually has more than one page
-        % (rare for invoices), right-aligned under the columns.
-        \ifkxf@pagenumbers
-            \ifnum\getpagerefnumber{LastPage}>1
-                \par\vspace{4pt}%
-                % \pageref* (no hyperlink) — a link would tint the number in
-                % the profile's link color.
-                \makebox[\linewidth][r]{\kx@page\ \thepage\ \kx@of\ \pageref*{LastPage}}%
-            \fi
-        \fi
+        % Page number per the pagenumbers mode (auto: only when the document
+        % actually has more than one page, which is rare for invoices),
+        % right-aligned under the columns.
+        \kxifpagenumbers{\kxf@pagenumbers}{%
+            \par\vspace{4pt}%
+            % \pageref* (no hyperlink) — a link would tint the number in
+            % the profile's link color.
+            \makebox[\linewidth][r]{\kx@page\ \thepage\ \kx@of\ \pageref*{LastPage}}%
+        }%
         }}%
         \raisebox{\dp\kxf@footbox}[0pt][0pt]{\usebox{\kxf@footbox}}%
     }%

@@ -30,13 +30,13 @@ Page template data in the render request is an object::
         },
         "footer": {
             "variant": "columns",
+            "page_numbers": "off",
             "fields": {
                 "company": "Bolaget AB",
                 "org_number": "556123-4567",
                 "bankgiro": "1234-5678"
             }
         },
-        "page_numbers": false,
         "first_page_header": false,
         "font": "Futura",
         "header_font": "Futura",
@@ -219,6 +219,21 @@ TITLE_SETTING = {
     "description": "true prints the document title before the page number.",
 }
 
+#: Page numbers are a setting on the footer variant that carries them, not a
+#: document-level switch. A future header variant with page numbers takes the
+#: same setting on its own slot.
+PAGE_NUMBERS_SETTING = {
+    "type": "string",
+    "enum": ["auto", "on", "off"],
+    "default": "auto",
+    "description": (
+        "When the page number is printed: \"auto\" (default — only when the "
+        "document has more than one page), \"on\" (always, so a one-page "
+        "document reads \"Sida 1 av 1\") or \"off\" (never). The document "
+        "title, where the variant prints one, is unaffected."
+    ),
+}
+
 HEADER_VARIANTS: dict[str, Variant] = {
     "letterhead": Variant(
         description="Organisation details on the left and the logo on the right of the header",
@@ -262,13 +277,14 @@ HEADER_VARIANTS: dict[str, Variant] = {
 
 FOOTER_VARIANTS: dict[str, Variant] = {
     "pagenumber": Variant(
-        description="Page number centred in the footer, preceded by the document title when title is set",
+        description="Page number centred in the footer per page_numbers, preceded by the document title when title is set",
         label="page-number",
-        settings={"title": TITLE_SETTING},
+        settings={"title": TITLE_SETTING, "page_numbers": PAGE_NUMBERS_SETTING},
     ),
     "columns": Variant(
-        description="Multi-column footer with company, contact and payment details from fields, and page numbers when the document runs past one page",
+        description="Multi-column footer with company, contact and payment details from fields, and page numbers per page_numbers",
         label="columns",
+        settings={"page_numbers": PAGE_NUMBERS_SETTING},
         fields={
             "company": Field(TEXT, "Company name"),
             "address": Field(
@@ -615,7 +631,6 @@ def font_files(spec: dict | None) -> list[str]:
 
 # Document-level settings on the page_template object.
 DOCUMENT_SETTINGS: dict[str, dict] = {
-    "page_numbers": {"type": "boolean", "description": "Show page numbers in the footer"},
     "first_page_header": {"type": "boolean", "description": "Show the header on the first page"},
     "font": {
         "description": (
@@ -714,6 +729,13 @@ class SlotSpec:
     def has_fields(self) -> bool:
         return bool(self.fields)
 
+    @property
+    def page_numbers(self) -> str:
+        """The page-number mode the slot renders with: ``auto``, ``on`` or
+        ``off``. A variant that carries no such setting reports the default,
+        which its fragment ignores."""
+        return self.settings.get("page_numbers", PAGE_NUMBERS_SETTING["default"])
+
 
 @dataclass
 class PageTemplate:
@@ -721,7 +743,6 @@ class PageTemplate:
 
     header: SlotSpec = field(default_factory=SlotSpec)
     footer: SlotSpec = field(default_factory=SlotSpec)
-    page_numbers: bool = True
     first_page_header: bool = True
     font: str | dict | None = None
     header_font: str | dict | None = None
@@ -767,7 +788,7 @@ class PageTemplate:
             self.footer.variant,
             {
                 **self.footer.settings,
-                "page_numbers": self.page_numbers,
+                "page_numbers": self.footer.page_numbers,
                 "keyvals": footer_keyvals(self.footer.fields),
             },
         )
@@ -861,6 +882,18 @@ def _check_settings(slot: str, variant: str, settings: dict) -> None:
             raise ValueError(
                 f"Unknown setting '{key}' for the {variant} {slot} variant. "
                 f"Allowed: {', '.join(allowed)}"
+            )
+    # load_page_template is reachable from callers that never ran the JSON
+    # Schema, so a settings value constrained to an enum is checked here too.
+    for key, schema in spec.settings.items():
+        choices = schema.get("enum")
+        if not choices or key not in settings:
+            continue
+        value = settings[key]
+        if not isinstance(value, str) or value not in choices:
+            raise ValueError(
+                f"Setting '{key}' on the {variant} {slot} variant must be one "
+                f"of: {', '.join(choices)}, got {value!r}"
             )
     fields = settings.get("fields")
     if fields is not None:
@@ -1016,9 +1049,6 @@ def load_page_template(
                 "footer", overrides.get("footer", _MISSING), defaults["footer"]
             )
 
-    page_numbers = overrides.get("page_numbers")
-    if page_numbers is None:
-        page_numbers = True
     first_page_header = overrides.get("first_page_header")
     if first_page_header is None:
         # A header that puts nothing on the page has nothing to suppress on
@@ -1028,7 +1058,6 @@ def load_page_template(
     template = PageTemplate(
         header=header,
         footer=footer,
-        page_numbers=page_numbers,
         first_page_header=first_page_header,
         font=font,
         header_font=header_font,

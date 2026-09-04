@@ -211,6 +211,27 @@ def test_render_schema_validation_path_is_unchanged():
     assert detail["path"] == []
 
 
+def test_render_top_level_page_numbers_reports_the_page_template_object():
+    """`page_numbers` lives on the footer slot carrying the numbers. A payload
+    still sending it at the document level is rejected on the containing
+    object, with the key named in the message."""
+    r = client.post(
+        "/render",
+        json={
+            "template": "_block",
+            "data": {
+                "body": [{"type": "heading", "text": "x"}],
+                "page_template": {"page_numbers": False},
+            },
+        },
+    )
+    assert r.status_code == 400
+    detail = r.json()["detail"]
+    assert detail["type"] == "validation_error"
+    assert detail["path"] == ["page_template"]
+    assert "page_numbers" in detail["message"]
+
+
 def test_render_faktura_top_level_footer_reports_its_path():
     """The invoice recipes carry their footer in the page template's footer
     slot; a payload sending a top-level `footer` gets the field named."""

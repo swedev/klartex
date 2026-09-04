@@ -201,7 +201,21 @@ A slot that is left out takes the surface's default: the block engine has an emp
 
 The object form of `letterhead` requires `fields.org_name` — the name is what the header is built around, and without it the other details would not be printed. A header with no details at all is written as the variant name on its own (`"header": "letterhead"`). `logo` is a filename free of whitespace and LaTeX-special characters; the schema states the pattern. The contact column is narrow and does not hyphenate, so a long `web` or `email` wraps after `@`, `.` and `/` to fit.
 
-Beside the slots there are document-level settings — `font`, `header_font`, `diff_style` and `margins` — which apply whether or not a slot has its own LaTeX, plus `page_numbers` and `first_page_header`.
+Beside the slots there are document-level settings — `font`, `header_font`, `diff_style` and `margins` — which apply whether or not a slot has its own LaTeX, plus `first_page_header`.
+
+### Page numbers
+
+Page numbering is a setting on the footer variant that prints it — both `pagenumber` and `columns` carry `page_numbers` among their settings:
+
+```json
+"page_template": { "footer": { "variant": "pagenumber", "page_numbers": "on" } }
+```
+
+- `"auto"` (default) — page numbers only when the document runs past one page.
+- `"on"` — always, so a one-page document reads `Sida 1 av 1`.
+- `"off"` — never.
+
+The setting governs the page number, not the footer: `pagenumber` with `title` prints the document title in every mode. A footer with its own LaTeX owns its page numbers and can use the same conditional through `\kxifpagenumbers{<mode>}{<content>}`.
 
 ### Margins
 

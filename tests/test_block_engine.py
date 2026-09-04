@@ -40,13 +40,16 @@ class TestPrepareBlockContext:
 
     def test_page_template_object(self):
         data = {
-            "page_template": {"header": "logo", "page_numbers": False},
+            "page_template": {
+                "header": "logo",
+                "footer": {"variant": "pagenumber", "page_numbers": "off"},
+            },
             "body": [{"type": "heading", "text": "Test"}],
         }
         ctx = prepare_block_context(data)
         assert ctx["page_template"].header.variant == "logo"
         assert "fancyhead" in ctx["page_template"].header_fragment
-        assert ctx["page_template"].page_numbers is False
+        assert ctx["page_template"].footer.page_numbers == "off"
 
     def test_caller_provided_sources_override(self):
         data = {"body": [{"type": "heading", "text": "Test"}]}
@@ -2035,9 +2038,11 @@ class TestPageTemplateSlots:
         assert self._tex(_MISSING_PT) == self._tex({"header": None, "footer": "pagenumber"})
 
     def test_only_a_title_footer_prints_the_title(self):
-        assert r"\doctitle\ \textbullet\ " in self._tex({"footer": {"variant": "pagenumber", "title": True}})
-        assert r"\doctitle\ \textbullet\ " not in self._tex({"header": "logo"})
-        assert r"\doctitle\ \textbullet\ " not in self._tex({"header": None})
+        assert r"\ifdefempty{\doctitle}{}{\doctitle}" in self._tex(
+            {"footer": {"variant": "pagenumber", "title": True}}
+        )
+        assert r"\doctitle" not in self._tex({"header": "logo"})
+        assert r"\doctitle" not in self._tex({"header": None})
 
     # --- header-space reclaim ----------------------------------------------
 
@@ -2112,11 +2117,47 @@ class TestPageTemplateSlots:
         assert r"\thispagestyle{plain}" in tex
 
     def test_custom_footer_owns_page_numbers(self):
+        """A custom source is emitted verbatim; nothing wraps it in the
+        page-number conditional or blanks the footer on its behalf."""
         tex = self._tex(
-            {"header": "letterhead", "page_numbers": False},
+            {"header": "letterhead"},
             footer_source=r"\fancyfoot[C]{\thepage}",
         )
+        assert r"\fancyfoot[C]{\thepage}" in tex
         assert r"\fancyfoot[C]{}" not in tex
+        assert r"\kxifpagenumbers" not in tex
+
+    # --- page numbers ------------------------------------------------------
+
+    def test_pagenumber_footer_defaults_to_auto(self):
+        tex = self._tex({"footer": "pagenumber"})
+        assert r"\kxifpagenumbers{auto}" in tex
+
+    def test_pagenumber_footer_carries_its_mode(self):
+        for mode in ("auto", "on", "off"):
+            tex = self._tex({"footer": {"variant": "pagenumber", "page_numbers": mode}})
+            assert rf"\kxifpagenumbers{{{mode}}}" in tex
+
+    def test_composition_never_blanks_the_footer(self):
+        """The fragment owns its own conditional, so no arm of the composition
+        emits an empty footer in its place."""
+        for mode in ("auto", "on", "off"):
+            tex = self._tex({"footer": {"variant": "pagenumber", "page_numbers": mode}})
+            assert r"\fancyfoot[C]{}" not in tex
+
+    def test_title_prints_outside_the_page_number_conditional(self):
+        tex = self._tex(
+            {"footer": {"variant": "pagenumber", "title": True, "page_numbers": "off"}}
+        )
+        title = tex.index(r"\doctitle")
+        assert title < tex.index(r"\kxifpagenumbers{off}")
+        assert r"\textbullet" not in tex[:title]
+
+    def test_columns_footer_emits_the_mode_as_a_keyval(self):
+        assert "pagenumbers=auto" in self._tex({"footer": "columns"})
+        assert "pagenumbers=on" in self._tex(
+            {"footer": {"variant": "columns", "page_numbers": "on", "fields": {"company": "AB"}}}
+        )
 
     # --- margins -----------------------------------------------------------
 
@@ -2271,10 +2312,12 @@ class TestWholePageTemplateSource:
         tex = self._tex({}, page_template_source="% whole page")
         assert r"\ifdefempty{\orgname}" not in tex
 
-    def test_page_numbers_false_emits_no_empty_footer(self):
-        """The source owns the footer, so nothing blanks it on its behalf."""
-        tex = self._tex({"page_numbers": False}, page_template_source="% whole page")
+    def test_page_numbers_are_left_to_the_source(self):
+        """The source owns the footer, so nothing blanks it or wraps it in the
+        page-number conditional on its behalf."""
+        tex = self._tex({}, page_template_source="% whole page")
         assert r"\fancyfoot[C]{}" not in tex
+        assert r"\kxifpagenumbers" not in tex
 
 
 def test_whole_page_source_conflicts_with_a_slot_source():

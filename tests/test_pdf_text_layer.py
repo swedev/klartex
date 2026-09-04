@@ -202,6 +202,89 @@ def test_title_footer_carries_the_title_and_page_count():
     assert "Kallelse till stämma • Sida 1 av 2" in pages[0]
 
 
+def _one_page_body() -> list[dict]:
+    return [{"type": "heading", "text": "Kallelse"}, {"type": "text", "text": LOREM}]
+
+
+def _footer_pages(footer, body):
+    data = {"lang": "sv", "page_template": {"footer": footer}, "body": body}
+    return _pages(render(BLOCK_ENGINE_TEMPLATE, data))
+
+
+COLUMNS_FIELDS = {"company": "Bolaget AB", "org_number": "556123-4567"}
+
+
+@requires_tools
+@pytest.mark.parametrize(
+    "footer,body,expected",
+    [
+        # pagenumber — auto is the default and prints nothing on one page.
+        ("pagenumber", _one_page_body(), None),
+        ({"variant": "pagenumber", "page_numbers": "auto"}, _one_page_body(), None),
+        ({"variant": "pagenumber", "page_numbers": "on"}, _one_page_body(), "Sida 1 av 1"),
+        ({"variant": "pagenumber", "page_numbers": "off"}, _two_page_body("Kallelse"), None),
+        ({"variant": "pagenumber", "page_numbers": "auto"}, _two_page_body("Kallelse"), "Sida 1 av 2"),
+        # columns — the same three modes on the multi-column footer.
+        ({"variant": "columns", "fields": COLUMNS_FIELDS}, _one_page_body(), None),
+        ({"variant": "columns", "fields": COLUMNS_FIELDS}, _two_page_body("Kallelse"), "Sida 1 av 2"),
+        (
+            {"variant": "columns", "page_numbers": "off", "fields": COLUMNS_FIELDS},
+            _two_page_body("Kallelse"),
+            None,
+        ),
+        (
+            {"variant": "columns", "page_numbers": "on", "fields": COLUMNS_FIELDS},
+            _one_page_body(),
+            "Sida 1 av 1",
+        ),
+    ],
+)
+def test_page_number_modes_on_both_footer_variants(footer, body, expected):
+    """auto/on/off decide the page number at LaTeX time, on the slot that
+    carries it. `None` means no page number anywhere in the document."""
+    pages = _footer_pages(footer, body)
+    if expected is None:
+        for page in pages:
+            assert "Sida" not in page
+    else:
+        assert expected in pages[0]
+
+
+@requires_tools
+def test_title_footer_prints_the_title_alone_on_a_one_page_document():
+    """The mode governs the page number, not the footer: under `auto` a
+    one-page titled document keeps its title and drops the number and its
+    separator."""
+    data = {
+        "lang": "sv",
+        "page_template": {"footer": {"variant": "pagenumber", "title": True}},
+        "body": _one_page_body(),
+    }
+    pages = _pages(render(BLOCK_ENGINE_TEMPLATE, data))
+    assert len(pages) == 1
+    assert "Kallelse" in pages[0]
+    assert "Sida" not in pages[0]
+    assert "•" not in pages[0]
+
+
+@requires_tools
+def test_faktura_footer_page_numbers_survive_the_derived_fields():
+    """The recipe's columns footer derives its fields from the payload; a
+    `page_numbers` the payload sets on that slot must survive the merge."""
+    data = {
+        "invoice_number": "F-1",
+        "date": "2026-08-06",
+        "due_date": "2026-09-05",
+        "sender": {"name": "Säljbolaget AB", "org_number": "556123-4567"},
+        "recipient": {"name": "Kund AB"},
+        "lines": [{"description": "Tjänst", "quantity": 1, "unit_price": 100.0}],
+        "page_template": {"footer": {"variant": "columns", "page_numbers": "on"}},
+    }
+    pages = _pages(render("faktura", data))
+    assert len(pages) == 1
+    assert "Sida 1 av 1" in pages[0]
+
+
 @requires_tools
 def test_letterhead_settings_reach_the_printed_page():
     """Structured header content is what the slot model adds: no custom LaTeX,

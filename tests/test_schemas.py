@@ -6,7 +6,7 @@ from pathlib import Path
 import jsonschema
 import pytest
 
-from klartex.page_templates import DIMENSION_PATTERN, GUARANTEED_FONTS
+from klartex.page_templates import DIMENSION_PATTERN, GUARANTEED_FONTS, list_slot_variants
 from klartex.renderer import get_registry, TEMPLATES_DIR
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -322,6 +322,9 @@ def _with_body(page_template):
         {"header": {"variant": "logo", "fields": {"logo": "logo.pdf"}}},
         {"header": {"variant": "logo"}},
         {"footer": "pagenumber"},
+        {"footer": {"variant": "pagenumber", "page_numbers": "auto"}},
+        {"footer": {"variant": "pagenumber", "title": True, "page_numbers": "off"}},
+        {"footer": {"variant": "columns", "page_numbers": "off"}},
         {"margins": None},
         {"margins": {}},
         {"margins": {"left": "2cm"}},
@@ -341,7 +344,11 @@ def test_block_schema_accepts_slot_forms(page_template):
         {"header": {"variant": "letterhead", "org_name": "X"}},
         {"footer": {"variant": "letterhead"}},
         {"footer": {"variant": "pagenumber", "page_numbers": True}},
+        {"footer": {"variant": "pagenumber", "page_numbers": "sometimes"}},
         {"footer": {"variant": "pagenumber", "bogus": 1}},
+        {"page_numbers": True},
+        {"page_numbers": "auto"},
+        {"header": {"variant": "logo", "page_numbers": "on"}},
         {"footer": {"variant": "columns", "company": "X"}},
         {"footer": {"variant": "columns", "fields": {"bogus": 1}}},
         {"footer": {"variant": "columns", "title": True}},
@@ -394,6 +401,28 @@ def test_every_template_schema_carries_the_generated_page_template(template_name
     assert margins["additionalProperties"] is False
     assert set(margins["properties"]) == {"top", "bottom", "left", "right"}
     assert all(v["pattern"] == DIMENSION_PATTERN for v in margins["properties"].values())
+
+
+@pytest.mark.parametrize("template_name", RECIPE_SCHEMA_NAMES + ("_block",))
+def test_page_numbers_is_a_footer_setting_not_a_document_key(template_name):
+    """The tri-state sits on both footer variants; nothing carries it at the
+    document level or on a header variant."""
+    pt = get_registry()[template_name].schema["properties"]["page_template"]
+    assert "page_numbers" not in pt["properties"]
+    object_forms = [f for f in pt["properties"]["footer"]["oneOf"] if f.get("type") == "object"]
+    assert [f["properties"]["variant"]["const"] for f in object_forms] == ["pagenumber", "columns"]
+    for form in object_forms:
+        setting = form["properties"]["page_numbers"]
+        assert setting["enum"] == ["auto", "on", "off"]
+        assert setting["default"] == "auto"
+    for form in pt["properties"]["header"]["oneOf"]:
+        assert "page_numbers" not in form.get("properties", {})
+
+
+def test_slot_listing_exposes_page_numbers_on_both_footer_variants():
+    footer = {v["name"]: v for v in list_slot_variants()["footer"]}
+    assert "page_numbers" in footer["pagenumber"]["settings"]
+    assert "page_numbers" in footer["columns"]["settings"]
 
 
 @pytest.mark.parametrize("field_name", ["web", "email"])

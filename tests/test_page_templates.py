@@ -26,7 +26,7 @@ class TestDefaults:
         pt = load_page_template(None)
         assert pt.header.is_empty
         assert pt.footer.variant == "pagenumber"
-        assert pt.page_numbers is True
+        assert pt.footer.page_numbers == "auto"
         assert pt.first_page_header is False
 
     def test_empty_object_equals_none_spec(self):
@@ -37,6 +37,7 @@ class TestDefaults:
         assert pt.header.variant == "letterhead"
         assert pt.footer.variant == "pagenumber"
         assert pt.footer.settings["title"] is True
+        assert pt.footer.page_numbers == "auto"
         assert pt.footer.has_fields is False
         assert pt.first_page_header is True
 
@@ -57,22 +58,64 @@ class TestDefaults:
 class TestPageTemplateOverrides:
     """Document-level keys on the page_template object."""
 
-    def test_page_numbers_override(self):
-        pt = load_page_template({**LETTERHEAD_TITLE, "page_numbers": False})
-        assert pt.page_numbers is False
-        assert pt.first_page_header is True  # default preserved
+    def test_page_numbers_is_not_a_document_level_key(self):
+        with pytest.raises(ValueError, match="page_numbers"):
+            load_page_template({**LETTERHEAD_TITLE, "page_numbers": False})
 
     def test_first_page_header_override(self):
         pt = load_page_template({**LETTERHEAD_TITLE, "first_page_header": False})
         assert pt.first_page_header is False
-        assert pt.page_numbers is True  # default preserved
 
     def test_multiple_overrides(self):
         pt = load_page_template(
-            {"header": "logo", "page_numbers": False, "first_page_header": False}
+            {"header": "logo", "footer": None, "first_page_header": False}
         )
-        assert pt.page_numbers is False
+        assert pt.footer.is_empty
         assert pt.first_page_header is False
+
+
+class TestFooterPageNumbers:
+    """The tri-state page_numbers setting on the footer variant carrying them."""
+
+    def test_bare_variant_defaults_to_auto(self):
+        assert load_page_template({"footer": "pagenumber"}).footer.page_numbers == "auto"
+        assert load_page_template({"footer": "columns"}).footer.page_numbers == "auto"
+
+    def test_pagenumber_mode(self):
+        pt = load_page_template({"footer": {"variant": "pagenumber", "page_numbers": "off"}})
+        assert pt.footer.page_numbers == "off"
+
+    def test_columns_mode(self):
+        pt = load_page_template(
+            {
+                "footer": {
+                    "variant": "columns",
+                    "page_numbers": "on",
+                    "fields": {"company": "Bolaget AB"},
+                }
+            }
+        )
+        assert pt.footer.page_numbers == "on"
+        assert pt.footer.fields == {"company": "Bolaget AB"}
+
+    def test_title_and_page_numbers_coexist(self):
+        pt = load_page_template(
+            {"footer": {"variant": "pagenumber", "title": True, "page_numbers": "off"}}
+        )
+        assert pt.footer.settings["title"] is True
+        assert pt.footer.page_numbers == "off"
+
+    def test_boolean_is_rejected(self):
+        with pytest.raises(ValueError, match="auto, on, off"):
+            load_page_template({"footer": {"variant": "pagenumber", "page_numbers": True}})
+
+    def test_unknown_value_is_rejected(self):
+        with pytest.raises(ValueError, match="auto, on, off"):
+            load_page_template({"footer": {"variant": "columns", "page_numbers": "sometimes"}})
+
+    def test_header_variants_do_not_carry_it(self):
+        with pytest.raises(ValueError, match="page_numbers"):
+            load_page_template({"header": {"variant": "logo", "page_numbers": "on"}})
 
 
 class TestFontAndFooterOverrides:
@@ -313,9 +356,9 @@ class TestSlotErrors:
         with pytest.raises(ValueError, match="org_name"):
             load_page_template({"header": {"variant": "logo", "fields": {"org_name": "X"}}})
 
-    def test_footer_page_numbers_is_not_a_setting(self):
-        with pytest.raises(ValueError, match="page_numbers"):
-            load_page_template({"footer": {"variant": "pagenumber", "page_numbers": True}})
+    def test_setting_not_allowed_by_variant(self):
+        with pytest.raises(ValueError, match="title"):
+            load_page_template({"footer": {"variant": "columns", "title": True}})
 
 
 class TestCustomSources:

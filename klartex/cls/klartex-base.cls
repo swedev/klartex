@@ -36,6 +36,7 @@
 \RequirePackage{titlesec}
 \RequirePackage{enumitem}
 \RequirePackage{lastpage}
+\RequirePackage{refcount}
 \RequirePackage{hyperref}
 \RequirePackage{parskip}
 \RequirePackage{setspace}
@@ -111,6 +112,26 @@
 \providecommand{\orgemail}{}
 \providecommand{\orgphone}{}
 \providecommand{\brandlogo}{}
+
+% \kxifpagenumbers{<mode>}{<content>} - typeset <content> as the page number
+% of a footer slot. Three modes: `on` always, `off` never, `auto` only when
+% the document runs past one page. Shared by the predefined footer fragments,
+% klartex-footer.sty and any custom slot source that wants the same rule.
+%
+% The mode arrives both as a literal (`auto` from a fragment) and as a macro
+% (\kxf@pagenumbers from the sty), so it is expanded into a scratch macro
+% before the comparison. Under `auto` the count comes from the LastPage
+% label, which is undefined on the first xelatex run and reads as 0 — the
+% renderer always runs xelatex twice, so run two prints the right thing.
+\newcommand{\kx@pnmode}{}
+\newcommand{\kxifpagenumbers}[2]{%
+    \edef\kx@pnmode{#1}%
+    \ifdefstring{\kx@pnmode}{on}{#2}{%
+        \ifdefstring{\kx@pnmode}{auto}{%
+            \ifnum\getpagerefnumber{LastPage}>1 #2\fi
+        }{}%
+    }%
+}
 
 % Stacked contact lines for a header column. \kx@hdrline skips an empty macro
 % and emits the line separator only between lines that actually render, so a

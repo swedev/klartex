@@ -1502,6 +1502,24 @@ class TestTitlePageChrome:
         assert "FOTMARKOR" in pages[1]
 
     @requires_tools
+    def test_a_title_block_spanning_pages_leaves_every_page_bare(self):
+        r"""The block sets `\pagestyle{empty}` for its whole extent, not just
+        `\thispagestyle` for the page the title starts on, so a title long
+        enough to overflow does not pick the chrome back up on the way."""
+        long_party = " ".join(
+            ["Sammanslutningen för Långnamnade Föreningar i Norra Distriktet"] * 30
+        )
+        data = self._doc(self.LETTERHEAD_PAGENUMBER)
+        data["body"][0]["party1"] = long_party
+        pages = _pages(render(BLOCK_ENGINE_TEMPLATE, data))
+        assert len(pages) == 3, "the title block must still span two pages here"
+        for page in pages[:2]:
+            assert self.ORG not in page
+            assert "Sida" not in page
+        assert self.ORG in pages[2]
+        assert "Sida 3 av 3" in pages[2]
+
+    @requires_tools
     def test_a_mid_document_title_page_starts_its_own_page(self):
         r"""The leading `\clearpage` keeps the preceding content's chrome on
         its own page instead of stripping it along with the title page's."""

@@ -10,7 +10,7 @@
 - **Sidnumrets villkor är ett delat klassmakro.** `\kxifpagenumbers{<läge>}{<innehåll>}` i `klartex-base.cls` avgör vid LaTeX-tid om sidnumret skrivs ut; det används av `pagenumber`-fragmentet, av `klartex-footer.sty` och kan anropas från en sidfot med egen LaTeX. `auto` läser `LastPage`, som är definierat först på andra xelatex-körningen — renderaren kör alltid två. Laddaren validerar dessutom enum-inställningars värden, inte bara nycklarna, så en boolean fångas även från anropare som aldrig kört JSON-schemat. (#67)
 
 ### Fixes
-- **`title_page` renderas utan sidhuvud och sidfot.** `\makedoctitle` inleder med `\clearpage\thispagestyle{empty}`, så titelsidan är en egen sida helt utan chrome oavsett sidmall — fördefinierade slotar, egna slotkällor och helsidesmall lika. **Utseendet ändras för befintliga dokument** som kombinerar `title_page` med ett sidhuvud eller en sidfot: chromet försvinner från titelsidan. Sidbrytningen i inledningen betyder också att ett `title_page` efter annat innehåll börjar på ny sida, i stället för att dela sida med det föregående innehållet. (#66)
+- **`title_page` renderas utan sidhuvud och sidfot.** `\makedoctitle` inleder med `\clearpage` och sätter `\pagestyle{empty}` för hela blocket, så titelsidan är en egen sida helt utan chrome oavsett sidmall — fördefinierade slotar, egna slotkällor och helsidesmall lika. En titel som svämmar över till fler sidor lämnar var och en av dem bar. **Utseendet ändras för befintliga dokument** som kombinerar `title_page` med ett sidhuvud eller en sidfot: chromet försvinner från titelsidan. Sidbrytningen i inledningen betyder också att ett `title_page` efter annat innehåll börjar på ny sida, i stället för att dela sida med det föregående innehållet. (#66)
 
 ## 0.19.0 — 2026-09-03
 

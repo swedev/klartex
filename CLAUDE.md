@@ -115,7 +115,7 @@ Two invariants worth not breaking:
 
 `klartex-base.cls` sets up geometry, fancyhdr, language switching (`\kx@setlang`), and shared macros. Each component that needs custom LaTeX ships its own `.sty` (`klartex-signatureblock.sty`, `klartex-callout.sty`, …). At compile time the renderer symlinks the entire `cls/` dir into the tempdir and additionally exposes `klartex-base.cls` at top level so `\documentclass{klartex-base}` resolves.
 
-`\makedoctitle` in `klartex-titelsida.sty` starts with `\clearpage\thispagestyle{empty}`, so a `title_page` block is its own page and carries neither header nor footer in any chrome mode — predefined slots, per-slot custom sources and a whole-page source alike. Nothing in the page-template composition suppresses first-page chrome.
+`\makedoctitle` in `klartex-titelsida.sty` opens with `\clearpage` and then sets `\pagestyle{empty}` inside a group, closing with `\clearpage` before `\endgroup`. So a `title_page` block is its own page and carries neither header nor footer in any chrome mode — predefined slots, per-slot custom sources and a whole-page source alike — and a title long enough to overflow keeps every one of its pages bare, since `\thispagestyle` would only have covered the first. The trailing `\clearpage` ships those pages before the group restores the surrounding style. Nothing in the page-template composition suppresses first-page chrome.
 
 Spacing fixes accumulate in `_block_engine.tex.jinja` as `\kxneedspace` glue tricks and `\nopagebreak[4]` / `\penalty` interactions to manage break points (orphan protection, sibling label-width via `\settowidth{\kxgrouplabelw}{…}`). When changing spacing, read the recent CHANGELOG entries — most fixes have a documented rationale that is easy to undo accidentally.
 
